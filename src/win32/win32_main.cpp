@@ -118,7 +118,7 @@ namespace win32
 
     static void process_keyboard_input(KeyboardInput const& old_input, KeyboardInput& new_input)
     {
-        reset_keyboard(new_input);
+        copy_keyboard_state(old_input, new_input);
 
         auto const key_was_down = [](MSG const& msg) { return (msg.lParam & (1u << 30)) != 0; };
         auto const key_is_down = [](MSG const& msg) { return (msg.lParam & (1u << 31)) == 0; };
@@ -141,7 +141,9 @@ namespace win32
                     is_down = key_is_down(message);
 
                     if (was_down == is_down)
+                    {
                         break;
+                    }
 
                     if (is_down && alt_key_down(message))
                     {
