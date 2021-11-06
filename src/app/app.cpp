@@ -34,7 +34,7 @@ constexpr u32 next_option(u32 option)
 class AppState
 {
 public:
-	u32 current_option;
+	bool render_new;
 
 	double min_re;
 	double max_re;
@@ -89,7 +89,38 @@ static void fill(img::image_t const& dst, img::pixel_t const& p)
 }
 
 
-constexpr size_t maxymax = std::numeric_limits<size_t>::max();
+using uP = u32;
+constexpr auto uP_max = std::numeric_limits<uP>::max();
+
+
+constexpr size_t MAX_ITERATIONS = 100;
+
+using gray_palette_t = std::array<u8, MAX_ITERATIONS>;
+
+constexpr gray_palette_t make_gray_palette()
+{
+	std::array<u8, MAX_ITERATIONS> palette = {};
+	for (u32 i = 0; i < MAX_ITERATIONS; ++i)
+	{
+		auto ratio = static_cast<double>(i) / (MAX_ITERATIONS - 1);
+		palette[i] = static_cast<u8>(255 * ratio);
+	}
+
+	return palette;
+}
+
+
+constexpr u8 gray_palette(u32 index)
+{
+	constexpr auto palette = make_gray_palette();
+
+	if (index >= palette.size())
+	{
+		index = palette.size() - 1;
+	}
+
+	return palette[index];
+}
 
 
 static void mandelbrot(img::image_t const& dst, AppState& state)
@@ -102,41 +133,32 @@ static void mandelbrot(img::image_t const& dst, AppState& state)
 	auto const max_im = state.max_im;
 	auto const max_iter = state.max_iter;
 
+	double min_value = 5.0;
+
 	for (u32 y = 0; y < height; ++y)
 	{
 		double ci = min_im + (max_im - min_im) * y / height;
+
 		auto row = dst.row_begin(y);
 		for (u32 x = 0; x < width; ++x)
 		{
-			/*double cr = min_re + (max_re - min_re) * x / width;			
-			double re = 0, im = 0;
+			double cr = min_re + (max_re - min_re) * x / width;
+
+			double re = 0.0;
+			double im = 0.0;
 
 			u32 iter = 0;
-
-			for (iter = 0; iter < max_iter && re * re + im * im > 4.0; iter++)
+			
+			for (u32 i = 0; i < MAX_ITERATIONS && re * re + im * im <= 4.0; ++i)
 			{
 				double tr = re * re - im * im + cr;
 				im = 2 * re * im + ci;
 				re = tr;
-			}*/
 
-			double cr = min_re + (max_re - min_re) * x / width;
-			double ci = min_im + (max_im - min_im) * y / height;
-			double re = 0, im = 0;
-			u32 iter;
-			for (iter = 0; iter < max_iter; iter++)
-			{
-				double tr = re * re - im * im + cr;
-				im = 2 * re * im + ci;
-				re = tr;
-				if (re * re + im * im > 4.0) break;
+				++iter;
 			}
 
-			auto ratio = static_cast<double>(max_iter - iter) / max_iter;
-
-			auto shade = static_cast<u8>(ratio * 255);
-
-			row[x] = to_platform_pixel(shade);
+			row[x] = to_platform_pixel(gray_palette(iter - 1));
 		}
 	}
 }
@@ -147,7 +169,7 @@ namespace app
 {
 	static void initialize_memory(AppState& state)
 	{
-		state.current_option = 1;
+		state.render_new = true;
 
 		state.max_iter = 100;
 		state.min_re = -2.5;
@@ -171,15 +193,16 @@ namespace app
 
 		auto buffer_image = make_buffer_image(buffer);
 
-		/*if (input.keyboard.space_key.pressed || input.mouse.left.pressed)
+		if (input.keyboard.space_key.pressed || input.mouse.left.pressed)
 		{
-			state.current_option = next_option(state.current_option); 
+			state.render_new = true;
 		}
 
-		fill(buffer_image, COLOR_OPTIONS[state.current_option]);*/
-
-		mandelbrot(buffer_image, state);
-
+		if (state.render_new)
+		{
+			mandelbrot(buffer_image, state);
+			state.render_new = false;
+		}
 	}
 
 
