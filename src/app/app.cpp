@@ -31,6 +31,23 @@ constexpr u32 next_option(u32 option)
 }
 
 
+constexpr r64 MBT_MIN_X = -2.5;
+constexpr r64 MBT_MAX_X = 1.0;
+constexpr r64 MBT_MIN_Y = -1.0;
+constexpr r64 MBT_MAX_Y = 1.0;
+constexpr r64 MBT_WIDTH = MBT_MAX_X - MBT_MIN_X;
+constexpr r64 MBT_HEIGHT = MBT_MAX_Y - MBT_MIN_Y;
+
+
+class Point3Dr64
+{
+public:
+	r64 x;
+	r64 y;
+	r64 z;
+};
+
+
 class AppState
 {
 public:
@@ -40,7 +57,8 @@ public:
 	double max_re;
 	double min_im;
 	double max_im;
-	u32 max_iter;
+
+	Point3Dr64 screen_pos;
 };
 
 
@@ -110,6 +128,11 @@ constexpr gray_palette_t make_gray_palette()
 }
 
 
+constexpr long double dec = 0.00000000000001;
+constexpr auto smallest = std::numeric_limits<double>::epsilon();
+
+constexpr auto incr = smallest * uP_max;
+
 constexpr u8 gray_palette(u32 index)
 {
 	constexpr auto palette = make_gray_palette();
@@ -127,11 +150,18 @@ static void mandelbrot(img::image_t const& dst, AppState& state)
 {
 	auto const width = dst.width;
 	auto const height = dst.height;
-	auto const min_re = state.min_re;
-	auto const max_re = state.max_re;
-	auto const min_im = state.min_im;
-	auto const max_im = state.max_im;
-	auto const max_iter = state.max_iter;
+
+	auto const x_pos = state.screen_pos.x;
+	auto const y_pos = state.screen_pos.y;
+	auto const z_pos = state.screen_pos.z;
+
+	auto const screen_width = MBT_WIDTH - 2.0 * z_pos;
+	auto const screen_height = MBT_HEIGHT - 2.0 * z_pos;
+
+	auto const min_re = MBT_MIN_X + x_pos;
+	auto const max_re = min_re + screen_width;
+	auto const min_im = MBT_MIN_Y + y_pos;
+	auto const max_im = min_im + screen_height;
 
 	double min_value = 5.0;
 
@@ -171,11 +201,9 @@ namespace app
 	{
 		state.render_new = true;
 
-		state.max_iter = 100;
-		state.min_re = -2.5;
-		state.max_re = 1.0;
-		state.min_im = -1.0;
-		state.max_im = 1.0;
+		state.screen_pos.x = 0.5;
+		state.screen_pos.y = 0.1;
+		state.screen_pos.z = 0.0;
 	}
 
 
