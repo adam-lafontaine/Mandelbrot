@@ -31,7 +31,7 @@ constexpr u32 next_option(u32 option)
 }
 
 
-constexpr r64 MBT_MIN_X = -2.5;
+constexpr r64 MBT_MIN_X = -2.0;
 constexpr r64 MBT_MAX_X = 1.0;
 constexpr r64 MBT_MIN_Y = -1.0;
 constexpr r64 MBT_MAX_Y = 1.0;
@@ -39,12 +39,11 @@ constexpr r64 MBT_WIDTH = MBT_MAX_X - MBT_MIN_X;
 constexpr r64 MBT_HEIGHT = MBT_MAX_Y - MBT_MIN_Y;
 
 
-class Point3Dr64
+class Point2Dr64
 {
 public:
 	r64 x;
 	r64 y;
-	r64 z;
 };
 
 
@@ -53,17 +52,10 @@ class AppState
 public:
 	bool render_new;
 
-	Point3Dr64 screen_pos;
+	Point2Dr64 screen_pos;
 
-	bool red;
-	bool blue;
+	r64 zoom;
 };
-
-
-static r64 screen_distance(r64 distance, Point3Dr64 const& pos)
-{
-	return distance - 2 * pos.z;
-}
 
 
 static img::image_t make_buffer_image(app::PixelBuffer const& buffer)
@@ -157,35 +149,35 @@ static void mandelbrot(img::image_t const& dst, AppState& state)
 
 	auto const x_pos = state.screen_pos.x;
 	auto const y_pos = state.screen_pos.y;
-	auto const z_pos = state.screen_pos.z;
+	auto const zoom = state.zoom;
 
-	auto const screen_width = screen_distance(MBT_WIDTH, state.screen_pos);
-	auto const screen_height = screen_distance(MBT_HEIGHT, state.screen_pos);
+	auto const screen_width = MBT_WIDTH / zoom;
+	auto const screen_height = MBT_HEIGHT / zoom;
 
 	auto const min_re = MBT_MIN_X + x_pos;
 	auto const max_re = min_re + screen_width;
 	auto const min_im = MBT_MIN_Y + y_pos;
 	auto const max_im = min_im + screen_height;
 
-	double min_value = 5.0;
+	auto const ci_step = (max_im - min_im) / height;
+	auto const cr_step = (max_re - min_re) / width;
 
-	for (u32 y = 0; y < height; ++y)
+	r64 ci = min_im;
+	for (u32 y = 0; y < height; ++y, ci += ci_step)
 	{
-		double ci = min_im + (max_im - min_im) * y / height;
-
 		auto row = dst.row_begin(y);
-		for (u32 x = 0; x < width; ++x)
-		{
-			double cr = min_re + (max_re - min_re) * x / width;
 
-			double re = 0.0;
-			double im = 0.0;
+		r64 cr = min_re;
+		for (u32 x = 0; x < width; ++x, cr += cr_step)
+		{
+			r64 re = 0.0;
+			r64 im = 0.0;
 
 			u32 iter = 0;
 			
 			for (u32 i = 0; i < MAX_ITERATIONS && re * re + im * im <= 4.0; ++i)
 			{
-				double tr = re * re - im * im + cr;
+				r64 tr = re * re - im * im + cr;
 				im = 2 * re * im + ci;
 				re = tr;
 
@@ -207,33 +199,80 @@ namespace app
 
 		state.screen_pos.x = 0.0;
 		state.screen_pos.y = 0.0;
-		state.screen_pos.z = 0.0;
+
+		state.zoom = 1.0;
+	}
+
+
+	static r64 screen_width(AppState const& state)
+	{
+		return MBT_WIDTH / state.zoom;
+	}
+
+
+	static r64 screen_height(AppState const& state)
+	{
+		return MBT_HEIGHT / state.zoom;
 	}
 
 
 	static void process_input(Input const& input, AppState& state)
 	{
-		r64 const pixel_speed = 100;
-		r64 pixel_distance = pixel_speed * input.dt_frame;
+		r64 const pixels_per_second = 0.2 * BUFFER_HEIGHT;
+		r64 pixel_distance = pixels_per_second * input.dt_frame;
+
+		r64 const zoom_per_second = 0.2;
+		r64 zoom = zoom_per_second * input.dt_frame;
 
 		auto& pos = state.screen_pos;
 
-		if (input.mouse.left.is_down || input.keyboard.space_key.is_down)
+		if (input.keyboard.w_key.is_down)
 		{
-			//pos.x += screen_distance(MBT_WIDTH, pos) * pixel_distance / BUFFER_WIDTH;
-
-			state.blue = true;
-			state.red = false;
+			pos.x += 0.5 * zoom * screen_width(state);
+			state.zoom += zoom;			
 
 			state.render_new = true;
 		}
-		else
+
+		if (input.keyboard.s_key.is_down)
 		{
-			state.red = true;
-			state.blue = false;
+			pos.x -= 0.5 * zoom * screen_width(state);
+			state.zoom -= zoom;
+
 			state.render_new = true;
 		}
 
+		if (input.keyboard.right_key.is_down)
+		{
+			auto distance_per_pixel = screen_width(state) / BUFFER_WIDTH;
+			pos.x += pixel_distance * distance_per_pixel;
+
+			state.render_new = true;
+		}
+
+		if (input.keyboard.left_key.is_down)
+		{
+			auto distance_per_pixel = screen_width(state) / BUFFER_WIDTH;
+			pos.x -= pixel_distance * distance_per_pixel;
+
+			state.render_new = true;
+		}
+
+		if (input.keyboard.up_key.is_down)
+		{
+			auto distance_per_pixel = screen_height(state) / BUFFER_HEIGHT;
+			pos.y -= pixel_distance * distance_per_pixel;
+
+			state.render_new = true;
+		}
+
+		if (input.keyboard.down_key.is_down)
+		{
+			auto distance_per_pixel = screen_height(state) / BUFFER_HEIGHT;
+			pos.y += pixel_distance * distance_per_pixel;
+
+			state.render_new = true;
+		}
 	}
 
 
@@ -254,18 +293,10 @@ namespace app
 		if (state.render_new)
 		{
 			auto buffer_image = make_buffer_image(buffer);
-			//mandelbrot(buffer_image, state);
-
-			if (state.blue)
-			{
-				fill(buffer_image, img::to_pixel(0, 0, 255));
-			}
-			else if (state.red)
-			{
-				fill(buffer_image, img::to_pixel(255, 0, 0));                 
-			}
-			state.render_new = false;
+			mandelbrot(buffer_image, state);
 		}
+
+		state.render_new = false;
 	}
 
 

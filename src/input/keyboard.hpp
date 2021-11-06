@@ -21,11 +21,11 @@
 #define KEYBOARD_P 0
 #define KEYBOARD_Q 0
 #define KEYBOARD_R 0
-#define KEYBOARD_S 0
+#define KEYBOARD_S 1
 #define KEYBOARD_T 0
 #define KEYBOARD_U 0
 #define KEYBOARD_V 0
-#define KEYBOARD_W 0
+#define KEYBOARD_W 1
 #define KEYBOARD_X 0
 #define KEYBOARD_Y 0
 #define KEYBOARD_Z 0
