@@ -9,8 +9,9 @@ typedef struct input_t
 	KeyboardInput keyboard;
 	MouseInput mouse;
 
-} Input;
+	r32 dt_frame;
 
+} Input;
 
 
 inline void reset_button_state(ButtonState& state)
@@ -22,11 +23,21 @@ inline void reset_button_state(ButtonState& state)
 }
 
 
-inline void reset_keyboard(KeyboardInput& keyboard)
+
+inline void copy_button_state(ButtonState const& src, ButtonState& dst)
 {
-	for (u32 i = 0; i < ArrayCount(keyboard.keys); ++i)
+	for (u32 i = 0; i < ArrayCount(src.states); ++i)
 	{
-		reset_button_state(keyboard.keys[i]);
+		dst.states[i] = src.states[i];
+	}
+}
+
+
+inline void copy_keyboard_state(KeyboardInput const& src, KeyboardInput& dst)
+{
+	for (u32 i = 0; i < ArrayCount(src.keys); ++i)
+	{
+		copy_button_state(src.keys[i], dst.keys[i]);
 	}
 }
 

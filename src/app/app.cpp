@@ -53,13 +53,17 @@ class AppState
 public:
 	bool render_new;
 
-	double min_re;
-	double max_re;
-	double min_im;
-	double max_im;
-
 	Point3Dr64 screen_pos;
+
+	bool red;
+	bool blue;
 };
+
+
+static r64 screen_distance(r64 distance, Point3Dr64 const& pos)
+{
+	return distance - 2 * pos.z;
+}
 
 
 static img::image_t make_buffer_image(app::PixelBuffer const& buffer)
@@ -155,8 +159,8 @@ static void mandelbrot(img::image_t const& dst, AppState& state)
 	auto const y_pos = state.screen_pos.y;
 	auto const z_pos = state.screen_pos.z;
 
-	auto const screen_width = MBT_WIDTH - 2.0 * z_pos;
-	auto const screen_height = MBT_HEIGHT - 2.0 * z_pos;
+	auto const screen_width = screen_distance(MBT_WIDTH, state.screen_pos);
+	auto const screen_height = screen_distance(MBT_HEIGHT, state.screen_pos);
 
 	auto const min_re = MBT_MIN_X + x_pos;
 	auto const max_re = min_re + screen_width;
@@ -201,9 +205,35 @@ namespace app
 	{
 		state.render_new = true;
 
-		state.screen_pos.x = 0.5;
-		state.screen_pos.y = 0.1;
+		state.screen_pos.x = 0.0;
+		state.screen_pos.y = 0.0;
 		state.screen_pos.z = 0.0;
+	}
+
+
+	static void process_input(Input const& input, AppState& state)
+	{
+		r64 const pixel_speed = 100;
+		r64 pixel_distance = pixel_speed * input.dt_frame;
+
+		auto& pos = state.screen_pos;
+
+		if (input.mouse.left.is_down || input.keyboard.space_key.is_down)
+		{
+			//pos.x += screen_distance(MBT_WIDTH, pos) * pixel_distance / BUFFER_WIDTH;
+
+			state.blue = true;
+			state.red = false;
+
+			state.render_new = true;
+		}
+		else
+		{
+			state.red = true;
+			state.blue = false;
+			state.render_new = true;
+		}
+
 	}
 
 
@@ -219,16 +249,21 @@ namespace app
 			memory.is_app_initialized = true;
 		}
 
-		auto buffer_image = make_buffer_image(buffer);
-
-		if (input.keyboard.space_key.pressed || input.mouse.left.pressed)
-		{
-			state.render_new = true;
-		}
+		process_input(input, state);		
 
 		if (state.render_new)
 		{
-			mandelbrot(buffer_image, state);
+			auto buffer_image = make_buffer_image(buffer);
+			//mandelbrot(buffer_image, state);
+
+			if (state.blue)
+			{
+				fill(buffer_image, img::to_pixel(0, 0, 255));
+			}
+			else if (state.red)
+			{
+				fill(buffer_image, img::to_pixel(255, 0, 0));                 
+			}
 			state.render_new = false;
 		}
 	}

@@ -118,7 +118,7 @@ namespace win32
 
     static void process_keyboard_input(KeyboardInput const& old_input, KeyboardInput& new_input)
     {
-        reset_keyboard(new_input);
+        copy_keyboard_state(old_input, new_input);
 
         auto const key_was_down = [](MSG const& msg) { return (msg.lParam & (1u << 30)) != 0; };
         auto const key_is_down = [](MSG const& msg) { return (msg.lParam & (1u << 31)) == 0; };
@@ -136,12 +136,13 @@ namespace win32
                 case WM_SYSKEYUP:
                 case WM_KEYDOWN:
                 case WM_KEYUP:
-                {
+                {  
                     was_down = key_was_down(message);
                     is_down = key_is_down(message);
-
                     if (was_down == is_down)
+                    {
                         break;
+                    }
 
                     if (is_down && alt_key_down(message))
                     {
@@ -351,6 +352,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     sw.start();
     while (g_running)
     {
+        new_input->dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
         win32::process_keyboard_input(old_input->keyboard, new_input->keyboard);        
         win32::record_mouse_input(window, old_input->mouse, new_input->mouse);
         app::update_and_render(app_memory, *new_input, app_pixel_buffer);
