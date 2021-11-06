@@ -6,8 +6,8 @@
 
 // size of window
 // bitmap buffer will be scaled to these dimensions Windows (StretchDIBits)
-constexpr int WINDOW_AREA_HEIGHT = 600;
-constexpr int WINDOW_AREA_WIDTH = WINDOW_AREA_HEIGHT * 16 / 9;
+constexpr int WINDOW_AREA_WIDTH = app::BUFFER_WIDTH;
+constexpr int WINDOW_AREA_HEIGHT = app::BUFFER_HEIGHT;
 
 // control the framerate of the application
 constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
@@ -25,6 +25,12 @@ void end_program()
 {
     g_running = false;
     app::end_program();
+}
+
+
+u32 platform_to_color_32(u8 red, u8 green, u8 blue)
+{
+    return red << 16 | green << 8 | blue;
 }
 
 
@@ -198,7 +204,7 @@ static app::PixelBuffer make_app_pixel_buffer()
     buffer.height = g_back_buffer.height;
     buffer.bytes_per_pixel = g_back_buffer.bytes_per_pixel;
 
-    buffer.to_color32 = [](u8 red, u8 green, u8 blue) { return red << 16 | green << 8 | blue; };
+    //buffer.to_color32 = [](u8 red, u8 green, u8 blue) { return red << 16 | green << 8 | blue; };
 
     return buffer;
 }
