@@ -84,6 +84,9 @@
     <ClInclude Include="..\src\utils\libimage\types.hpp">
       <Filter>Header Files\utils\libimage</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\utils\index_range.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\src\resources\MandlebrotWin32.ico">

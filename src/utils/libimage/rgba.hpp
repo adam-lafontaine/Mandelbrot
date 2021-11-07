@@ -98,7 +98,7 @@ namespace libimage
 
 		pixel_t* data = nullptr;
 
-		pixel_t* row_begin(u32 y) const
+		pixel_t* row_begin(u64 y) const
 		{
 			assert(y < height);
 

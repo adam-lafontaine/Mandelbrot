@@ -1,10 +1,13 @@
 #include "app.hpp"
 #include "../utils/libimage/rgba.hpp"
+#include "../utils/index_range.hpp"
 
 #include <cassert>
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <execution>
+#include <immintrin.h>
 
 
 namespace img = libimage;
@@ -103,11 +106,7 @@ static void fill(img::image_t const& dst, img::pixel_t const& p)
 }
 
 
-using uP = u32;
-constexpr auto uP_max = std::numeric_limits<uP>::max();
-
-
-constexpr size_t MAX_ITERATIONS = 100;
+constexpr size_t MAX_ITERATIONS = 500;
 
 using gray_palette_t = std::array<u8, MAX_ITERATIONS>;
 
@@ -124,12 +123,7 @@ constexpr gray_palette_t make_gray_palette()
 }
 
 
-constexpr long double dec = 0.00000000000001;
-constexpr auto smallest = std::numeric_limits<double>::epsilon();
-
-constexpr auto incr = smallest * uP_max;
-
-constexpr u8 gray_palette(u32 index)
+constexpr u8 gray_palette(size_t index)
 {
 	constexpr auto palette = make_gray_palette();
 
@@ -161,21 +155,33 @@ static void mandelbrot(img::image_t const& dst, AppState& state)
 
 	auto const ci_step = (max_im - min_im) / height;
 	auto const cr_step = (max_re - min_re) / width;
+	
+	UnsignedRange y_ids(0u, height);
+	UnsignedRange x_ids(0u, width);
 
-	r64 ci = min_im;
-	for (u32 y = 0; y < height; ++y, ci += ci_step)
+	u64 const max_iter = MAX_ITERATIONS;
+
+
+	auto const do_row = [&](u64 y) 
 	{
+		r64 ci = min_im + y * ci_step;
 		auto row = dst.row_begin(y);
 
-		r64 cr = min_re;
-		for (u32 x = 0; x < width; ++x, cr += cr_step)
+		auto const do_simd = [&]() 
 		{
+			
+		};
+
+		auto const do_x = [&](u64 x) 
+		{
+			r64 cr = min_re + x * cr_step;
+
 			r64 re = 0.0;
 			r64 im = 0.0;
 
 			u32 iter = 0;
-			
-			for (u32 i = 0; i < MAX_ITERATIONS && re * re + im * im <= 4.0; ++i)
+
+			for (u32 i = 0; i < max_iter && re * re + im * im <= 4.0; ++i)
 			{
 				r64 tr = re * re - im * im + cr;
 				im = 2 * re * im + ci;
@@ -185,8 +191,12 @@ static void mandelbrot(img::image_t const& dst, AppState& state)
 			}
 
 			row[x] = to_platform_pixel(gray_palette(iter - 1));
-		}
-	}
+		};
+		
+		std::for_each(std::execution::par, x_ids.begin(), x_ids.end(), do_x);
+	};
+
+	std::for_each(std::execution::par, y_ids.begin(), y_ids.end(), do_row);
 }
 
 
@@ -218,26 +228,38 @@ namespace app
 
 	static void process_input(Input const& input, AppState& state)
 	{
-		r64 const pixels_per_second = 0.2 * BUFFER_HEIGHT;
+		r64 const pixels_per_second = 0.4 * BUFFER_HEIGHT;
 		r64 pixel_distance = pixels_per_second * input.dt_frame;
 
-		r64 const zoom_per_second = 0.2;
-		r64 zoom = zoom_per_second * input.dt_frame;
+		r64 const zoom_per_second = 0.5;
+		r64 zoom = 1.0 + zoom_per_second * input.dt_frame;
 
 		auto& pos = state.screen_pos;
 
 		if (input.keyboard.w_key.is_down)
 		{
-			pos.x += 0.5 * zoom * screen_width(state);
-			state.zoom += zoom;			
+			auto old_w = screen_width(state);
+			auto old_h = screen_height(state);
+			state.zoom *= zoom;
+			auto new_w = screen_width(state);
+			auto new_h = screen_height(state);
+
+			pos.x += 0.5 * (old_w - new_w);	
+			pos.y += 0.5 * (old_h - new_h);
 
 			state.render_new = true;
 		}
 
 		if (input.keyboard.s_key.is_down)
 		{
-			pos.x -= 0.5 * zoom * screen_width(state);
-			state.zoom -= zoom;
+			auto old_w = screen_width(state);
+			auto old_h = screen_height(state);
+			state.zoom /= zoom;
+			auto new_w = screen_width(state);
+			auto new_h = screen_height(state);
+
+			pos.x += 0.5 * (old_w - new_w);
+			pos.y += 0.5 * (old_h - new_h);
 
 			state.render_new = true;
 		}
