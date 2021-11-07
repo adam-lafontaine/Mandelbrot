@@ -1,6 +1,6 @@
 #include "app.hpp"
-#include "../utils/libimage/rgba.hpp"
 #include "../utils/index_range.hpp"
+#include "../utils/image.hpp"
 
 #include <cassert>
 #include <algorithm>
@@ -8,30 +8,6 @@
 #include <limits>
 #include <execution>
 #include <immintrin.h>
-
-
-namespace img = libimage;
-
-
-constexpr std::array<img::pixel_t, 3> COLOR_OPTIONS = 
-{
-	img::to_pixel(255, 0, 0),
-	img::to_pixel(0, 255, 0),
-	img::to_pixel(0, 0, 255)
-};
-
-
-constexpr u32 next_option(u32 option)
-{
-	switch (option)
-	{
-	case 0:
-	case 1:
-		return option + 1;
-	}
-
-	return 0;
-}
 
 
 constexpr r64 MBT_MIN_X = -2.0;
@@ -56,50 +32,69 @@ public:
 	bool render_new;
 
 	Point2Dr64 screen_pos;
-
 	r64 zoom;
+
+	fimage_t screen;
 };
 
 
-static img::image_t make_buffer_image(app::PixelBuffer const& buffer)
-{
-	assert(buffer.bytes_per_pixel == img::RGBA_CHANNELS);
 
-	img::image_t image;
+
+
+static image_t make_buffer_image(app::PixelBuffer const& buffer)
+{
+	assert(buffer.bytes_per_pixel == RGBA_CHANNELS);
+
+	image_t image{};
 
 	image.width = buffer.width;
 	image.height = buffer.height;
-	image.data = (img::pixel_t*)buffer.memory;
+	image.data = (pixel_t*)buffer.memory;
 
 	return image;
 }
 
 
-static img::pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
+static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
 {
-	img::pixel_t p;
+	pixel_t p;
 	p.value = platform_to_color_32(red, green, blue);
 
 	return p;
 }
 
 
-static img::pixel_t to_platform_pixel(u8 gray)
+static pixel_t to_platform_pixel(u8 gray)
 {
-	img::pixel_t p;
+	pixel_t p;
 	p.value = platform_to_color_32(gray, gray, gray);
 
 	return p;
 }
 
 
-static img::pixel_t to_platform_pixel(img::pixel_t const& p)
+static pixel_t to_platform_pixel(pixel_t const& p)
 {
 	return to_platform_pixel(p.red, p.green, p.blue);
 }
 
 
-static void fill(img::image_t const& dst, img::pixel_t const& p)
+void copy_to_platform(fimage_t const& src, image_t const& dst)
+{
+	auto const convert = [](fpixel_t const& p)
+	{
+		auto const r = static_cast<u8>(p.red);
+		auto const g = static_cast<u8>(p.green);
+		auto const b = static_cast<u8>(p.blue);
+
+		return to_platform_pixel(r, g, b);
+	};
+
+	std::transform(std::execution::par, src.begin(), src.end(), dst.begin(), convert);
+}
+
+
+static void fill(image_t const& dst, pixel_t const& p)
 {
 	auto const platform_p = to_platform_pixel(p);
 	std::fill(dst.begin(), dst.end(), platform_p);
@@ -136,7 +131,7 @@ constexpr u8 gray_palette(size_t index)
 }
 
 
-static void mandelbrot(img::image_t const& dst, AppState& state)
+static void mandelbrot(image_t const& dst, AppState& state)
 {
 	auto const width = dst.width;
 	auto const height = dst.height;
@@ -167,11 +162,6 @@ static void mandelbrot(img::image_t const& dst, AppState& state)
 		r64 ci = min_im + y * ci_step;
 		auto row = dst.row_begin(y);
 
-		auto const do_simd = [&]() 
-		{
-			
-		};
-
 		auto const do_x = [&](u64 x) 
 		{
 			r64 cr = min_re + x * cr_step;
@@ -200,10 +190,39 @@ static void mandelbrot(img::image_t const& dst, AppState& state)
 }
 
 
+static void mandelbrot(fimage_t const& dst, AppState const& state)
+{
+	auto const width = dst.width;
+	auto const height = dst.height;
+
+	auto const x_pos = state.screen_pos.x;
+	auto const y_pos = state.screen_pos.y;
+	auto const zoom = state.zoom;
+
+	auto const screen_width = MBT_WIDTH / zoom;
+	auto const screen_height = MBT_HEIGHT / zoom;
+
+	auto const min_re = MBT_MIN_X + x_pos;
+	auto const max_re = min_re + screen_width;
+	auto const min_im = MBT_MIN_Y + y_pos;
+	auto const max_im = min_im + screen_height;
+
+	auto const ci_step = (max_im - min_im) / height;
+	auto const cr_step = (max_re - min_re) / width;
+
+	UnsignedRange y_ids(0u, height);
+	UnsignedRange x_ids(0u, width);
+
+	u64 const max_iter = MAX_ITERATIONS;
+}
+
+
 
 namespace app
 {
-	static void initialize_memory(AppState& state)
+	GlobalVariable fpixel_t* g_screen_memory;
+
+	static void initialize_memory(AppState& state, PixelBuffer const& buffer)
 	{
 		state.render_new = true;
 
@@ -211,6 +230,15 @@ namespace app
 		state.screen_pos.y = 0.0;
 
 		state.zoom = 1.0;
+
+		auto const width = buffer.width;
+		auto const height = buffer.height;
+
+		state.screen.width = width;
+		state.screen.height = height;
+		state.screen.data = (fpixel_t*)malloc(sizeof(fpixel_t) * width * height);
+
+		g_screen_memory = state.screen.data;
 	}
 
 
@@ -306,7 +334,7 @@ namespace app
 
 		if (!memory.is_app_initialized)
 		{
-			initialize_memory(state);
+			initialize_memory(state, buffer);
 			memory.is_app_initialized = true;
 		}
 
@@ -324,6 +352,6 @@ namespace app
 
 	void end_program()
 	{
-		
+		free(g_screen_memory);
 	}
 }

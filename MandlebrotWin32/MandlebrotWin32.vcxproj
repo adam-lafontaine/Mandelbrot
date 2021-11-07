@@ -148,12 +148,11 @@
     <ClInclude Include="..\src\input\input.hpp" />
     <ClInclude Include="..\src\input\keyboard.hpp" />
     <ClInclude Include="..\src\input\mouse.hpp" />
+    <ClInclude Include="..\src\utils\image.hpp" />
     <ClInclude Include="..\src\utils\index_range.hpp" />
-    <ClInclude Include="..\src\utils\libimage\libimage.hpp" />
-    <ClInclude Include="..\src\utils\libimage\rgba.hpp" />
-    <ClInclude Include="..\src\utils\libimage\types.hpp" />
     <ClInclude Include="..\src\utils\stopwatch.hpp" />
     <ClInclude Include="..\src\utils\types.hpp" />
+    <ClInclude Include="..\src\utils\win32_leak_check.h" />
     <ClInclude Include="..\src\win32\framework.h" />
     <ClInclude Include="..\src\win32\Resource.h" />
     <ClInclude Include="..\src\win32\targetver.h" />
@@ -168,7 +167,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\app\app.cpp" />
-    <ClCompile Include="..\src\utils\libimage\libimage.cpp" />
     <ClCompile Include="..\src\win32\win32_input.cpp" />
     <ClCompile Include="..\src\win32\win32_main.cpp" />
   </ItemGroup>

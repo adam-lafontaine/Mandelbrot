@@ -2,6 +2,11 @@
 #include "../app/app.hpp"
 #include "../utils/stopwatch.hpp"
 
+//#define CHECK_LEAKS
+#if defined(_WIN32) && defined(_DEBUG) && defined(CHECK_LEAKS)
+#include "../utils/win32_leak_check.h"
+#endif
+
 #include <iostream>
 
 // size of window
@@ -272,6 +277,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_ LPWSTR    lpCmdLine,
                      _In_ int       nCmdShow)
 {
+
+
+#if defined(_WIN32) && defined(_DEBUG) && defined(CHECK_LEAKS)
+    int dbgFlags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
+    dbgFlags |= _CRTDBG_CHECK_ALWAYS_DF;   // check block integrity
+    dbgFlags |= _CRTDBG_DELAY_FREE_MEM_DF; // don't recycle memory
+    dbgFlags |= _CRTDBG_LEAK_CHECK_DF;     // leak report on exit
+    _CrtSetDbgFlag(dbgFlags);
+#endif
+
+
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 

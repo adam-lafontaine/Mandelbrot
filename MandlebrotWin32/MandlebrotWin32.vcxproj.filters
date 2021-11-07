@@ -34,12 +34,6 @@
     <Filter Include="Source Files\utils">
       <UniqueIdentifier>{a66b97b6-e43e-43b0-bf06-25bf5c0ff699}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\utils\libimage">
-      <UniqueIdentifier>{4b6260ff-ede5-40e9-9e50-0a0e6af6e543}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\utils\libimage">
-      <UniqueIdentifier>{b478ef55-ee93-41f8-91b0-e1c8793e6df7}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\input\button_state.hpp">
@@ -75,16 +69,13 @@
     <ClInclude Include="..\src\utils\stopwatch.hpp">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\utils\libimage\libimage.hpp">
-      <Filter>Header Files\utils\libimage</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\libimage\rgba.hpp">
-      <Filter>Header Files\utils\libimage</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\libimage\types.hpp">
-      <Filter>Header Files\utils\libimage</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\utils\index_range.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\image.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\win32_leak_check.h">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
   </ItemGroup>
@@ -110,9 +101,6 @@
     </ClCompile>
     <ClCompile Include="..\src\app\app.cpp">
       <Filter>Source Files\app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\utils\libimage\libimage.cpp">
-      <Filter>Source Files\utils\libimage</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
