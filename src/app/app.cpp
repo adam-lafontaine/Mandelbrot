@@ -228,8 +228,6 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 
 namespace app
 {
-	GlobalVariable fpixel_t* g_screen_memory;
-
 	static void initialize_memory(AppState& state, PixelBuffer const& buffer)
 	{
 		state.render_new = true;
@@ -244,9 +242,9 @@ namespace app
 
 		state.screen.width = width;
 		state.screen.height = height;
-		state.screen.data = (fpixel_t*)malloc(sizeof(fpixel_t) * width * height);
+		state.screen.data = (fpixel_t*)((u8*)(&state) + sizeof(AppState));
 
-		g_screen_memory = state.screen.data;
+		assert(state.screen.data);
 	}
 
 
@@ -336,9 +334,15 @@ namespace app
 
 	void update_and_render(AppMemory& memory, Input const& input, PixelBuffer const& buffer)
 	{
-		assert(sizeof(AppState) <= memory.permanent_storage_size);
+		auto const state_sz = sizeof(AppState);
+		auto const screen_data_sz = sizeof(fpixel_t) * buffer.width * buffer.height;
+
+		auto const required_sz = state_sz + screen_data_sz;
+
+		assert(required_sz <= memory.permanent_storage_size);
 
 		auto& state = *(AppState*)memory.permanent_storage;
+		
 
 		if (!memory.is_app_initialized)
 		{
@@ -360,6 +364,6 @@ namespace app
 
 	void end_program()
 	{
-		free(g_screen_memory);
+		
 	}
 }

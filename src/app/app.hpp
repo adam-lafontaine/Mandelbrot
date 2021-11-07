@@ -34,8 +34,6 @@ namespace app
 		u32 width;
 		u32 height;
 		u32 bytes_per_pixel;
-
-		//to_color32_f to_color32;
 	};
 	
 
