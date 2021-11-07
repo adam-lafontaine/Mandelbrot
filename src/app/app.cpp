@@ -17,6 +17,8 @@ constexpr r64 MBT_MAX_Y = 1.0;
 constexpr r64 MBT_WIDTH = MBT_MAX_X - MBT_MIN_X;
 constexpr r64 MBT_HEIGHT = MBT_MAX_Y - MBT_MIN_Y;
 
+constexpr size_t MAX_ITERATIONS = 1000;
+
 
 class Point2Dr64
 {
@@ -36,9 +38,6 @@ public:
 
 	fimage_t screen;
 };
-
-
-
 
 
 static image_t make_buffer_image(app::PixelBuffer const& buffer)
@@ -79,6 +78,15 @@ static pixel_t to_platform_pixel(pixel_t const& p)
 }
 
 
+static fpixel_t to_fpixel(r32 gray)
+{
+	fpixel_t p;
+	p.red = p.green = p.blue = gray;
+
+	return p;
+}
+
+
 void copy_to_platform(fimage_t const& src, image_t const& dst)
 {
 	auto const convert = [](fpixel_t const& p)
@@ -101,16 +109,16 @@ static void fill(image_t const& dst, pixel_t const& p)
 }
 
 
-constexpr size_t MAX_ITERATIONS = 500;
+
 
 using gray_palette_t = std::array<u8, MAX_ITERATIONS>;
 
 constexpr gray_palette_t make_gray_palette()
 {
-	std::array<u8, MAX_ITERATIONS> palette = {};
+	gray_palette_t palette = {};
 	for (u32 i = 0; i < MAX_ITERATIONS; ++i)
 	{
-		auto ratio = static_cast<double>(i) / (MAX_ITERATIONS - 1);
+		auto ratio = static_cast<r64>(i) / (MAX_ITERATIONS - 1);
 		palette[i] = static_cast<u8>(255 * ratio);
 	}
 
@@ -131,7 +139,33 @@ constexpr u8 gray_palette(size_t index)
 }
 
 
-static void mandelbrot(image_t const& dst, AppState& state)
+constexpr std::array<r32, MAX_ITERATIONS> make_gray_palette_r32()
+{
+	std::array<r32, MAX_ITERATIONS> palette = {};
+
+	for (u32 i = 0; i < MAX_ITERATIONS; ++i)
+	{
+		auto ratio = static_cast<r64>(i) / (MAX_ITERATIONS - 1);
+		palette[i] = static_cast<r32>(255.0 * ratio);
+	}
+
+	return palette;
+}
+
+constexpr r32 gray_palette_r32(size_t index)
+{
+	constexpr auto palette = make_gray_palette_r32();
+
+	if (index >= palette.size())
+	{
+		index = palette.size() - 1;
+	}
+
+	return palette[index];
+}
+
+
+static void mandelbrot(image_t const& dst, AppState const& state)
 {
 	auto const width = dst.width;
 	auto const height = dst.height;
@@ -150,19 +184,18 @@ static void mandelbrot(image_t const& dst, AppState& state)
 
 	auto const ci_step = (max_im - min_im) / height;
 	auto const cr_step = (max_re - min_re) / width;
-	
+
 	UnsignedRange y_ids(0u, height);
 	UnsignedRange x_ids(0u, width);
 
 	u64 const max_iter = MAX_ITERATIONS;
 
-
-	auto const do_row = [&](u64 y) 
+	auto const do_row = [&](u64 y)
 	{
 		r64 ci = min_im + y * ci_step;
-		auto row = dst.row_begin(y);
+		auto row = state.screen.row_begin(y);
 
-		auto const do_x = [&](u64 x) 
+		auto const do_x = [&](u64 x)
 		{
 			r64 cr = min_re + x * cr_step;
 
@@ -180,40 +213,15 @@ static void mandelbrot(image_t const& dst, AppState& state)
 				++iter;
 			}
 
-			row[x] = to_platform_pixel(gray_palette(iter - 1));
+			row[x] = to_fpixel(gray_palette_r32(iter - 1));
 		};
-		
+
 		std::for_each(std::execution::par, x_ids.begin(), x_ids.end(), do_x);
 	};
 
 	std::for_each(std::execution::par, y_ids.begin(), y_ids.end(), do_row);
-}
 
-
-static void mandelbrot(fimage_t const& dst, AppState const& state)
-{
-	auto const width = dst.width;
-	auto const height = dst.height;
-
-	auto const x_pos = state.screen_pos.x;
-	auto const y_pos = state.screen_pos.y;
-	auto const zoom = state.zoom;
-
-	auto const screen_width = MBT_WIDTH / zoom;
-	auto const screen_height = MBT_HEIGHT / zoom;
-
-	auto const min_re = MBT_MIN_X + x_pos;
-	auto const max_re = min_re + screen_width;
-	auto const min_im = MBT_MIN_Y + y_pos;
-	auto const max_im = min_im + screen_height;
-
-	auto const ci_step = (max_im - min_im) / height;
-	auto const cr_step = (max_re - min_re) / width;
-
-	UnsignedRange y_ids(0u, height);
-	UnsignedRange x_ids(0u, width);
-
-	u64 const max_iter = MAX_ITERATIONS;
+	copy_to_platform(state.screen, dst);
 }
 
 
