@@ -78,10 +78,21 @@ static pixel_t to_platform_pixel(pixel_t const& p)
 }
 
 
-static fpixel_t to_fpixel(r32 gray)
+constexpr fpixel_t to_fpixel(r32 gray)
 {
-	fpixel_t p;
+	fpixel_t p{};
 	p.red = p.green = p.blue = gray;
+
+	return p;
+}
+
+
+constexpr fpixel_t to_fpixel(r32 r, r32 g, r32 b)
+{
+	fpixel_t p{};
+	p.red = r;
+	p.green = g;
+	p.blue = b;
 
 	return p;
 }
@@ -111,37 +122,12 @@ static void fill(image_t const& dst, pixel_t const& p)
 
 
 
-using gray_palette_t = std::array<u8, MAX_ITERATIONS>;
+using gray_palette_t = std::array<r32, MAX_ITERATIONS>;
+
 
 constexpr gray_palette_t make_gray_palette()
 {
 	gray_palette_t palette = {};
-	for (u32 i = 0; i < MAX_ITERATIONS; ++i)
-	{
-		auto ratio = static_cast<r64>(i) / (MAX_ITERATIONS - 1);
-		palette[i] = static_cast<u8>(255 * ratio);
-	}
-
-	return palette;
-}
-
-
-constexpr u8 gray_palette(size_t index)
-{
-	constexpr auto palette = make_gray_palette();
-
-	if (index >= palette.size())
-	{
-		index = palette.size() - 1;
-	}
-
-	return palette[index];
-}
-
-
-constexpr std::array<r32, MAX_ITERATIONS> make_gray_palette_r32()
-{
-	std::array<r32, MAX_ITERATIONS> palette = {};
 
 	for (u32 i = 0; i < MAX_ITERATIONS; ++i)
 	{
@@ -152,9 +138,65 @@ constexpr std::array<r32, MAX_ITERATIONS> make_gray_palette_r32()
 	return palette;
 }
 
-constexpr r32 gray_palette_r32(size_t index)
+constexpr fpixel_t to_gray(size_t index)
 {
-	constexpr auto palette = make_gray_palette_r32();
+	constexpr auto palette = make_gray_palette();
+
+	if (index >= palette.size())
+	{
+		index = palette.size() - 1;
+	}
+
+	return to_fpixel(palette[index]);
+}
+
+
+constexpr fpixel_t to_rgb(r64 ratio)
+{
+	assert(ratio >= 0.0);
+	assert(ratio <= 1.0);
+
+	auto const p = ratio;
+	auto const q = 1.0 - p;
+	auto const p2 = p * p;
+	auto const p3 = p2 * p;
+	auto const q2 = q * q;
+	auto const q3 = q2 * q;
+
+	auto const c_max = 255.0;
+
+	auto const c1 = static_cast<r32>(9.0 * q * p3 * c_max);
+	auto const c2 = static_cast<r32>(15.0 * q2 * p2 * c_max);
+	auto const c3 = static_cast<r32>(8.5 * q3 * p * c_max);
+
+	auto const r = c1;
+	auto const g = c2;
+	auto const b = c3;
+
+	return to_fpixel(r, g, b);
+}
+
+
+using color_palette_t = std::array<fpixel_t, MAX_ITERATIONS>;
+
+
+constexpr color_palette_t make_rgb_palette()
+{
+	color_palette_t palette = {};
+
+	for (u32 i = 0; i < MAX_ITERATIONS; ++i)
+	{
+		auto ratio = static_cast<r64>(i) / (MAX_ITERATIONS - 1);
+		palette[i] = to_rgb(ratio);
+	}
+
+	return palette;
+}
+
+
+constexpr fpixel_t to_color(size_t index)
+{
+	constexpr auto palette = make_rgb_palette();
 
 	if (index >= palette.size())
 	{
@@ -213,7 +255,8 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 				++iter;
 			}
 
-			row[x] = to_fpixel(gray_palette_r32(iter - 1));
+			//row[x] = to_gray(iter - 1);
+			row[x] = to_color(iter - 1);
 		};
 
 		std::for_each(std::execution::par, x_ids.begin(), x_ids.end(), do_x);
@@ -341,8 +384,7 @@ namespace app
 
 		assert(required_sz <= memory.permanent_storage_size);
 
-		auto& state = *(AppState*)memory.permanent_storage;
-		
+		auto& state = *(AppState*)memory.permanent_storage;		
 
 		if (!memory.is_app_initialized)
 		{
