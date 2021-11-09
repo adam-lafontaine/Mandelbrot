@@ -1,6 +1,7 @@
 #include "app.hpp"
 #include "../utils/index_range.hpp"
 #include "../utils/image.hpp"
+#include "../utils/fixed_point.hpp"
 
 #include <cassert>
 #include <algorithm>
@@ -11,13 +12,15 @@
 
 
 constexpr r64 MBT_MIN_X = -2.0;
-constexpr r64 MBT_MAX_X = 1.0;
-constexpr r64 MBT_MIN_Y = -1.0;
-constexpr r64 MBT_MAX_Y = 1.0;
+constexpr r64 MBT_MAX_X = 0.7;
+constexpr r64 MBT_MIN_Y = -1.2;
+constexpr r64 MBT_MAX_Y = 1.2;
 constexpr r64 MBT_WIDTH = MBT_MAX_X - MBT_MIN_X;
 constexpr r64 MBT_HEIGHT = MBT_MAX_Y - MBT_MIN_Y;
 
-constexpr size_t MAX_ITERATIONS = 1000;
+constexpr size_t MAX_ITERATIONS = 500;
+
+using r64fp = sg14::make_fixed<1, 62>;
 
 
 class Point2Dr64
@@ -207,6 +210,106 @@ constexpr fpixel_t to_color(size_t index)
 }
 
 
+static inline r64fp fp_add(r64fp lhs, r64fp rhs)
+{
+	return sg14::add(lhs, rhs);
+}
+
+
+static inline r64fp fp_sub(r64fp lhs, r64fp rhs)
+{
+	return sg14::subtract(lhs, rhs);
+}
+
+
+static inline r64fp fp_div(r64fp lhs, r64fp rhs)
+{
+	return sg14::divide(lhs, rhs);
+}
+
+
+static inline r64fp fp_mul(r64fp lhs, r64fp rhs)
+{
+	return sg14::multiply(lhs, rhs);
+}
+
+
+template <typename T>
+static inline r64fp to_fp(T val)
+{
+	return r64fp{ val };
+}
+
+
+static void mandelbrot_fp(image_t const& dst, AppState const& state)
+{
+	auto const width = to_fp(dst.width);
+	auto const height = to_fp(dst.height);
+
+	auto const x_pos = to_fp(state.screen_pos.x);
+	auto const y_pos = to_fp(state.screen_pos.y);
+	auto const zoom = to_fp(state.zoom);
+
+	auto const screen_width = fp_div(to_fp(MBT_WIDTH), zoom);
+	auto const screen_height = fp_div(to_fp(MBT_HEIGHT), zoom);
+
+	auto const min_re = fp_add(to_fp(MBT_MIN_X), x_pos);
+	auto const max_re = fp_add(min_re, screen_width);
+	auto const min_im = fp_add(to_fp(MBT_MIN_Y), y_pos);
+	auto const max_im = fp_add(min_im, screen_height);
+
+	auto const re_step = fp_div(fp_sub(max_re, min_re), width);
+	auto const im_step = fp_div(fp_sub(max_im, min_im), height);
+
+	UnsignedRange y_ids(0u, dst.height);
+	UnsignedRange x_ids(0u, dst.width);
+
+	u64 const max_iter = MAX_ITERATIONS;
+
+	auto const limit = to_fp(4.0);
+
+	auto const do_row = [&](u64 y)
+	{
+		auto const yfp = to_fp(y);
+		auto const ci = fp_add(min_im, fp_mul(yfp, im_step));
+
+		auto row = state.screen.row_begin(y);
+
+		auto const do_x = [&](u64 x)
+		{
+			auto const xfp = to_fp(x);
+			auto const cr = fp_add(min_re, fp_mul(x, re_step));
+
+			auto re = to_fp(0.0);
+			auto im = to_fp(0.0);
+			auto re2 = to_fp(0.0);
+			auto im2 = to_fp(0.0);
+
+			u64 iter = 0;			
+
+			while (fp_add(re2, im2) <= limit && iter < max_iter)
+			{
+				im = fp_add(fp_mul(fp_add(re, re), im), ci);
+				re = re2 - im2 + cr;
+				im2 = im * im;
+				re2 = re * re;
+
+				++iter;
+			}
+
+			//row[x] = to_gray(iter - 1);
+			row[x] = to_color(iter - 1);
+		};
+
+		std::for_each(std::execution::par, x_ids.begin(), x_ids.end(), do_x);
+	};
+
+	std::for_each(std::execution::par, y_ids.begin(), y_ids.end(), do_row);
+
+	copy_to_platform(state.screen, dst);
+}
+
+
 static void mandelbrot(image_t const& dst, AppState const& state)
 {
 	auto const width = dst.width;
@@ -224,33 +327,37 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 	auto const min_im = MBT_MIN_Y + y_pos;
 	auto const max_im = min_im + screen_height;
 
-	auto const ci_step = (max_im - min_im) / height;
-	auto const cr_step = (max_re - min_re) / width;
+	auto const re_step = (max_re - min_re) / width;
+	auto const im_step = (max_im - min_im) / height;
 
 	UnsignedRange y_ids(0u, height);
 	UnsignedRange x_ids(0u, width);
 
 	u64 const max_iter = MAX_ITERATIONS;
+	r64 const limit = 4.0;
 
 	auto const do_row = [&](u64 y)
 	{
-		r64 ci = min_im + y * ci_step;
+		r64 const ci = min_im + y * im_step;
 		auto row = state.screen.row_begin(y);
 
 		auto const do_x = [&](u64 x)
 		{
-			r64 cr = min_re + x * cr_step;
+			r64 const cr = min_re + x * re_step;
 
 			r64 re = 0.0;
 			r64 im = 0.0;
+			r64 re2 = 0.0;
+			r64 im2 = 0.0;
 
-			u32 iter = 0;
+			u64 iter = 0;
 
-			for (u32 i = 0; i < max_iter && re * re + im * im <= 4.0; ++i)
+			while (re2 + im2 <= limit && iter < max_iter)
 			{
-				r64 tr = re * re - im * im + cr;
-				im = 2 * re * im + ci;
-				re = tr;
+				im = (re + re) * im + ci;
+				re = re2 - im2 + cr;
+				im2 = im * im;
+				re2 = re * re;
 
 				++iter;
 			}

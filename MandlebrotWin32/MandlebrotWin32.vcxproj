@@ -148,6 +148,7 @@
     <ClInclude Include="..\src\input\input.hpp" />
     <ClInclude Include="..\src\input\keyboard.hpp" />
     <ClInclude Include="..\src\input\mouse.hpp" />
+    <ClInclude Include="..\src\utils\fixed_point.hpp" />
     <ClInclude Include="..\src\utils\image.hpp" />
     <ClInclude Include="..\src\utils\index_range.hpp" />
     <ClInclude Include="..\src\utils\stopwatch.hpp" />
