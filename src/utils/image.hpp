@@ -92,9 +92,38 @@ public:
 };
 
 
+template <typename T>
+class Matrix
+{
+public:
+	u32 width;
+	u32 height;
+
+	T* data;
+
+	T* row_begin(u64 y) const
+	{
+		assert(y < height);
+
+		auto offset = y * width;
+
+		auto ptr = data + static_cast<u64>(offset);
+		assert(ptr);
+
+		return ptr;
+	}
+
+	T* begin() { return data; }
+	T* end() { return data + static_cast<u64>(width) * static_cast<u64>(height); }
+	T* begin() const { return data; }
+	T* end() const { return data + static_cast<u64>(width) * static_cast<u64>(height); }
+};
+
 
 using image_t = Image;
 using pixel_t = image_t::pixel_t;
 
 using fimage_t = FloatImage;
 using fpixel_t = fimage_t::pixel_t;
+
+using mat_u32_t = Matrix<u32>;

@@ -1,14 +1,13 @@
 #include "app.hpp"
 #include "../utils/index_range.hpp"
 #include "../utils/image.hpp"
-#include "../utils/fixed_point.hpp"
 
 #include <cassert>
 #include <algorithm>
 #include <array>
 #include <limits>
 #include <execution>
-#include <immintrin.h>
+//#include <immintrin.h>
 
 
 constexpr r64 MBT_MIN_X = -2.0;
@@ -19,9 +18,6 @@ constexpr r64 MBT_WIDTH = MBT_MAX_X - MBT_MIN_X;
 constexpr r64 MBT_HEIGHT = MBT_MAX_Y - MBT_MIN_Y;
 
 constexpr size_t MAX_ITERATIONS = 500;
-
-using r64fp = sg14::make_fixed<1, 62>;
-
 
 class Point2Dr64
 {
@@ -38,9 +34,19 @@ public:
 
 	Point2Dr64 screen_pos;
 	r64 zoom;
-
-	fimage_t screen;
 };
+
+
+static r64 screen_width(AppState const& state)
+{
+	return MBT_WIDTH / state.zoom;
+}
+
+
+static r64 screen_height(AppState const& state)
+{
+	return MBT_HEIGHT / state.zoom;
+}
 
 
 static image_t make_buffer_image(app::PixelBuffer const& buffer)
@@ -81,6 +87,16 @@ static pixel_t to_platform_pixel(pixel_t const& p)
 }
 
 
+static pixel_t to_platform_pixel(fpixel_t const& p)
+{
+	auto const r = static_cast<u8>(p.red);
+	auto const g = static_cast<u8>(p.green);
+	auto const b = static_cast<u8>(p.blue);
+
+	return to_platform_pixel(r, g, b);
+}
+
+
 constexpr fpixel_t to_fpixel(r32 gray)
 {
 	fpixel_t p{};
@@ -101,19 +117,7 @@ constexpr fpixel_t to_fpixel(r32 r, r32 g, r32 b)
 }
 
 
-void copy_to_platform(fimage_t const& src, image_t const& dst)
-{
-	auto const convert = [](fpixel_t const& p)
-	{
-		auto const r = static_cast<u8>(p.red);
-		auto const g = static_cast<u8>(p.green);
-		auto const b = static_cast<u8>(p.blue);
 
-		return to_platform_pixel(r, g, b);
-	};
-
-	std::transform(std::execution::par, src.begin(), src.end(), dst.begin(), convert);
-}
 
 
 static void fill(image_t const& dst, pixel_t const& p)
@@ -210,104 +214,19 @@ constexpr fpixel_t to_color(size_t index)
 }
 
 
-static inline r64fp fp_add(r64fp lhs, r64fp rhs)
+void copy_to_platform(mat_u32_t const& src, image_t const& dst)
 {
-	return sg14::add(lhs, rhs);
-}
 
-
-static inline r64fp fp_sub(r64fp lhs, r64fp rhs)
-{
-	return sg14::subtract(lhs, rhs);
-}
-
-
-static inline r64fp fp_div(r64fp lhs, r64fp rhs)
-{
-	return sg14::divide(lhs, rhs);
-}
-
-
-static inline r64fp fp_mul(r64fp lhs, r64fp rhs)
-{
-	return sg14::multiply(lhs, rhs);
-}
-
-
-template <typename T>
-static inline r64fp to_fp(T val)
-{
-	return r64fp{ val };
-}
-
-
-static void mandelbrot_fp(image_t const& dst, AppState const& state)
-{
-	auto const width = to_fp(dst.width);
-	auto const height = to_fp(dst.height);
-
-	auto const x_pos = to_fp(state.screen_pos.x);
-	auto const y_pos = to_fp(state.screen_pos.y);
-	auto const zoom = to_fp(state.zoom);
-
-	auto const screen_width = fp_div(to_fp(MBT_WIDTH), zoom);
-	auto const screen_height = fp_div(to_fp(MBT_HEIGHT), zoom);
-
-	auto const min_re = fp_add(to_fp(MBT_MIN_X), x_pos);
-	auto const max_re = fp_add(min_re, screen_width);
-	auto const min_im = fp_add(to_fp(MBT_MIN_Y), y_pos);
-	auto const max_im = fp_add(min_im, screen_height);
-
-	auto const re_step = fp_div(fp_sub(max_re, min_re), width);
-	auto const im_step = fp_div(fp_sub(max_im, min_im), height);
-
-	UnsignedRange y_ids(0u, dst.height);
-	UnsignedRange x_ids(0u, dst.width);
-
-	u64 const max_iter = MAX_ITERATIONS;
-
-	auto const limit = to_fp(4.0);
-
-	auto const do_row = [&](u64 y)
+	auto const convert = [](u64 i)
 	{
-		auto const yfp = to_fp(y);
-		auto const ci = fp_add(min_im, fp_mul(yfp, im_step));
-
-		auto row = state.screen.row_begin(y);
-
-		auto const do_x = [&](u64 x)
-		{
-			auto const xfp = to_fp(x);
-			auto const cr = fp_add(min_re, fp_mul(x, re_step));
-
-			auto re = to_fp(0.0);
-			auto im = to_fp(0.0);
-			auto re2 = to_fp(0.0);
-			auto im2 = to_fp(0.0);
-
-			u64 iter = 0;			
-
-			while (fp_add(re2, im2) <= limit && iter < max_iter)
-			{
-				im = fp_add(fp_mul(fp_add(re, re), im), ci);
-				re = re2 - im2 + cr;
-				im2 = im * im;
-				re2 = re * re;
-
-				++iter;
-			}
-
-			//row[x] = to_gray(iter - 1);
-			row[x] = to_color(iter - 1);
-		};
-
-		std::for_each(std::execution::par, x_ids.begin(), x_ids.end(), do_x);
+		return to_platform_pixel(to_color(i));
 	};
 
-	std::for_each(std::execution::par, y_ids.begin(), y_ids.end(), do_row);
-
-	copy_to_platform(state.screen, dst);
+	std::transform(std::execution::par, src.begin(), src.end(), dst.begin(), convert);
 }
+
+
+
 
 
 static void mandelbrot(image_t const& dst, AppState const& state)
@@ -319,19 +238,24 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 	auto const y_pos = state.screen_pos.y;
 	auto const zoom = state.zoom;
 
-	auto const screen_width = MBT_WIDTH / zoom;
-	auto const screen_height = MBT_HEIGHT / zoom;
+	auto const scr_width = screen_width(state);
+	auto const scr_height = screen_height(state);
 
 	auto const min_re = MBT_MIN_X + x_pos;
-	auto const max_re = min_re + screen_width;
+	auto const max_re = min_re + scr_width;
 	auto const min_im = MBT_MIN_Y + y_pos;
-	auto const max_im = min_im + screen_height;
+	auto const max_im = min_im + scr_height;
 
 	auto const re_step = (max_re - min_re) / width;
 	auto const im_step = (max_im - min_im) / height;
 
 	UnsignedRange y_ids(0u, height);
+	auto const y_id_begin = y_ids.begin();
+	auto const y_id_end = y_ids.end();
+
 	UnsignedRange x_ids(0u, width);
+	auto const x_id_begin = x_ids.begin();
+	auto const x_id_end = x_ids.end();	
 
 	u64 const max_iter = MAX_ITERATIONS;
 	r64 const limit = 4.0;
@@ -339,18 +263,17 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 	auto const do_row = [&](u64 y)
 	{
 		r64 const ci = min_im + y * im_step;
-		auto row = state.screen.row_begin(y);
+		auto row = dst.row_begin(y);
 
 		auto const do_x = [&](u64 x)
 		{
+			u32 iter = 0;
 			r64 const cr = min_re + x * re_step;
 
 			r64 re = 0.0;
 			r64 im = 0.0;
 			r64 re2 = 0.0;
-			r64 im2 = 0.0;
-
-			u64 iter = 0;
+			r64 im2 = 0.0;			
 
 			while (re2 + im2 <= limit && iter < max_iter)
 			{
@@ -363,15 +286,13 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 			}
 
 			//row[x] = to_gray(iter - 1);
-			row[x] = to_color(iter - 1);
+			row[x] = to_platform_pixel(to_color(iter - 1));
 		};
 
-		std::for_each(std::execution::par, x_ids.begin(), x_ids.end(), do_x);
+		std::for_each(std::execution::par, x_id_begin, x_id_end, do_x);
 	};
 
-	std::for_each(std::execution::par, y_ids.begin(), y_ids.end(), do_row);
-
-	copy_to_platform(state.screen, dst);
+	std::for_each(std::execution::par, y_id_begin, y_id_end, do_row);
 }
 
 
@@ -389,25 +310,10 @@ namespace app
 
 		auto const width = buffer.width;
 		auto const height = buffer.height;
-
-		state.screen.width = width;
-		state.screen.height = height;
-		state.screen.data = (fpixel_t*)((u8*)(&state) + sizeof(AppState));
-
-		assert(state.screen.data);
 	}
 
 
-	static r64 screen_width(AppState const& state)
-	{
-		return MBT_WIDTH / state.zoom;
-	}
-
-
-	static r64 screen_height(AppState const& state)
-	{
-		return MBT_HEIGHT / state.zoom;
-	}
+	
 
 
 	static void process_input(Input const& input, AppState& state)
@@ -485,9 +391,8 @@ namespace app
 	void update_and_render(AppMemory& memory, Input const& input, PixelBuffer const& buffer)
 	{
 		auto const state_sz = sizeof(AppState);
-		auto const screen_data_sz = sizeof(fpixel_t) * buffer.width * buffer.height;
 
-		auto const required_sz = state_sz + screen_data_sz;
+		auto const required_sz = state_sz;
 
 		assert(required_sz <= memory.permanent_storage_size);
 
