@@ -7,7 +7,7 @@
 #include <array>
 #include <limits>
 #include <execution>
-//#include <immintrin.h>
+#include <immintrin.h>
 
 
 constexpr r64 MBT_MIN_X = -2.0;
@@ -117,9 +117,6 @@ constexpr fpixel_t to_fpixel(r32 r, r32 g, r32 b)
 }
 
 
-
-
-
 static void fill(image_t const& dst, pixel_t const& p)
 {
 	auto const platform_p = to_platform_pixel(p);
@@ -144,6 +141,7 @@ constexpr gray_palette_t make_gray_palette()
 
 	return palette;
 }
+
 
 constexpr fpixel_t to_gray(size_t index)
 {
@@ -214,29 +212,42 @@ constexpr fpixel_t to_color(size_t index)
 }
 
 
-void copy_to_platform(mat_u32_t const& src, image_t const& dst)
+using r64_4 = __m256d;
+
+r64_4 make_zero()
 {
-
-	auto const convert = [](u64 i)
-	{
-		return to_platform_pixel(to_color(i));
-	};
-
-	std::transform(std::execution::par, src.begin(), src.end(), dst.begin(), convert);
+	return _mm256_setzero_pd();
 }
 
 
+r64_4 add(r64_4 lhs, r64_4 rhs)
+{
+	return _mm256_add_pd(lhs, rhs);
+}
 
+
+r64_4 sub(r64_4 lhs, r64_4 rhs)
+{
+	return _mm256_sub_pd(lhs, rhs);
+}
+
+
+r64_4 mul(r64_4 lhs, r64_4 rhs)
+{
+	return _mm256_mul_pd(lhs, rhs);
+}
 
 
 static void mandelbrot(image_t const& dst, AppState const& state)
 {
+	constexpr u64 max_iter = MAX_ITERATIONS;
+	constexpr r64 limit = 4.0;
+
 	auto const width = dst.width;
 	auto const height = dst.height;
 
 	auto const x_pos = state.screen_pos.x;
 	auto const y_pos = state.screen_pos.y;
-	auto const zoom = state.zoom;
 
 	auto const scr_width = screen_width(state);
 	auto const scr_height = screen_height(state);
@@ -256,9 +267,6 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 	UnsignedRange x_ids(0u, width);
 	auto const x_id_begin = x_ids.begin();
 	auto const x_id_end = x_ids.end();	
-
-	u64 const max_iter = MAX_ITERATIONS;
-	r64 const limit = 4.0;
 
 	auto const do_row = [&](u64 y)
 	{
@@ -285,11 +293,80 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 				++iter;
 			}
 
-			//row[x] = to_gray(iter - 1);
 			row[x] = to_platform_pixel(to_color(iter - 1));
 		};
 
 		std::for_each(std::execution::par, x_id_begin, x_id_end, do_x);
+	};
+
+	std::for_each(std::execution::par, y_id_begin, y_id_end, do_row);
+}
+
+
+static void mandelbrot_simd(image_t const& dst, AppState const& state)
+{
+	constexpr u8 x_step = 4;
+	constexpr u64 max_iter = MAX_ITERATIONS;
+	constexpr r64 limit = 4.0;
+
+	auto const width = dst.width;
+	auto const height = dst.height;
+
+	auto const x_pos = state.screen_pos.x;
+	auto const y_pos = state.screen_pos.y;
+
+	auto const scr_width = screen_width(state);
+	auto const scr_height = screen_height(state);
+
+	auto const min_re = MBT_MIN_X + x_pos;
+	auto const max_re = min_re + scr_width;
+	auto const min_im = MBT_MIN_Y + y_pos;
+	auto const max_im = min_im + scr_height;
+
+	auto const re_step = (max_re - min_re) / width;
+	auto const im_step = (max_im - min_im) / height;
+
+	UnsignedRange y_ids(0u, height);
+	auto const y_id_begin = y_ids.begin();
+	auto const y_id_end = y_ids.end();
+
+	UnsignedRange x_ids(0u, width / x_step);
+	auto const x_id_begin = x_ids.begin();
+	auto const x_id_end = x_ids.end();
+
+	auto const do_row = [&](u64 y)
+	{
+		r64 const ci = min_im + y * im_step;
+		auto row = dst.row_begin(y);
+
+		auto const do_x = [&](u64 x)
+		{
+			u32 iter = 0;
+			r64 const cr = min_re + x * re_step;
+
+			r64 re = 0.0;
+			r64 im = 0.0;
+			r64 re2 = 0.0;
+			r64 im2 = 0.0;
+
+			while (re2 + im2 <= limit && iter < max_iter)
+			{
+				im = (re + re) * im + ci;
+				re = re2 - im2 + cr;
+				im2 = im * im;
+				re2 = re * re;
+
+				++iter;
+			}
+
+			row[x] = to_platform_pixel(to_color(iter - 1));
+		};
+
+		auto const do_x_id = [&](u64 x_id) { do_x(x_id * x_step); };
+
+		std::for_each(std::execution::par, x_id_begin, x_id_end, do_x_id);
+
+		do_x(width - x_step);
 	};
 
 	std::for_each(std::execution::par, y_id_begin, y_id_end, do_row);
@@ -409,7 +486,7 @@ namespace app
 		if (state.render_new)
 		{
 			auto buffer_image = make_buffer_image(buffer);
-			mandelbrot(buffer_image, state);
+			mandelbrot_simd(buffer_image, state);
 		}
 
 		state.render_new = false;
