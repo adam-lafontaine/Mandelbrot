@@ -63,6 +63,39 @@ static image_t make_buffer_image(app::PixelBuffer const& buffer)
 }
 
 
+static void copy_rows(image_t const& src, image_t const& dst, u32 src_y_begin, u32 dst_y_begin, u32 n_rows)
+{
+	for (u32 iy = 0; iy < n_rows; ++iy)
+	{
+		auto src_begin = src.row_begin(src_y_begin + iy);
+		auto src_end = src_begin + src.width;
+		auto dst_begin = dst.row_begin(dst_y_begin + iy);
+
+		std::copy(std::execution::par, src_begin, src_end, dst_begin);
+	}
+}
+
+
+static void copy_columns(image_t const& src, image_t const& dst, u32 src_x_begin, u32 dst_x_begin, u32 n_cols)
+{
+	UnsignedRange y_ids(0u, src.height);
+	auto const y_id_begin = y_ids.begin();
+	auto const y_id_end = y_ids.end();
+
+	auto const copy_row_part = [&](u64 y) 
+	{
+		auto src_begin = src.row_begin(y + src_x_begin);
+		auto dst_begin = dst.row_begin(y + dst_x_begin);
+		for (u32 ix = 0; ix < n_cols; ++ix)
+		{
+			dst_begin[ix] = src_begin[ix];
+		}
+	};
+
+	std::for_each(std::execution::par, y_id_begin, y_id_end, copy_row_part);
+}
+
+
 static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
 {
 	pixel_t p;
@@ -212,32 +245,6 @@ constexpr fpixel_t to_color(size_t index)
 }
 
 
-using r64_4 = __m256d;
-
-r64_4 make_zero()
-{
-	return _mm256_setzero_pd();
-}
-
-
-r64_4 add(r64_4 lhs, r64_4 rhs)
-{
-	return _mm256_add_pd(lhs, rhs);
-}
-
-
-r64_4 sub(r64_4 lhs, r64_4 rhs)
-{
-	return _mm256_sub_pd(lhs, rhs);
-}
-
-
-r64_4 mul(r64_4 lhs, r64_4 rhs)
-{
-	return _mm256_mul_pd(lhs, rhs);
-}
-
-
 static void mandelbrot(image_t const& dst, AppState const& state)
 {
 	constexpr u64 max_iter = MAX_ITERATIONS;
@@ -253,12 +260,10 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 	auto const scr_height = screen_height(state);
 
 	auto const min_re = MBT_MIN_X + x_pos;
-	auto const max_re = min_re + scr_width;
 	auto const min_im = MBT_MIN_Y + y_pos;
-	auto const max_im = min_im + scr_height;
 
-	auto const re_step = (max_re - min_re) / width;
-	auto const im_step = (max_im - min_im) / height;
+	auto const re_step = scr_width / width;
+	auto const im_step = scr_height / height;
 
 	UnsignedRange y_ids(0u, height);
 	auto const y_id_begin = y_ids.begin();
@@ -281,9 +286,9 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 			r64 re = 0.0;
 			r64 im = 0.0;
 			r64 re2 = 0.0;
-			r64 im2 = 0.0;			
+			r64 im2 = 0.0;
 
-			while (re2 + im2 <= limit && iter < max_iter)
+			while (iter < max_iter && re2 + im2 <= limit)
 			{
 				im = (re + re) * im + ci;
 				re = re2 - im2 + cr;
@@ -299,77 +304,172 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 		std::for_each(std::execution::par, x_id_begin, x_id_end, do_x);
 	};
 
-	std::for_each(std::execution::par, y_id_begin, y_id_end, do_row);
+	std::for_each(y_id_begin, y_id_end, do_row);
 }
+
+
+using r64_4 = __m256d;
+
+inline r64_4 make_zero4()
+{
+	return _mm256_setzero_pd();
+}
+
+
+inline r64_4 make4(const r64* val)
+{
+	return _mm256_broadcast_sd(val);
+}
+
+
+inline r64_4 load4(const r64* begin)
+{
+	return _mm256_load_pd(begin);
+}
+
+
+inline r64_4 add4(r64_4 lhs, r64_4 rhs)
+{
+	return _mm256_add_pd(lhs, rhs);
+}
+
+
+inline r64_4 sub4(r64_4 lhs, r64_4 rhs)
+{
+	return _mm256_sub_pd(lhs, rhs);
+}
+
+
+inline r64_4 mul4(r64_4 lhs, r64_4 rhs)
+{
+	return _mm256_mul_pd(lhs, rhs);
+}
+
+
+inline r64_4 div4(r64_4 lhs, r64_4 rhs)
+{
+	return _mm256_div_pd(lhs, rhs);
+}
+
+
+inline r64_4 cmp_lt4(r64_4 lhs, r64_4 rhs)
+{
+	return _mm256_cmp_pd(lhs, rhs, _CMP_LT_OQ);
+}
+
+
+inline r64_4 cmp_ge4(r64_4 lhs, r64_4 rhs)
+{
+	return _mm256_cmp_pd(lhs, rhs, _CMP_GE_OQ);
+}
+
+
+inline void store4(r64_4 src, r64* dst)
+{
+	_mm256_store_pd(dst, src);
+}
+
 
 
 static void mandelbrot_simd(image_t const& dst, AppState const& state)
 {
 	constexpr u8 x_step = 4;
 	constexpr u64 max_iter = MAX_ITERATIONS;
-	constexpr r64 limit = 4.0;
 
-	auto const width = dst.width;
-	auto const height = dst.height;
+	r64 const limit_r64 = 4.0;
 
-	auto const x_pos = state.screen_pos.x;
-	auto const y_pos = state.screen_pos.y;
+	auto const limit = make4(&limit_r64);
 
-	auto const scr_width = screen_width(state);
-	auto const scr_height = screen_height(state);
+	auto const width_r64 = static_cast<r64>(dst.width);
+	auto const height_r64 = static_cast<r64>(dst.height);
+	auto const scr_width_r64 = screen_width(state);
+	auto const scr_height_r64 = screen_height(state);
 
-	auto const min_re = MBT_MIN_X + x_pos;
-	auto const max_re = min_re + scr_width;
-	auto const min_im = MBT_MIN_Y + y_pos;
-	auto const max_im = min_im + scr_height;
+	auto const min_re = add4(make4(&MBT_MIN_X), make4(&state.screen_pos.x));
+	auto const min_im = add4(make4(&MBT_MIN_Y), make4(&state.screen_pos.y));
 
-	auto const re_step = (max_re - min_re) / width;
-	auto const im_step = (max_im - min_im) / height;
+	auto const re_step = div4(make4(&scr_width_r64), make4(&width_r64));
+	auto const im_step = div4(make4(&scr_height_r64), make4(&height_r64));
 
-	UnsignedRange y_ids(0u, height);
+	UnsignedRange y_ids(0u, dst.height);
 	auto const y_id_begin = y_ids.begin();
 	auto const y_id_end = y_ids.end();
 
-	UnsignedRange x_ids(0u, width / x_step);
+	UnsignedRange x_ids(0u, dst.width / x_step);
 	auto const x_id_begin = x_ids.begin();
 	auto const x_id_end = x_ids.end();
 
 	auto const do_row = [&](u64 y)
 	{
-		r64 const ci = min_im + y * im_step;
+		auto const y_r64 = static_cast<r64>(y);
+		auto const y_4 = make4(&y_r64);
+
+		auto const ci = mul4(add4(min_im, y_4), im_step);
+
 		auto row = dst.row_begin(y);
 
 		auto const do_x = [&](u64 x)
 		{
-			u32 iter = 0;
-			r64 const cr = min_re + x * re_step;
+			auto const x_begin = static_cast<r64>(x);			
+			r64 x_4[] = { x_begin, x_begin + 1.0, x_begin + 2.0, x_begin + 3.0 };
 
-			r64 re = 0.0;
-			r64 im = 0.0;
-			r64 re2 = 0.0;
-			r64 im2 = 0.0;
+			auto const cr = mul4(add4(min_re, load4(x_4)), re_step);
 
-			while (re2 + im2 <= limit && iter < max_iter)
+			u32 iter = 0;			
+
+			auto re = make_zero4();
+			auto im = make_zero4();
+			auto re2 = make_zero4();
+			auto im2 = make_zero4();
+
+			u64 iters[] = { 0, 0, 0, 0 };
+			u8 flags[] = { 1, 1, 1, 1 };
+			auto const flag_on = [&]() { return flags[0] || flags[1] || flags[2] || flags[3]; };
+
+			r64 comps[4] = {};
+
+			while (iter < max_iter && flag_on())
 			{
-				im = (re + re) * im + ci;
-				re = re2 - im2 + cr;
-				im2 = im * im;
-				re2 = re * re;
+				im = add4(mul4(add4(re, re), im), ci);
+				re = add4(sub4(re2, im2), cr);
+				im2 = mul4(im, im);
+				re2 = mul4(re, re);
 
 				++iter;
+
+				store4(cmp_ge4(add4(re2, im2), limit), comps);
+				for (u32 i = 0; i < 4; ++i)
+				{
+					if (!flags[i])
+					{
+						continue;
+					}
+
+					if (comps[i] > 0.0)
+					{
+						flags[i] = 0;						
+					}
+					else
+					{
+						iters[i] = iter;
+					}
+				}
 			}
 
-			row[x] = to_platform_pixel(to_color(iter - 1));
+			for (u32 i = 0; i < 4; ++i)
+			{
+				row[x + i] = to_platform_pixel(to_color(iters[i] - 1));
+			}			
 		};
 
 		auto const do_x_id = [&](u64 x_id) { do_x(x_id * x_step); };
 
-		std::for_each(std::execution::par, x_id_begin, x_id_end, do_x_id);
+		std::for_each(x_id_begin, x_id_end, do_x_id);
 
-		do_x(width - x_step);
+		do_x(dst.width - x_step);
 	};
 
-	std::for_each(std::execution::par, y_id_begin, y_id_end, do_row);
+	std::for_each(y_id_begin, y_id_end, do_row);
 }
 
 
@@ -486,7 +586,7 @@ namespace app
 		if (state.render_new)
 		{
 			auto buffer_image = make_buffer_image(buffer);
-			mandelbrot_simd(buffer_image, state);
+			mandelbrot(buffer_image, state);
 		}
 
 		state.render_new = false;
