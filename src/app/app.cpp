@@ -7,6 +7,7 @@
 #include <array>
 #include <limits>
 #include <execution>
+#include <cmath>
 #include <immintrin.h>
 
 
@@ -27,12 +28,21 @@ public:
 };
 
 
+class Point2Di32
+{
+public:
+	i32 x;
+	i32 y;
+};
+
+
 class AppState
 {
 public:
 	bool render_new;
 
 	Point2Dr64 screen_pos;
+	Point2Di32 pixel_shift;
 	r64 zoom;
 };
 
@@ -65,7 +75,7 @@ static image_t make_buffer_image(app::PixelBuffer const& buffer)
 
 static void copy_rows(image_t const& src, image_t const& dst, u32 src_y_begin, u32 dst_y_begin, u32 n_rows)
 {
-	for (u32 iy = 0; iy < n_rows; ++iy)
+	for (u64 iy = 0; iy < n_rows; ++iy)
 	{
 		auto src_begin = src.row_begin(src_y_begin + iy);
 		auto src_end = src_begin + src.width;
@@ -245,13 +255,82 @@ constexpr fpixel_t to_color(size_t index)
 }
 
 
+static UnsignedRange mandelbrot_x_range(image_t const& image, AppState const& state)
+{
+	u32 x_begin = 0u;
+	u32 x_end = image.width;
+
+	if (state.pixel_shift.x < 0)
+	{
+		x_begin = x_end + state.pixel_shift.x;
+	}
+	else if (state.pixel_shift.x > 0)
+	{
+		x_end = x_begin + state.pixel_shift.x;
+	}
+
+	UnsignedRange x_ids(x_begin, x_end);
+
+	return x_ids;
+}
+
+
+static UnsignedRange copy_y_range(image_t const& image, AppState const& state)
+{
+	u32 y_begin = 0u;
+	u32 y_end = image.height;
+
+	if (state.pixel_shift.y < 0)
+	{
+		y_end += state.pixel_shift.y;
+	}
+	else if (state.pixel_shift.y > 0)
+	{
+		y_begin += state.pixel_shift.y;
+	}
+
+	UnsignedRange y_ids(y_begin, y_end);
+
+	return y_ids;
+}
+
+
+static UnsignedRange mandelbrot_y_range(image_t const& image, AppState const& state)
+{
+	u32 y_begin = 0u;
+	u32 y_end = image.height;
+
+	if (state.pixel_shift.y < 0)
+	{
+		y_begin = y_end + state.pixel_shift.y;
+	}
+	else if (state.pixel_shift.y > 0)
+	{
+		y_end = y_begin + state.pixel_shift.y;
+	}
+
+	UnsignedRange y_ids(y_begin, y_end);
+
+	return y_ids;
+}
+
+
 static void mandelbrot(image_t const& dst, AppState const& state)
 {
-	constexpr u64 max_iter = MAX_ITERATIONS;
-	constexpr r64 limit = 4.0;
-
 	auto const width = dst.width;
 	auto const height = dst.height;
+
+	
+	auto y_ids = mandelbrot_y_range(dst, state);	
+	auto const y_id_begin = y_ids.begin();
+	auto const y_id_end = y_ids.end();
+
+	auto x_ids = mandelbrot_x_range(dst, state);
+	auto const x_id_begin = x_ids.begin();
+	auto const x_id_end = x_ids.end();
+
+	constexpr u64 max_iter = MAX_ITERATIONS;
+	constexpr r64 limit = 4.0;
 
 	auto const x_pos = state.screen_pos.x;
 	auto const y_pos = state.screen_pos.y;
@@ -265,13 +344,7 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 	auto const re_step = scr_width / width;
 	auto const im_step = scr_height / height;
 
-	UnsignedRange y_ids(0u, height);
-	auto const y_id_begin = y_ids.begin();
-	auto const y_id_end = y_ids.end();
-
-	UnsignedRange x_ids(0u, width);
-	auto const x_id_begin = x_ids.begin();
-	auto const x_id_end = x_ids.end();	
+	
 
 	auto const do_row = [&](u64 y)
 	{
@@ -305,6 +378,140 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 	};
 
 	std::for_each(y_id_begin, y_id_end, do_row);
+}
+
+
+
+
+
+
+namespace app
+{
+	static void initialize_memory(AppState& state, PixelBuffer const& buffer)
+	{
+		state.render_new = true;
+
+		state.screen_pos.x = 0.0;
+		state.screen_pos.y = 0.0;
+
+		state.zoom = 1.0;
+
+		auto const width = buffer.width;
+		auto const height = buffer.height;
+	}
+
+
+	static void process_input(Input const& input, AppState& state)
+	{
+		state.pixel_shift = { 0, 0 };
+
+		i32 const pixel_shift = static_cast<i32>(std::round(PIXELS_PER_SECOND * input.dt_frame));
+
+		r64 const zoom_per_second = 0.5;
+		r64 zoom = 1.0 + zoom_per_second * input.dt_frame;
+
+		if (input.keyboard.w_key.is_down)
+		{
+			auto old_w = screen_width(state);
+			auto old_h = screen_height(state);
+			state.zoom *= zoom;
+			auto new_w = screen_width(state);
+			auto new_h = screen_height(state);
+
+			state.screen_pos.x += 0.5 * (old_w - new_w);	
+			state.screen_pos.y += 0.5 * (old_h - new_h);
+
+			state.render_new = true;
+		}
+
+		if (input.keyboard.s_key.is_down)
+		{
+			auto old_w = screen_width(state);
+			auto old_h = screen_height(state);
+			state.zoom /= zoom;
+			auto new_w = screen_width(state);
+			auto new_h = screen_height(state);
+
+			state.screen_pos.x += 0.5 * (old_w - new_w);
+			state.screen_pos.y += 0.5 * (old_h - new_h);
+
+			state.render_new = true;
+		}
+
+		if (input.keyboard.right_key.is_down)
+		{
+			auto distance_per_pixel = screen_width(state) / BUFFER_WIDTH;
+
+			state.pixel_shift.x -= pixel_shift;
+			state.screen_pos.x += pixel_shift * distance_per_pixel;
+
+			state.render_new = true;
+		}
+
+		if (input.keyboard.left_key.is_down)
+		{
+			auto distance_per_pixel = screen_width(state) / BUFFER_WIDTH;
+
+			state.pixel_shift.x += pixel_shift;
+			state.screen_pos.x -= pixel_shift * distance_per_pixel;
+
+			state.render_new = true;
+		}
+
+		if (input.keyboard.up_key.is_down)
+		{
+			auto distance_per_pixel = screen_height(state) / BUFFER_HEIGHT;
+
+			state.pixel_shift.y += pixel_shift;
+			state.screen_pos.y -= pixel_shift * distance_per_pixel;
+
+			state.render_new = true;
+		}
+
+		if (input.keyboard.down_key.is_down)
+		{
+			auto distance_per_pixel = screen_height(state) / BUFFER_HEIGHT;
+
+			state.pixel_shift.y -= pixel_shift;
+			state.screen_pos.y += pixel_shift * distance_per_pixel;
+
+			state.render_new = true;
+		}
+	}
+
+
+	void update_and_render(AppMemory& memory, Input const& input, PixelBuffer const& buffer)
+	{
+		auto const state_sz = sizeof(AppState);
+
+		auto const required_sz = state_sz;
+
+		assert(required_sz <= memory.permanent_storage_size);
+
+		auto& state = *(AppState*)memory.permanent_storage;		
+
+		if (!memory.is_app_initialized)
+		{
+			initialize_memory(state, buffer);
+			memory.is_app_initialized = true;
+		}
+
+		process_input(input, state);		
+
+		if (state.render_new)
+		{
+			auto buffer_image = make_buffer_image(buffer);
+			mandelbrot(buffer_image, state);
+		}
+
+		state.render_new = false;
+	}
+
+
+	void end_program()
+	{
+		
+	}
 }
 
 
@@ -410,12 +617,12 @@ static void mandelbrot_simd(image_t const& dst, AppState const& state)
 
 		auto const do_x = [&](u64 x)
 		{
-			auto const x_begin = static_cast<r64>(x);			
+			auto const x_begin = static_cast<r64>(x);
 			r64 x_4[] = { x_begin, x_begin + 1.0, x_begin + 2.0, x_begin + 3.0 };
 
 			auto const cr = mul4(add4(min_re, load4(x_4)), re_step);
 
-			u32 iter = 0;			
+			u32 iter = 0;
 
 			auto re = make_zero4();
 			auto im = make_zero4();
@@ -447,7 +654,7 @@ static void mandelbrot_simd(image_t const& dst, AppState const& state)
 
 					if (comps[i] > 0.0)
 					{
-						flags[i] = 0;						
+						flags[i] = 0;
 					}
 					else
 					{
@@ -459,7 +666,7 @@ static void mandelbrot_simd(image_t const& dst, AppState const& state)
 			for (u32 i = 0; i < 4; ++i)
 			{
 				row[x + i] = to_platform_pixel(to_color(iters[i] - 1));
-			}			
+			}
 		};
 
 		auto const do_x_id = [&](u64 x_id) { do_x(x_id * x_step); };
@@ -470,131 +677,4 @@ static void mandelbrot_simd(image_t const& dst, AppState const& state)
 	};
 
 	std::for_each(y_id_begin, y_id_end, do_row);
-}
-
-
-
-namespace app
-{
-	static void initialize_memory(AppState& state, PixelBuffer const& buffer)
-	{
-		state.render_new = true;
-
-		state.screen_pos.x = 0.0;
-		state.screen_pos.y = 0.0;
-
-		state.zoom = 1.0;
-
-		auto const width = buffer.width;
-		auto const height = buffer.height;
-	}
-
-
-	
-
-
-	static void process_input(Input const& input, AppState& state)
-	{
-		r64 const pixels_per_second = 0.4 * BUFFER_HEIGHT;
-		r64 pixel_distance = pixels_per_second * input.dt_frame;
-
-		r64 const zoom_per_second = 0.5;
-		r64 zoom = 1.0 + zoom_per_second * input.dt_frame;
-
-		auto& pos = state.screen_pos;
-
-		if (input.keyboard.w_key.is_down)
-		{
-			auto old_w = screen_width(state);
-			auto old_h = screen_height(state);
-			state.zoom *= zoom;
-			auto new_w = screen_width(state);
-			auto new_h = screen_height(state);
-
-			pos.x += 0.5 * (old_w - new_w);	
-			pos.y += 0.5 * (old_h - new_h);
-
-			state.render_new = true;
-		}
-
-		if (input.keyboard.s_key.is_down)
-		{
-			auto old_w = screen_width(state);
-			auto old_h = screen_height(state);
-			state.zoom /= zoom;
-			auto new_w = screen_width(state);
-			auto new_h = screen_height(state);
-
-			pos.x += 0.5 * (old_w - new_w);
-			pos.y += 0.5 * (old_h - new_h);
-
-			state.render_new = true;
-		}
-
-		if (input.keyboard.right_key.is_down)
-		{
-			auto distance_per_pixel = screen_width(state) / BUFFER_WIDTH;
-			pos.x += pixel_distance * distance_per_pixel;
-
-			state.render_new = true;
-		}
-
-		if (input.keyboard.left_key.is_down)
-		{
-			auto distance_per_pixel = screen_width(state) / BUFFER_WIDTH;
-			pos.x -= pixel_distance * distance_per_pixel;
-
-			state.render_new = true;
-		}
-
-		if (input.keyboard.up_key.is_down)
-		{
-			auto distance_per_pixel = screen_height(state) / BUFFER_HEIGHT;
-			pos.y -= pixel_distance * distance_per_pixel;
-
-			state.render_new = true;
-		}
-
-		if (input.keyboard.down_key.is_down)
-		{
-			auto distance_per_pixel = screen_height(state) / BUFFER_HEIGHT;
-			pos.y += pixel_distance * distance_per_pixel;
-
-			state.render_new = true;
-		}
-	}
-
-
-	void update_and_render(AppMemory& memory, Input const& input, PixelBuffer const& buffer)
-	{
-		auto const state_sz = sizeof(AppState);
-
-		auto const required_sz = state_sz;
-
-		assert(required_sz <= memory.permanent_storage_size);
-
-		auto& state = *(AppState*)memory.permanent_storage;		
-
-		if (!memory.is_app_initialized)
-		{
-			initialize_memory(state, buffer);
-			memory.is_app_initialized = true;
-		}
-
-		process_input(input, state);		
-
-		if (state.render_new)
-		{
-			auto buffer_image = make_buffer_image(buffer);
-			mandelbrot(buffer_image, state);
-		}
-
-		state.render_new = false;
-	}
-
-
-	void end_program()
-	{
-		
-	}
 }

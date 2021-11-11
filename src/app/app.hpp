@@ -9,6 +9,7 @@ namespace app
 	// allocate memory
 	constexpr u32 BUFFER_HEIGHT = 900;
 	constexpr u32 BUFFER_WIDTH = BUFFER_HEIGHT * 9 / 8;
+	constexpr u32 PIXELS_PER_SECOND = static_cast<u32>(0.4 * BUFFER_HEIGHT);
 
 
 	using to_color32_f = std::function<u32(u8 red, u8 green, u8 blue)>;
