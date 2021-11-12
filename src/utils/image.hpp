@@ -37,6 +37,7 @@ public:
 
 	pixel_t* row_begin(u64 y) const
 	{
+		auto x = y;
 		assert(y < height);
 
 		auto offset = y * width;
@@ -118,6 +119,9 @@ public:
 	T* begin() const { return data; }
 	T* end() const { return data + static_cast<u64>(width) * static_cast<u64>(height); }
 };
+
+
+
 
 
 using image_t = Image;

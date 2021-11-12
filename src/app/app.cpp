@@ -36,6 +36,16 @@ public:
 };
 
 
+class Range2Du32
+{
+public:
+	u32 x_begin;
+	u32 x_end;
+	u32 y_begin;
+	u32 y_end;
+};
+
+
 class AppState
 {
 public:
@@ -45,6 +55,9 @@ public:
 	Point2Di32 pixel_shift;
 	r64 zoom;
 };
+
+
+
 
 
 static r64 screen_width(AppState const& state)
@@ -73,32 +86,84 @@ static image_t make_buffer_image(app::PixelBuffer const& buffer)
 }
 
 
-static void copy_rows(image_t const& src, image_t const& dst, u32 src_y_begin, u32 dst_y_begin, u32 n_rows)
+static void copy_rows_up(image_t const& img, u32 n_rows)
 {
-	for (u64 iy = 0; iy < n_rows; ++iy)
+	auto const width = static_cast<u64>(img.width);
+	auto const height = static_cast<u64>(img.height);
+	
+	auto const y_begin = static_cast<u64>(n_rows);
+	auto const y_end = height;
+
+	for (u64 y = y_begin; y < y_end; ++y)
 	{
-		auto src_begin = src.row_begin(src_y_begin + iy);
-		auto src_end = src_begin + src.width;
-		auto dst_begin = dst.row_begin(dst_y_begin + iy);
+		auto src_begin = img.row_begin(y);
+		auto dst_begin = img.row_begin(y - n_rows);
+		
+		auto src_end = src_begin + width;
 
 		std::copy(std::execution::par, src_begin, src_end, dst_begin);
 	}
 }
 
 
-static void copy_columns(image_t const& src, image_t const& dst, u32 src_x_begin, u32 dst_x_begin, u32 n_cols)
+static void copy_rows_down(image_t const& img, u32 n_rows)
 {
-	UnsignedRange y_ids(0u, src.height);
+	auto const width = static_cast<u64>(img.width);
+	auto const height = static_cast<u64>(img.height);
+
+	auto const y_rbegin = static_cast<u64>(img.height - n_rows - 1);
+
+	for (u64 i = 0; i < height - n_rows; ++i)
+	{
+		auto y = y_rbegin - i;
+
+		auto src_begin = img.row_begin(y);
+		auto dst_begin = img.row_begin(y + n_rows);
+		
+		auto src_end = src_begin + width;
+
+		std::copy(std::execution::par, src_begin, src_end, dst_begin);
+	}
+}
+
+
+static void copy_columns_left(image_t const& img, u32 n_cols)
+{
+	UnsignedRange y_ids(0u, img.height);
 	auto const y_id_begin = y_ids.begin();
 	auto const y_id_end = y_ids.end();
 
-	auto const copy_row_part = [&](u64 y) 
+	auto const x_begin = n_cols;
+	auto const x_end = static_cast<u64>(img.width);
+
+	auto const copy_row_part = [&](u64 y)
 	{
-		auto src_begin = src.row_begin(y + src_x_begin);
-		auto dst_begin = dst.row_begin(y + dst_x_begin);
-		for (u32 ix = 0; ix < n_cols; ++ix)
+		auto row_begin = img.row_begin(y);
+		for (u64 x = x_begin; x < x_end; ++x)
 		{
-			dst_begin[ix] = src_begin[ix];
+			row_begin[x - n_cols] = row_begin[x];
+		}
+	};
+
+	std::for_each(std::execution::par, y_id_begin, y_id_end, copy_row_part);
+}
+
+
+static void copy_columns_right(image_t const& img, u32 n_cols)
+{
+	UnsignedRange y_ids(0u, img.height);
+	auto const y_id_begin = y_ids.begin();
+	auto const y_id_end = y_ids.end();
+
+	u64 const x_rbegin = static_cast<u64>(img.width - n_cols - 1);
+
+	auto const copy_row_part = [&](u64 y)
+	{
+		auto row_begin = img.row_begin(y);
+		for (u64 i = 0; i < img.width - n_cols;  ++i)
+		{
+			auto x = x_rbegin - i;
+			row_begin[x + n_cols] = row_begin[x];
 		}
 	};
 
@@ -255,24 +320,7 @@ constexpr fpixel_t to_color(size_t index)
 }
 
 
-static UnsignedRange mandelbrot_x_range(image_t const& image, AppState const& state)
-{
-	u32 x_begin = 0u;
-	u32 x_end = image.width;
 
-	if (state.pixel_shift.x < 0)
-	{
-		x_begin = x_end + state.pixel_shift.x;
-	}
-	else if (state.pixel_shift.x > 0)
-	{
-		x_end = x_begin + state.pixel_shift.x;
-	}
-
-	UnsignedRange x_ids(x_begin, x_end);
-
-	return x_ids;
-}
 
 
 static UnsignedRange copy_y_range(image_t const& image, AppState const& state)
@@ -295,39 +343,51 @@ static UnsignedRange copy_y_range(image_t const& image, AppState const& state)
 }
 
 
-static UnsignedRange mandelbrot_y_range(image_t const& image, AppState const& state)
+
+
+
+static Range2Du32 render_range(image_t const& image, AppState const& state)
 {
-	u32 y_begin = 0u;
-	u32 y_end = image.height;
+	Range2Du32 range{};
+	range.x_begin = 0;
+	range.x_end = image.width;
+	range.y_begin = 0;
+	range.y_end = image.height;
+
+	if (state.pixel_shift.x < 0)
+	{
+		range.x_begin = range.x_end + state.pixel_shift.x;
+	}
+	else if (state.pixel_shift.x > 0)
+	{
+		range.x_end = range.x_begin + state.pixel_shift.x;
+	}
 
 	if (state.pixel_shift.y < 0)
 	{
-		y_begin = y_end + state.pixel_shift.y;
+		range.y_begin = range.y_end + state.pixel_shift.y;
 	}
 	else if (state.pixel_shift.y > 0)
 	{
-		y_end = y_begin + state.pixel_shift.y;
+		range.y_end = range.y_begin + state.pixel_shift.y;
 	}
 
-	UnsignedRange y_ids(y_begin, y_end);
-
-	return y_ids;
+	return range;
 }
 
 
-static void mandelbrot(image_t const& dst, AppState const& state)
+static void mandelbrot(image_t const& dst, AppState const& state, Range2Du32 const& range)
 {
-	auto const width = dst.width;
-	auto const height = dst.height;
+	UnsignedRange x_ids(range.x_begin, range.x_end);
+	UnsignedRange y_ids(range.y_begin, range.y_end);
 
-	
-	auto y_ids = mandelbrot_y_range(dst, state);	
 	auto const y_id_begin = y_ids.begin();
 	auto const y_id_end = y_ids.end();
-
-	auto x_ids = mandelbrot_x_range(dst, state);
 	auto const x_id_begin = x_ids.begin();
 	auto const x_id_end = x_ids.end();
+
+	auto const width = dst.width;
+	auto const height = dst.height;
 
 	constexpr u64 max_iter = MAX_ITERATIONS;
 	constexpr r64 limit = 4.0;
@@ -343,8 +403,6 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 
 	auto const re_step = scr_width / width;
 	auto const im_step = scr_height / height;
-
-	
 
 	auto const do_row = [&](u64 y)
 	{
@@ -378,6 +436,35 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 	};
 
 	std::for_each(y_id_begin, y_id_end, do_row);
+}
+
+
+static void mandelbrot(image_t const& dst, AppState const& state)
+{	
+	auto mbt = render_range(dst, state);
+
+	if (mbt.x_begin > 0)
+	{
+		auto n_cols = dst.width - mbt.x_begin;
+		copy_columns_left(dst, n_cols);
+	}
+	else if (mbt.x_end < dst.width)
+	{
+		auto n_cols = mbt.x_end;
+		copy_columns_right(dst, n_cols);
+	}
+	else if (mbt.y_begin > 0)
+	{
+		auto n_rows = dst.height - mbt.y_begin;
+		copy_rows_up(dst, n_rows);
+	}
+	else if (mbt.y_end < dst.height)
+	{
+		auto n_rows = mbt.y_end;
+		copy_rows_down(dst, n_rows);
+	}
+
+	mandelbrot(dst, state, mbt);
 }
 
 
