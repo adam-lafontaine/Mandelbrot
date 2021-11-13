@@ -58,8 +58,6 @@ public:
 	r64 zoom;
 
 	mat_u32_t iterations;
-	u32 min_iter;
-	u32 max_iter;
 };
 
 
@@ -200,6 +198,62 @@ constexpr pixel_t to_rgb(r64 ratio)
 }
 
 
+constexpr pixel_t to_rgb2(r64 ratio)
+{
+	constexpr u32 N = 16;
+	std::array<pixel_t, N> palette = 
+	{
+		to_pixel(66, 30, 15),
+		to_pixel(25, 7, 26),
+		to_pixel(9, 1, 47),
+		to_pixel(4, 4, 73),
+		to_pixel(0, 7, 100),
+		to_pixel(12, 44, 138),
+		to_pixel(24, 82, 177),
+		to_pixel(57, 125, 209),
+		to_pixel(134, 181, 229),
+		to_pixel(211, 236, 248),
+		to_pixel(241, 233, 191),
+		to_pixel(248, 201, 95),
+		to_pixel(255, 170, 0),
+		to_pixel(204, 128, 0),
+		to_pixel(153, 87, 0),
+		to_pixel(106, 52, 3),
+	};
+
+	auto n = ratio * (N - 1);
+	auto low = static_cast<u32>(n);
+	if (low == 0)
+	{
+		return palette[0];
+	}
+
+	if (low >= N - 1)
+	{
+		return palette[N - 1];
+	}
+
+	auto high = low + 1;
+
+	auto t = (n - low);
+
+	auto p_low = palette[low];
+	auto p_high = palette[high];
+
+	auto const lerp_channel = [&](u32 c) 
+	{
+		auto const diff = static_cast<r32>(p_high.channels[c]) - p_low.channels[c];
+		return static_cast<u8>(p_low.channels[c] + t * diff);
+	};
+
+	auto red = lerp_channel(0);
+	auto green = lerp_channel(1);
+	auto blue = lerp_channel(2);
+
+	return to_pixel(red, green, blue);
+}
+
+
 using color_palette_t = std::array<pixel_t, MAX_ITERATIONS>;
 
 
@@ -234,9 +288,20 @@ static void draw(image_t const& dst, AppState const& state)
 {
 	auto& mat = state.iterations;
 
-	auto const to_platform_color = [](u32 i) 
+	auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
+	auto const min = *mat_min;
+	auto const max = *mat_max;
+
+	auto const diff = static_cast<r64>(max - min);
+	color_palette_t lut{};
+	for (u32 i = min; i <= max; ++i)
 	{
-		return to_platform_pixel(to_color(i));
+		lut[i] = to_rgb2((i - min) / diff);
+	}
+
+	auto const to_platform_color = [&](u32 i) 
+	{		
+		return to_platform_pixel(lut[i]);
 	};
 
 	std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
@@ -602,9 +667,6 @@ static void mandelbrot(AppState& state)
 {
 	auto& dst = state.iterations;
 
-	state.min_iter = MAX_ITERATIONS;
-	state.max_iter = 0;
-
 	constexpr u32 max_iter = MAX_ITERATIONS;
 	constexpr r64 limit = 4.0;
 
@@ -653,16 +715,6 @@ static void mandelbrot(AppState& state)
 				}
 
 				--iter;
-
-				if (iter < state.min_iter)
-				{
-					state.min_iter = iter;
-				}
-
-				if (iter > state.max_iter)
-				{
-					state.max_iter = iter;
-				}
 
 				row[x] = iter;
 			};
