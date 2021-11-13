@@ -127,8 +127,8 @@ public:
 using image_t = Image;
 using pixel_t = image_t::pixel_t;
 
-using fimage_t = FloatImage;
-using fpixel_t = fimage_t::pixel_t;
+//using fimage_t = FloatImage;
+//using fpixel_t = fimage_t::pixel_t;
 
 using mat_u32_t = Matrix<u32>;
 using mat_r64_t = Matrix<r64>;

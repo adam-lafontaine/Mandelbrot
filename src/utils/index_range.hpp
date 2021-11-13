@@ -5,7 +5,7 @@ class UnsignedRange
 {
 public:
 
-    using index_type = size_t;
+    using index_type = unsigned;
 
     class iterator
     {
