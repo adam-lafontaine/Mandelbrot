@@ -8,6 +8,7 @@
 #include <limits>
 #include <execution>
 #include <cmath>
+#include <functional>
 #include <immintrin.h>
 
 
@@ -18,7 +19,7 @@ constexpr r64 MBT_MAX_Y = 1.2;
 constexpr r64 MBT_WIDTH = MBT_MAX_X - MBT_MIN_X;
 constexpr r64 MBT_HEIGHT = MBT_MAX_Y - MBT_MIN_Y;
 
-constexpr size_t MAX_ITERATIONS = 500;
+constexpr size_t MAX_ITERATIONS = 200;
 
 class Point2Dr64
 {
@@ -34,6 +35,8 @@ public:
 	i32 x;
 	i32 y;
 };
+
+using Vec2Di32 = Point2Di32;
 
 
 class Range2Du32
@@ -52,12 +55,9 @@ public:
 	bool render_new;
 
 	Point2Dr64 screen_pos;
-	Point2Di32 pixel_shift;
+	Vec2Di32 pixel_shift;
 	r64 zoom;
 };
-
-
-
 
 
 static r64 screen_width(AppState const& state)
@@ -83,6 +83,18 @@ static image_t make_buffer_image(app::PixelBuffer const& buffer)
 	image.data = (pixel_t*)buffer.memory;
 
 	return image;
+}
+
+
+static Range2Du32 get_range(image_t const& img)
+{
+	Range2Du32 r{};
+	r.x_begin = 0;
+	r.x_end = img.width;
+	r.y_begin = 0;
+	r.y_end = img.height;
+
+	return r;
 }
 
 
@@ -127,47 +139,236 @@ static void copy_rows_down(image_t const& img, u32 n_rows)
 }
 
 
-static void copy_columns_left(image_t const& img, u32 n_cols)
+static void for_each_row(image_t const& img, std::function<void(u64 y)> const& func)
 {
 	UnsignedRange y_ids(0u, img.height);
 	auto const y_id_begin = y_ids.begin();
 	auto const y_id_end = y_ids.end();
 
-	auto const x_begin = n_cols;
-	auto const x_end = static_cast<u64>(img.width);
-
-	auto const copy_row_part = [&](u64 y)
-	{
-		auto row_begin = img.row_begin(y);
-		for (u64 x = x_begin; x < x_end; ++x)
-		{
-			row_begin[x - n_cols] = row_begin[x];
-		}
-	};
-
-	std::for_each(std::execution::par, y_id_begin, y_id_end, copy_row_part);
+	std::for_each(std::execution::par, y_id_begin, y_id_end, func);
 }
 
 
-static void copy_columns_right(image_t const& img, u32 n_cols)
+static void copy_left(image_t const& img, u32 n_cols)
 {
-	UnsignedRange y_ids(0u, img.height);
-	auto const y_id_begin = y_ids.begin();
-	auto const y_id_end = y_ids.end();
-
-	u64 const x_rbegin = static_cast<u64>(img.width - n_cols - 1);
+	u64 const x_len = img.width - n_cols;
 
 	auto const copy_row_part = [&](u64 y)
 	{
-		auto row_begin = img.row_begin(y);
-		for (u64 i = 0; i < img.width - n_cols;  ++i)
+		auto row = img.row_begin(y);
+		for (u64 ix = 0; ix < x_len; ++ix)
 		{
-			auto x = x_rbegin - i;
-			row_begin[x + n_cols] = row_begin[x];
+			auto src_x = ix + n_cols;
+			auto dst_x = src_x - n_cols;
+			row[dst_x] = row[src_x];
 		}
 	};
 
-	std::for_each(std::execution::par, y_id_begin, y_id_end, copy_row_part);
+	for_each_row(img, copy_row_part);
+}
+
+
+static void copy_right(image_t const& img, u32 n_cols)
+{
+	u64 const x_len = img.width - n_cols;
+
+	auto const copy_row_part = [&](u64 y)
+	{
+		auto row = img.row_begin(y);
+		for (u64 ix = 0; ix < x_len; ++ix)
+		{
+			auto src_x = x_len - 1 - ix;
+			auto dst_x = src_x + n_cols;
+			row[dst_x] = row[src_x];
+		}
+	};
+
+	for_each_row(img, copy_row_part);
+}
+
+
+static void copy_up_left(image_t const& img, u32 n_rows, u32 n_cols)
+{
+	if (n_rows == 0)
+	{
+		copy_left(img, n_cols);
+		return;
+	}
+
+	u64 const x_len = img.width - n_cols;
+	u64 const y_len = img.height - n_rows;	
+
+	// left
+	auto src_x_begin = n_cols;
+	auto dst_x_begin = src_x_begin - n_cols;
+
+	for (u64 iy = 0; iy < y_len; ++iy)
+	{
+		// up
+		auto src_y = iy + n_rows;
+		auto dst_y = src_y - n_rows;
+
+		auto src_begin = img.row_begin(src_y) + src_x_begin;
+		auto dst_begin = img.row_begin(dst_y) + dst_x_begin;
+
+		auto src_end = src_begin + x_len;
+
+		std::copy(std::execution::par, src_begin, src_end, dst_begin);
+	}
+}
+
+
+static void copy_up_right(image_t const& img, u32 n_rows, u32 n_cols)
+{
+	if (n_rows == 0)
+	{
+		copy_right(img, n_cols);
+		return;
+	}
+
+	u64 const x_len = img.width - n_cols;
+	u64 const y_len = img.height - n_rows;
+
+	// right
+	auto src_x_begin = 0;
+	auto dst_x_begin = src_x_begin + n_cols;
+
+	for (u64 iy = 0; iy < y_len; ++iy)
+	{
+		// up
+		auto src_y = n_rows + iy;
+		auto dst_y = src_y - n_rows;
+
+		auto src_begin = img.row_begin(src_y) + src_x_begin;
+		auto dst_begin = img.row_begin(dst_y) + dst_x_begin;
+
+		auto src_end = src_begin + x_len;
+
+		std::copy(std::execution::par, src_begin, src_end, dst_begin);
+	}
+}
+
+
+static void copy_down_left(image_t const& img, u32 n_rows, u32 n_cols)
+{
+	if (n_rows == 0)
+	{
+		copy_left(img, n_cols);
+		return;
+	}
+
+	u64 const x_len = img.width - n_cols;
+	u64 const y_len = img.height - n_rows;
+
+	// left
+	auto src_x_begin = n_cols;
+	auto dst_x_begin = src_x_begin - n_cols;
+
+	for (u64 iy = 0; iy < y_len; ++iy)
+	{
+		// down
+		auto src_y = y_len - iy;
+		auto dst_y = src_y + n_rows;
+
+		auto src_begin = img.row_begin(src_y) + src_x_begin;
+		auto dst_begin = img.row_begin(dst_y) + dst_x_begin;
+
+		auto src_end = src_begin + x_len;
+
+		std::copy(std::execution::par, src_begin, src_end, dst_begin);
+	}
+}
+
+
+static void copy_down_right(image_t const& img, u32 n_rows, u32 n_cols)
+{
+	if (n_rows == 0)
+	{
+		copy_right(img, n_cols);
+		return;
+	}
+
+	u64 const x_len = img.width - n_cols;
+	u64 const y_len = img.height - n_rows;
+
+	// right
+	auto src_x_begin = 0;
+	auto dst_x_begin = src_x_begin + n_cols;
+
+	for (u64 iy = 0; iy < y_len; ++iy)
+	{
+		// down
+		auto src_y = y_len - iy;
+		auto dst_y = src_y + n_rows;
+
+		auto src_begin = img.row_begin(src_y) + src_x_begin;
+		auto dst_begin = img.row_begin(dst_y) + dst_x_begin;
+
+		auto src_end = src_begin + x_len;
+
+		std::copy(std::execution::par, src_begin, src_end, dst_begin);
+	}
+}
+
+
+static void copy(image_t const& img, Vec2Di32 const& direction)
+{
+	auto up = direction.y < 0;
+	auto right = direction.x > 0;
+
+	auto const n_cols = static_cast<u32>(std::abs(direction.x));
+	auto const n_rows = static_cast<u32>(std::abs(direction.y));
+
+	if (n_cols == 0 && n_rows == 0)
+	{
+		return;
+	}
+
+	if (n_rows == 0)
+	{
+		if (right)
+		{
+			copy_right(img, n_cols);
+		}
+		else
+		{
+			copy_left(img, n_cols);
+		}
+
+		return;
+	}
+
+	u64 const x_len = img.width - n_cols;
+	u64 const y_len = img.height - n_rows;
+
+	u32 src_x_begin = right ? 0 : n_cols;
+	u32 dst_x_begin = src_x_begin + direction.x;
+
+	u32 src_y_begin = 0;
+	i32 dy = 0;
+	if (up)
+	{
+		src_y_begin = n_rows;
+		dy = 1;
+	}
+	else
+	{
+		src_y_begin = y_len - 1;
+		dy = -1;
+	}
+
+	for (u64 iy = 0; iy < y_len; ++iy)
+	{
+		auto src_y = src_y_begin + dy * iy;
+		auto dst_y = src_y + direction.y;
+
+		auto src_begin = img.row_begin(src_y) + src_x_begin;
+		auto dst_begin = img.row_begin(dst_y) + dst_x_begin;
+
+		auto src_end = src_begin + x_len;
+
+		std::copy(std::execution::par, src_begin, src_end, dst_begin);
+	}
 }
 
 
@@ -299,7 +500,7 @@ constexpr color_palette_t make_rgb_palette()
 
 	for (u32 i = 0; i < MAX_ITERATIONS; ++i)
 	{
-		auto ratio = static_cast<r64>(i) / (MAX_ITERATIONS - 1);
+		auto ratio = static_cast<r64>(i) / (MAX_ITERATIONS);
 		palette[i] = to_rgb(ratio);
 	}
 
@@ -346,7 +547,7 @@ static UnsignedRange copy_y_range(image_t const& image, AppState const& state)
 
 
 
-static Range2Du32 render_range(image_t const& image, AppState const& state)
+static Range2Du32 get_render_range(image_t const& image, AppState const& state)
 {
 	Range2Du32 range{};
 	range.x_begin = 0;
@@ -441,28 +642,9 @@ static void mandelbrot(image_t const& dst, AppState const& state, Range2Du32 con
 
 static void mandelbrot(image_t const& dst, AppState const& state)
 {	
-	auto mbt = render_range(dst, state);
+	auto mbt = get_render_range(dst, state);
 
-	if (mbt.x_begin > 0)
-	{
-		auto n_cols = dst.width - mbt.x_begin;
-		copy_columns_left(dst, n_cols);
-	}
-	else if (mbt.x_end < dst.width)
-	{
-		auto n_cols = mbt.x_end;
-		copy_columns_right(dst, n_cols);
-	}
-	else if (mbt.y_begin > 0)
-	{
-		auto n_rows = dst.height - mbt.y_begin;
-		copy_rows_up(dst, n_rows);
-	}
-	else if (mbt.y_end < dst.height)
-	{
-		auto n_rows = mbt.y_end;
-		copy_rows_down(dst, n_rows);
-	}
+	copy(dst, state.pixel_shift);
 
 	mandelbrot(dst, state, mbt);
 }
