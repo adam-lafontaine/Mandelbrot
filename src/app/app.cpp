@@ -18,7 +18,7 @@ constexpr r64 MBT_MAX_Y = 1.2;
 constexpr r64 MBT_WIDTH = MBT_MAX_X - MBT_MIN_X;
 constexpr r64 MBT_HEIGHT = MBT_MAX_Y - MBT_MIN_Y;
 
-constexpr u32 MAX_ITERATIONS = 200;
+constexpr u32 MAX_ITERATIONS_START = 100;
 
 class Point2Dr64
 {
@@ -56,6 +56,7 @@ public:
 	Point2Dr64 screen_pos;
 	Vec2Di32 pixel_shift;
 	r64 zoom;
+	u32 max_iter;
 
 	mat_u32_t iterations;
 };
@@ -155,16 +156,16 @@ static void fill(image_t const& dst, pixel_t const& p)
 
 
 
-using gray_palette_t = std::array<r32, MAX_ITERATIONS>;
+using gray_palette_t = std::array<r32, MAX_ITERATIONS_START>;
 
 
 constexpr gray_palette_t make_gray_palette()
 {
 	gray_palette_t palette = {};
 
-	for (u32 i = 0; i < MAX_ITERATIONS; ++i)
+	for (u32 i = 0; i < MAX_ITERATIONS_START; ++i)
 	{
-		auto ratio = static_cast<r64>(i) / (MAX_ITERATIONS - 1);
+		auto ratio = static_cast<r64>(i) / (MAX_ITERATIONS_START - 1);
 		palette[i] = static_cast<r32>(255.0 * ratio);
 	}
 
@@ -254,16 +255,16 @@ constexpr pixel_t to_rgb2(r64 ratio)
 }
 
 
-using color_palette_t = std::array<pixel_t, MAX_ITERATIONS>;
+using color_palette_t = std::array<pixel_t, MAX_ITERATIONS_START>;
 
 
 constexpr color_palette_t make_rgb_palette()
 {
 	color_palette_t palette = {};
 
-	for (u32 i = 0; i < MAX_ITERATIONS; ++i)
+	for (u32 i = 0; i < MAX_ITERATIONS_START; ++i)
 	{
-		auto ratio = static_cast<r64>(i) / (MAX_ITERATIONS);
+		auto ratio = static_cast<r64>(i) / (MAX_ITERATIONS_START);
 		palette[i] = to_rgb(ratio);
 	}
 
@@ -293,15 +294,10 @@ static void draw(image_t const& dst, AppState const& state)
 	auto const max = *mat_max;
 
 	auto const diff = static_cast<r64>(max - min);
-	color_palette_t lut{};
-	for (u32 i = min; i <= max; ++i)
-	{
-		lut[i] = to_rgb2((i - min) / diff);
-	}
 
 	auto const to_platform_color = [&](u32 i) 
-	{		
-		return to_platform_pixel(lut[i]);
+	{
+		return to_platform_pixel(to_rgb((i - min) / diff));
 	};
 
 	std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
@@ -529,7 +525,7 @@ static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
 
 static void mandelbrot(image_t const& dst, AppState const& state)
 {
-	constexpr u32 max_iter = MAX_ITERATIONS;
+	auto const max_iter = state.max_iter;
 	constexpr r64 limit = 4.0;
 
 	auto const x_pos = state.screen_pos.x;
@@ -667,7 +663,7 @@ static void mandelbrot(AppState& state)
 {
 	auto& dst = state.iterations;
 
-	constexpr u32 max_iter = MAX_ITERATIONS;
+	auto const max_iter = state.max_iter;
 	constexpr r64 limit = 4.0;
 
 	auto const x_pos = state.screen_pos.x;
@@ -835,6 +831,7 @@ namespace app
 		state.screen_pos.y = 0.0;
 
 		state.zoom = 1.0;
+		state.max_iter = MAX_ITERATIONS_START;
 
 		auto const width = buffer.width;
 		auto const height = buffer.height;
