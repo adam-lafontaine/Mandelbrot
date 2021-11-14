@@ -18,7 +18,8 @@ constexpr r64 MBT_MAX_Y = 1.2;
 constexpr r64 MBT_WIDTH = MBT_MAX_X - MBT_MIN_X;
 constexpr r64 MBT_HEIGHT = MBT_MAX_Y - MBT_MIN_Y;
 
-constexpr u32 MAX_ITERATIONS_START = 100;
+//constexpr u32 MIN_COLORS = 256;
+constexpr u32 MAX_ITERATIONS_START = 511;
 
 class Point2Dr64
 {
@@ -59,6 +60,18 @@ public:
 	u32 max_iter;
 
 	mat_u32_t iterations;
+};
+
+
+class MatStats
+{
+public:
+	u32 min;
+	u32 max;
+
+	u32 total_count;
+
+	std::array<u32, 16> hist = { 0 };
 };
 
 
@@ -112,6 +125,33 @@ static Range2Du32 get_range(mat_u32_t const& mat)
 }
 
 
+static MatStats make_stats(mat_u32_t const& mat)
+{
+	auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
+	auto const min = *mat_min;
+	auto const max = *mat_max;
+
+	auto const diff = static_cast<r64>(max - min);
+
+	MatStats stats{};
+	stats.min = min;
+	stats.max = max;
+	stats.total_count = mat.width * mat.height;
+
+	auto const update = [&](u32 i) 
+	{
+		auto ratio = (i - min) / diff;
+		auto hist_bucket = static_cast<u32>(ratio * (stats.hist.size() - 1));
+
+		stats.hist[hist_bucket]++;
+	};
+
+	std::for_each(mat.begin(), mat.end(), update);
+
+	return stats;
+}
+
+
 static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
 {
 	pixel_t p = {};
@@ -156,20 +196,95 @@ static void fill(image_t const& dst, pixel_t const& p)
 
 
 
-using gray_palette_t = std::array<r32, MAX_ITERATIONS_START>;
+using gray_palette_t = std::array<pixel_t, 511>;
 
 
 constexpr gray_palette_t make_gray_palette()
 {
 	gray_palette_t palette = {};
 
-	for (u32 i = 0; i < MAX_ITERATIONS_START; ++i)
+	for (u32 i = 0; i < 256; ++i)
 	{
-		auto ratio = static_cast<r64>(i) / (MAX_ITERATIONS_START - 1);
-		palette[i] = static_cast<r32>(255.0 * ratio);
+		u8 c = static_cast<u8>(i);
+		palette[i] = to_pixel(c, c, c);
+	}
+
+	for (u32 i = 256; i < 511; ++i)
+	{
+		u8 c = static_cast<u8>(510 - i);
+		palette[i] = to_pixel(c, c, c);
 	}
 
 	return palette;
+}
+
+
+
+
+
+static pixel_t to_gray(r64 ratio)
+{
+	assert(ratio >= 0.0);
+	assert(ratio <= 1.0);
+
+	auto const p = ratio;
+	auto const q = 1.0 - p;
+	auto const p2 = p * p;
+	auto const p3 = p2 * p;
+	auto const q2 = q * q;
+	auto const q3 = q2 * q;
+
+	//auto const c_max = 255.0;
+
+	//auto const c = static_cast<u8>(9.45 * q * p3 * c_max);
+
+	//auto const r = 9.45 * q * p3;
+	auto const r = 16.0 * q2 * p2;
+
+	constexpr auto palette = make_gray_palette();
+
+	auto i = static_cast<u32>(r * (palette.size() - 1));
+
+	if (i >= palette.size())
+	{
+		i = palette.size() - 1;
+	}	
+
+	return palette[i];
+}
+
+
+static pixel_t to_gray(u32 value, MatStats const& stats)
+{
+	auto const diff = static_cast<r64>(stats.max - stats.min);
+	auto ratio = (value - stats.min) / diff;
+	auto hist_bucket = static_cast<u32>(ratio * (stats.hist.size() - 1));
+
+	
+
+	u32 count = 0;
+	for (u32 i = 0; i < hist_bucket; ++i)
+	{
+		count += stats.hist[i];
+	}
+
+	constexpr auto palette = make_gray_palette();
+	constexpr auto n_colors = palette.size();
+
+	auto r = static_cast<r64>(count) / stats.total_count;
+	auto base = static_cast<u32>(r * (n_colors - 1));
+
+	r = static_cast<r64>(stats.hist[hist_bucket]) / stats.total_count;
+	auto n = static_cast<u32>(r * (n_colors - 1));
+
+	auto c = base + n;
+
+	if (c >= n_colors)
+	{
+		c = n_colors - 1;
+	}
+
+	return palette[c];
 }
 
 
@@ -223,6 +338,11 @@ constexpr pixel_t to_rgb2(r64 ratio)
 	};
 
 	auto n = ratio * (N - 1);
+	if (n < 0.0)
+	{
+		return palette[0];
+	}
+
 	auto low = static_cast<u32>(n);
 	if (low == 0)
 	{
@@ -295,13 +415,19 @@ static void draw(image_t const& dst, AppState const& state)
 
 	auto const diff = static_cast<r64>(max - min);
 
+	//auto stats = make_stats(mat);
+
 	auto const to_platform_color = [&](u32 i) 
 	{
-		return to_platform_pixel(to_rgb((i - min) / diff));
+		//return to_platform_pixel(to_rgb2((i - min) / diff));
+		auto const r = (i - min) / diff;
+		return to_gray(r);
+
+		//return to_gray(i, stats);
 	};
 
-	std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
-	//std::transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
+	//std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
+	std::transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
 }
 
 
@@ -812,6 +938,7 @@ static void render(image_t const& dst, AppState& state)
 	{
 		copy(state.iterations, state.pixel_shift);
 		mandelbrot(state);
+
 		draw(dst, state);
 	}
 }
@@ -938,13 +1065,24 @@ namespace app
 			memory.is_app_initialized = true;
 		}
 
-		process_input(input, state);		
+		process_input(input, state);
 
-		if (state.render_new)
+		if (!state.render_new)
 		{
-			auto buffer_image = make_buffer_image(buffer);
-			render(buffer_image, state);
+			return;
 		}
+
+		auto buffer_image = make_buffer_image(buffer);
+		render(buffer_image, state);
+
+
+
+		auto& mat = state.iterations;
+
+		auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
+		auto const min = *mat_min;
+		auto const max = *mat_max;
+
 
 		state.render_new = false;
 	}
