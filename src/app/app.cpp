@@ -18,8 +18,11 @@ constexpr r64 MBT_MAX_Y = 1.2;
 constexpr r64 MBT_WIDTH = MBT_MAX_X - MBT_MIN_X;
 constexpr r64 MBT_HEIGHT = MBT_MAX_Y - MBT_MIN_Y;
 
-//constexpr u32 MIN_COLORS = 256;
-constexpr u32 MAX_ITERATIONS_START = 511;
+constexpr u32 NUM_COLORS = 511;
+
+constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
+constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 10000;
+constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
 
 class Point2Dr64
 {
@@ -60,18 +63,6 @@ public:
 	u32 max_iter;
 
 	mat_u32_t iterations;
-};
-
-
-class MatStats
-{
-public:
-	u32 min;
-	u32 max;
-
-	u32 total_count;
-
-	std::array<u32, 16> hist = { 0 };
 };
 
 
@@ -125,33 +116,6 @@ static Range2Du32 get_range(mat_u32_t const& mat)
 }
 
 
-static MatStats make_stats(mat_u32_t const& mat)
-{
-	auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
-	auto const min = *mat_min;
-	auto const max = *mat_max;
-
-	auto const diff = static_cast<r64>(max - min);
-
-	MatStats stats{};
-	stats.min = min;
-	stats.max = max;
-	stats.total_count = mat.width * mat.height;
-
-	auto const update = [&](u32 i) 
-	{
-		auto ratio = (i - min) / diff;
-		auto hist_bucket = static_cast<u32>(ratio * (stats.hist.size() - 1));
-
-		stats.hist[hist_bucket]++;
-	};
-
-	std::for_each(mat.begin(), mat.end(), update);
-
-	return stats;
-}
-
-
 static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
 {
 	pixel_t p = {};
@@ -196,12 +160,12 @@ static void fill(image_t const& dst, pixel_t const& p)
 
 
 
-using gray_palette_t = std::array<pixel_t, 511>;
+using color_palette_t = std::array<pixel_t, NUM_COLORS>;
 
 
-constexpr gray_palette_t make_gray_palette()
+constexpr color_palette_t make_gray_palette()
 {
-	gray_palette_t palette = {};
+	color_palette_t palette = {};
 
 	for (u32 i = 0; i < 256; ++i)
 	{
@@ -209,7 +173,7 @@ constexpr gray_palette_t make_gray_palette()
 		palette[i] = to_pixel(c, c, c);
 	}
 
-	for (u32 i = 256; i < 511; ++i)
+	for (u32 i = 256; i < NUM_COLORS; ++i)
 	{
 		u8 c = static_cast<u8>(510 - i);
 		palette[i] = to_pixel(c, c, c);
@@ -217,9 +181,6 @@ constexpr gray_palette_t make_gray_palette()
 
 	return palette;
 }
-
-
-
 
 
 static pixel_t to_gray(r64 ratio)
@@ -234,61 +195,23 @@ static pixel_t to_gray(r64 ratio)
 	auto const q2 = q * q;
 	auto const q3 = q2 * q;
 
-	//auto const c_max = 255.0;
+	constexpr auto palette = make_gray_palette();
+	constexpr auto n_colors = static_cast<u32>(palette.size());
 
-	//auto const c = static_cast<u8>(9.45 * q * p3 * c_max);
-
-	//auto const r = 9.45 * q * p3;
 	auto const r = 16.0 * q2 * p2;
 
-	constexpr auto palette = make_gray_palette();
+	auto g = static_cast<u32>(r * (n_colors - 1));
 
-	auto i = static_cast<u32>(r * (palette.size() - 1));
-
-	if (i >= palette.size())
+	if (g >= n_colors)
 	{
-		i = palette.size() - 1;
-	}	
+		g = n_colors - 1;
+	}
 
-	return palette[i];
+	return palette[g];
 }
 
 
-static pixel_t to_gray(u32 value, MatStats const& stats)
-{
-	auto const diff = static_cast<r64>(stats.max - stats.min);
-	auto ratio = (value - stats.min) / diff;
-	auto hist_bucket = static_cast<u32>(ratio * (stats.hist.size() - 1));
-
-	
-
-	u32 count = 0;
-	for (u32 i = 0; i < hist_bucket; ++i)
-	{
-		count += stats.hist[i];
-	}
-
-	constexpr auto palette = make_gray_palette();
-	constexpr auto n_colors = palette.size();
-
-	auto r = static_cast<r64>(count) / stats.total_count;
-	auto base = static_cast<u32>(r * (n_colors - 1));
-
-	r = static_cast<r64>(stats.hist[hist_bucket]) / stats.total_count;
-	auto n = static_cast<u32>(r * (n_colors - 1));
-
-	auto c = base + n;
-
-	if (c >= n_colors)
-	{
-		c = n_colors - 1;
-	}
-
-	return palette[c];
-}
-
-
-constexpr pixel_t to_rgb(r64 ratio)
+static pixel_t to_rgb(r64 ratio)
 {
 	assert(ratio >= 0.0);
 	assert(ratio <= 1.0);
@@ -300,17 +223,35 @@ constexpr pixel_t to_rgb(r64 ratio)
 	auto const q2 = q * q;
 	auto const q3 = q2 * q;
 
-	auto const c_max = 255.0;
+	constexpr auto palette = make_gray_palette();
+	constexpr auto n_colors = static_cast<u32>(palette.size());
 
-	auto const c1 = static_cast<u8>(9.0 * q * p3 * c_max);
-	auto const c2 = static_cast<u8>(15.0 * q2 * p2 * c_max);
-	auto const c3 = static_cast<u8>(8.5 * q3 * p * c_max);
+	auto rr = 16.0 * q2 * p2;
+	auto r = static_cast<u32>(rr * (n_colors - 1));
+	if (r >= n_colors)
+	{
+		r = n_colors - 1;
+	}
 
-	auto const r = c1;
-	auto const g = c2;
-	auto const b = c3;
+	auto gr = 9.45 * q * p3;
+	auto g = static_cast<u32>(gr * (n_colors - 1));
+	if (g >= n_colors)
+	{
+		g = n_colors - 1;
+	}
 
-	return to_pixel(r, g, b);
+	auto br = 9.4 * q3 * p;
+	auto b = static_cast<u32>(gr * (n_colors - 1));
+	if (b >= n_colors)
+	{
+		b = n_colors - 1;
+	}
+
+	auto const red = palette[r];
+	auto const green = palette[g];
+	auto const blue = palette[b];
+
+	return to_platform_pixel(r, g, b);
 }
 
 
@@ -375,55 +316,45 @@ constexpr pixel_t to_rgb2(r64 ratio)
 }
 
 
-using color_palette_t = std::array<pixel_t, MAX_ITERATIONS_START>;
+//using color_palette_t = std::array<pixel_t, MAX_ITERATIONS_START>;
+//
+//
+//constexpr color_palette_t make_rgb_palette()
+//{
+//	color_palette_t palette = {};
+//
+//	for (u32 i = 0; i < MAX_ITERATIONS_START; ++i)
+//	{
+//		auto ratio = static_cast<r64>(i) / (MAX_ITERATIONS_START);
+//		palette[i] = to_rgb(ratio);
+//	}
+//
+//	return palette;
+//}
 
 
-constexpr color_palette_t make_rgb_palette()
+//constexpr pixel_t to_color(size_t index)
+//{
+//	constexpr auto palette = make_rgb_palette();
+//
+//	if (index >= palette.size())
+//	{
+//		index = palette.size() - 1;
+//	}
+//
+//	return palette[index];
+//}
+
+
+static void draw(image_t const& dst, mat_u32_t const& mat, u32 min, u32 max)
 {
-	color_palette_t palette = {};
-
-	for (u32 i = 0; i < MAX_ITERATIONS_START; ++i)
-	{
-		auto ratio = static_cast<r64>(i) / (MAX_ITERATIONS_START);
-		palette[i] = to_rgb(ratio);
-	}
-
-	return palette;
-}
-
-
-constexpr pixel_t to_color(size_t index)
-{
-	constexpr auto palette = make_rgb_palette();
-
-	if (index >= palette.size())
-	{
-		index = palette.size() - 1;
-	}
-
-	return palette[index];
-}
-
-
-static void draw(image_t const& dst, AppState const& state)
-{
-	auto& mat = state.iterations;
-
-	auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
-	auto const min = *mat_min;
-	auto const max = *mat_max;
-
 	auto const diff = static_cast<r64>(max - min);
-
-	//auto stats = make_stats(mat);
 
 	auto const to_platform_color = [&](u32 i) 
 	{
-		//return to_platform_pixel(to_rgb2((i - min) / diff));
 		auto const r = (i - min) / diff;
-		return to_gray(r);
-
-		//return to_gray(i, stats);
+		//return to_gray(r);
+		return to_rgb(r);
 	};
 
 	//std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
@@ -698,7 +629,7 @@ static void mandelbrot(image_t const& dst, AppState const& state)
 					++iter;
 				}
 
-				row[x] = to_platform_pixel(to_color(iter - 1));
+				//row[x] = to_platform_pixel(to_color(iter - 1));
 			};
 
 			std::for_each(std::execution::par, x_id_begin, x_id_end, do_x);
@@ -925,23 +856,23 @@ static void mandelbrot(AppState& state)
 }
 
 
-static void render(image_t const& dst, AppState& state)
-{	
-	bool old = false;
-
-	if (old)
-	{
-		copy(dst, state.pixel_shift);
-		mandelbrot(dst, state);
-	}
-	else
-	{
-		copy(state.iterations, state.pixel_shift);
-		mandelbrot(state);
-
-		draw(dst, state);
-	}
-}
+//static void render(image_t const& dst, AppState& state)
+//{	
+//	bool old = false;
+//
+//	if (old)
+//	{
+//		copy(dst, state.pixel_shift);
+//		mandelbrot(dst, state);
+//	}
+//	else
+//	{
+//		copy(state.iterations, state.pixel_shift);
+//		mandelbrot(state);
+//
+//		draw(dst, state);
+//	}
+//}
 
 
 
@@ -1045,6 +976,18 @@ namespace app
 
 			state.render_new = true;
 		}
+
+		if (input.keyboard.plus_key.is_down)
+		{
+			state.max_iter = std::min(state.max_iter + 5, MAX_ITERATIONS_UPPER_LIMIT);
+			state.render_new = true;
+		}
+
+		if (input.keyboard.minus_key.is_down)
+		{
+			state.max_iter = std::max(state.max_iter - 5, MAX_ITERTAIONS_LOWER_LIMIT);
+			state.render_new = true;
+		}
 	}
 
 
@@ -1073,9 +1016,8 @@ namespace app
 		}
 
 		auto buffer_image = make_buffer_image(buffer);
-		render(buffer_image, state);
-
-
+		copy(state.iterations, state.pixel_shift);
+		mandelbrot(state);
 
 		auto& mat = state.iterations;
 
@@ -1083,6 +1025,7 @@ namespace app
 		auto const min = *mat_min;
 		auto const max = *mat_max;
 
+		draw(buffer_image, mat, min, max);
 
 		state.render_new = false;
 	}

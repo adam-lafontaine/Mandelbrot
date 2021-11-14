@@ -46,6 +46,8 @@
 #define KEYBOARD_RETURN 0
 #define KEYBOARD_ESCAPE 0
 #define KEYBOARD_SPACE 1
+#define KEYBOARD_PLUS 1
+#define KEYBOARD_MINUS 1
 
 
 constexpr size_t KEYBOARD_KEYS = 
@@ -91,7 +93,10 @@ KEYBOARD_A
 + KEYBOARD_RIGHT
 + KEYBOARD_RETURN
 + KEYBOARD_ESCAPE
-+ KEYBOARD_SPACE;
++ KEYBOARD_SPACE
++ KEYBOARD_PLUS
++ KEYBOARD_MINUS
+;
 
 
 typedef union keyboard_input_t
@@ -228,6 +233,12 @@ typedef union keyboard_input_t
 #endif
 #if KEYBOARD_SPACE
 		ButtonState space_key;
+#endif
+#if KEYBOARD_PLUS
+		ButtonState plus_key;
+#endif
+#if KEYBOARD_MINUS
+		ButtonState minus_key;
 #endif
 
 	};
