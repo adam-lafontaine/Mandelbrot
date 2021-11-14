@@ -23,6 +23,7 @@ constexpr u32 NUM_SHADES = 256;
 constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
 constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 50000;
 constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
+constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
 
 class Point2Dr64
 {
@@ -59,22 +60,26 @@ public:
 
 	Point2Dr64 screen_pos;
 	Vec2Di32 pixel_shift;
-	r64 zoom;
-	u32 max_iter;
 
+	r64 zoom_level;
+	r64 zoom_speed;
+	
+	u32 rgb_option;
+
+	u32 max_iter;
 	mat_u32_t iterations;
 };
 
 
 static r64 screen_width(AppState const& state)
 {
-	return MBT_WIDTH / state.zoom;
+	return MBT_WIDTH / state.zoom_level;
 }
 
 
 static r64 screen_height(AppState const& state)
 {
-	return MBT_HEIGHT / state.zoom;
+	return MBT_HEIGHT / state.zoom_level;
 }
 
 
@@ -228,7 +233,7 @@ constexpr color_palette_t make_color_palette()
 }
 
 
-static pixel_t to_rgb(r64 ratio)
+static pixel_t to_rgb(r64 ratio, u32 rgb_option)
 {
 	assert(ratio >= 0.0);
 	assert(ratio <= 1.0);
@@ -243,22 +248,72 @@ static pixel_t to_rgb(r64 ratio)
 	constexpr auto palette = make_color_palette();
 	constexpr auto n_colors = static_cast<u32>(palette.size());
 
-	auto rr = 4 * q2 * p2;
-	auto r = static_cast<u32>(rr * (n_colors - 1));
+	auto const max_low = 9.4 * q3 * p;
+	auto const max_high = 9.45 * q * p3;
+	auto const max_center = 16.0 * q2 * p2;
+	/*auto const low_to_high = p;
+	auto const high_to_low = q;
+	auto const high_to_low2 = q2;*/
+
+	/*auto rr = max_high;
+	auto gr = max_low;
+	auto br = max_center;*/
+
+	r64 color_map[] = { max_high, max_low, max_center };
+	u32 rgb_idx[] = { 0, 1, 2 };
+
+	switch (rgb_option)
+	{
+	case 1:
+		rgb_idx[0] = 0;
+		rgb_idx[1] = 2;
+		rgb_idx[2] = 1;
+		
+		break;
+	case 2:
+		rgb_idx[0] = 2;
+		rgb_idx[1] = 0;
+		rgb_idx[2] = 1;
+		break;
+	case 3:
+		rgb_idx[0] = 0;
+		rgb_idx[1] = 1;
+		rgb_idx[2] = 2;
+
+		
+		break;
+	case 4:
+		rgb_idx[0] = 2;
+		rgb_idx[1] = 1;
+		rgb_idx[2] = 0;
+
+		
+		break;
+	case 5:
+		rgb_idx[0] = 1;
+		rgb_idx[1] = 2;
+		rgb_idx[2] = 0;
+		break;
+	case 6:
+		rgb_idx[0] = 1;
+		rgb_idx[1] = 0;
+		rgb_idx[2] = 2;
+		break;
+	}
+
+	auto r = static_cast<u32>(color_map[rgb_idx[0]] * (n_colors - 1));
 	if (r >= n_colors)
 	{
 		r = n_colors - 1;
 	}
-
-	auto gr = 9.45 * q * p3;
-	auto g = static_cast<u32>(gr * (n_colors - 1));
+	
+	auto g = static_cast<u32>(color_map[rgb_idx[1]] * (n_colors - 1));
 	if (g >= n_colors)
 	{
 		g = n_colors - 1;
 	}
-
-	auto br = 9.4 * q3 * p;
-	auto b = static_cast<u32>(gr * (n_colors - 1));
+	
+	auto b = static_cast<u32>(color_map[rgb_idx[2]] * (n_colors - 1));
 	if (b >= n_colors)
 	{
 		b = n_colors - 1;
@@ -347,11 +402,11 @@ static void draw(image_t const& dst, AppState const& state)
 	{
 		auto const r = (i - min) / diff;
 		//return to_gray(r);
-		return to_rgb(r);
+		return to_rgb(r, state.rgb_option);
 	};
 
-	//std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
-	std::transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
+	std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
+	//std::transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
 }
 
 
@@ -632,8 +687,12 @@ namespace app
 		state.screen_pos.x = 0.0;
 		state.screen_pos.y = 0.0;
 
-		state.zoom = 1.0;
+		state.zoom_level = 1.0;
+		state.zoom_speed = ZOOM_SPEED_LOWER_LIMIT;
+
 		state.max_iter = MAX_ITERATIONS_START;
+
+		state.rgb_option = 1;
 
 		auto const width = buffer.width;
 		auto const height = buffer.height;
@@ -646,15 +705,21 @@ namespace app
 
 	static void process_input(Input const& input, AppState& state)
 	{
+		constexpr r64 zoom_speed_factor_per_second = 0.1;
+		constexpr r64 iteration_adjustment_factor = 0.02;
+
+		auto zoom_speed_factor = 1.0 + zoom_speed_factor_per_second * input.dt_frame;
+
 		state.pixel_shift = { 0, 0 };
 
 		i32 const pixel_shift = static_cast<i32>(std::round(PIXELS_PER_SECOND * input.dt_frame));
 
 		r64 const zoom_per_second = 0.5;
-		r64 zoom = 1.0 + zoom_per_second * input.dt_frame;
+		auto const zoom = [&]() { return state.zoom_speed * (1.0 + zoom_per_second * input.dt_frame); };
 
 		auto direction = false;
 
+		// pan image with arrow keys
 		if (input.keyboard.right_key.is_down)
 		{
 			auto distance_per_pixel = screen_width(state) / BUFFER_WIDTH;
@@ -665,7 +730,6 @@ namespace app
 			direction = true;
 			state.render_new = true;
 		}
-
 		if (input.keyboard.left_key.is_down)
 		{
 			auto distance_per_pixel = screen_width(state) / BUFFER_WIDTH;
@@ -676,7 +740,6 @@ namespace app
 			direction = true;
 			state.render_new = true;
 		}
-
 		if (input.keyboard.up_key.is_down)
 		{
 			auto distance_per_pixel = screen_height(state) / BUFFER_HEIGHT;
@@ -687,7 +750,6 @@ namespace app
 			direction = true;
 			state.render_new = true;
 		}
-
 		if (input.keyboard.down_key.is_down)
 		{
 			auto distance_per_pixel = screen_height(state) / BUFFER_HEIGHT;
@@ -699,11 +761,38 @@ namespace app
 			state.render_new = true;
 		}
 
-		if (input.keyboard.w_key.is_down && !direction)
+		// zoom speed with *, /
+		if (input.keyboard.mult_key.is_down)
+		{
+			state.zoom_speed *= zoom_speed_factor;
+			state.render_new = true;
+		}
+		if (input.keyboard.div_key.is_down)
+		{
+			state.zoom_speed = std::max(state.zoom_speed / zoom_speed_factor, ZOOM_SPEED_LOWER_LIMIT);
+
+			state.render_new = true;
+		}
+
+		// zoom in/out with +, -
+		if (input.keyboard.plus_key.is_down && !direction)
 		{
 			auto old_w = screen_width(state);
 			auto old_h = screen_height(state);
-			state.zoom *= zoom;
+			state.zoom_level *= zoom();
+			auto new_w = screen_width(state);
+			auto new_h = screen_height(state);
+
+			state.screen_pos.x += 0.5 * (old_w - new_w);
+			state.screen_pos.y += 0.5 * (old_h - new_h);
+
+			state.render_new = true;
+		}
+		if (input.keyboard.minus_key.is_down && !direction)
+		{
+			auto old_w = screen_width(state);
+			auto old_h = screen_height(state);
+			state.zoom_level /= zoom();
 			auto new_w = screen_width(state);
 			auto new_h = screen_height(state);
 
@@ -713,35 +802,53 @@ namespace app
 			state.render_new = true;
 		}
 
-		if (input.keyboard.s_key.is_down && !direction)
+		// resolution with F, D
+		if (input.keyboard.f_key.is_down)
 		{
-			auto old_w = screen_width(state);
-			auto old_h = screen_height(state);
-			state.zoom /= zoom;
-			auto new_w = screen_width(state);
-			auto new_h = screen_height(state);
-
-			state.screen_pos.x += 0.5 * (old_w - new_w);
-			state.screen_pos.y += 0.5 * (old_h - new_h);
-
-			state.render_new = true;
-		}
-
-		if (input.keyboard.plus_key.is_down)
-		{
-			u32 adj = static_cast<u32>(0.02 * state.max_iter);
+			u32 adj = static_cast<u32>(iteration_adjustment_factor * state.max_iter);
 			adj = std::max(adj, 5u);
 
 			state.max_iter = std::min(state.max_iter + adj, MAX_ITERATIONS_UPPER_LIMIT);
 			state.render_new = true;
 		}
-
-		if (input.keyboard.minus_key.is_down)
+		if (input.keyboard.d_key.is_down)
 		{
-			u32 adj = static_cast<u32>(0.02 * state.max_iter);
+			u32 adj = static_cast<u32>(iteration_adjustment_factor * state.max_iter);
 			adj = std::max(adj, 5u);
 
 			state.max_iter = std::max(state.max_iter - adj, MAX_ITERTAIONS_LOWER_LIMIT);
+			state.render_new = true;
+		}
+
+		// color scheme with 1 - 6
+		if (input.keyboard.one_key.is_down && state.rgb_option != 1)
+		{			
+			state.rgb_option = 1;
+			state.render_new = true;
+		}
+		if (input.keyboard.two_key.is_down && state.rgb_option != 2)
+		{
+			state.rgb_option = 2;
+			state.render_new = true;
+		}
+		if (input.keyboard.three_key.is_down && state.rgb_option != 3)
+		{
+			state.rgb_option = 3;
+			state.render_new = true;
+		}
+		if (input.keyboard.four_key.is_down && state.rgb_option != 4)
+		{
+			state.rgb_option = 4;
+			state.render_new = true;
+		}
+		if (input.keyboard.five_key.is_down && state.rgb_option != 5)
+		{
+			state.rgb_option = 5;
+			state.render_new = true;
+		}
+		if (input.keyboard.six_key.is_down && state.rgb_option != 6)
+		{
+			state.rgb_option = 6;
 			state.render_new = true;
 		}
 	}

@@ -83,10 +83,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\src\resources\MandlebrotWin32.ico">
+    <Image Include="..\src\resources\small.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="..\src\resources\small.ico">
+    <Image Include="..\src\resources\MandelbrotWin32.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

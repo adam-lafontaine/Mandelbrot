@@ -160,7 +160,7 @@
     <ClInclude Include="..\src\win32\win32_main.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\src\resources\MandlebrotWin32.ico" />
+    <Image Include="..\src\resources\MandelbrotWin32.ico" />
     <Image Include="..\src\resources\small.ico" />
   </ItemGroup>
   <ItemGroup>

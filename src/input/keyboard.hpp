@@ -6,9 +6,9 @@
 #define KEYBOARD_A 0
 #define KEYBOARD_B 0
 #define KEYBOARD_C 0
-#define KEYBOARD_D 0
+#define KEYBOARD_D 1
 #define KEYBOARD_E 0
-#define KEYBOARD_F 0
+#define KEYBOARD_F 1
 #define KEYBOARD_G 0
 #define KEYBOARD_H 0
 #define KEYBOARD_I 0
@@ -21,21 +21,21 @@
 #define KEYBOARD_P 0
 #define KEYBOARD_Q 0
 #define KEYBOARD_R 0
-#define KEYBOARD_S 1
+#define KEYBOARD_S 0
 #define KEYBOARD_T 0
 #define KEYBOARD_U 0
 #define KEYBOARD_V 0
-#define KEYBOARD_W 1
+#define KEYBOARD_W 0
 #define KEYBOARD_X 0
 #define KEYBOARD_Y 0
 #define KEYBOARD_Z 0
 #define KEYBOARD_0 0
-#define KEYBOARD_1 0
-#define KEYBOARD_2 0
-#define KEYBOARD_3 0
-#define KEYBOARD_4 0
-#define KEYBOARD_5 0
-#define KEYBOARD_6 0
+#define KEYBOARD_1 1
+#define KEYBOARD_2 1
+#define KEYBOARD_3 1
+#define KEYBOARD_4 1
+#define KEYBOARD_5 1
+#define KEYBOARD_6 1
 #define KEYBOARD_7 0
 #define KEYBOARD_8 0
 #define KEYBOARD_9 0
@@ -45,9 +45,11 @@
 #define KEYBOARD_RIGHT 1
 #define KEYBOARD_RETURN 0
 #define KEYBOARD_ESCAPE 0
-#define KEYBOARD_SPACE 1
+#define KEYBOARD_SPACE 0
 #define KEYBOARD_PLUS 1
 #define KEYBOARD_MINUS 1
+#define KEYBOARD_MULTIPLY 1
+#define KEYBOARD_DIVIDE 1
 
 
 constexpr size_t KEYBOARD_KEYS = 
@@ -96,6 +98,8 @@ KEYBOARD_A
 + KEYBOARD_SPACE
 + KEYBOARD_PLUS
 + KEYBOARD_MINUS
++ KEYBOARD_MULTIPLY
++ KEYBOARD_DIVIDE
 ;
 
 
@@ -239,6 +243,12 @@ typedef union keyboard_input_t
 #endif
 #if KEYBOARD_MINUS
 		ButtonState minus_key;
+#endif
+#if KEYBOARD_MULTIPLY
+		ButtonState mult_key;
+#endif
+#if KEYBOARD_DIVIDE
+		ButtonState div_key;
 #endif
 
 	};
