@@ -255,10 +255,6 @@ static pixel_t to_rgb(r64 ratio, u32 rgb_option)
 	auto const high_to_low = q;
 	auto const high_to_low2 = q2;*/
 
-	/*auto rr = max_high;
-	auto gr = max_low;
-	auto br = max_center;*/
-
 	r64 color_map[] = { max_high, max_low, max_center };
 	u32 rgb_idx[] = { 0, 1, 2 };
 
@@ -267,8 +263,7 @@ static pixel_t to_rgb(r64 ratio, u32 rgb_option)
 	case 1:
 		rgb_idx[0] = 0;
 		rgb_idx[1] = 2;
-		rgb_idx[2] = 1;
-		
+		rgb_idx[2] = 1;		
 		break;
 	case 2:
 		rgb_idx[0] = 2;
@@ -278,16 +273,12 @@ static pixel_t to_rgb(r64 ratio, u32 rgb_option)
 	case 3:
 		rgb_idx[0] = 0;
 		rgb_idx[1] = 1;
-		rgb_idx[2] = 2;
-
-		
+		rgb_idx[2] = 2;		
 		break;
 	case 4:
 		rgb_idx[0] = 2;
 		rgb_idx[1] = 1;
-		rgb_idx[2] = 0;
-
-		
+		rgb_idx[2] = 0;		
 		break;
 	case 5:
 		rgb_idx[0] = 1;
@@ -393,14 +384,33 @@ static void draw(image_t const& dst, AppState const& state)
 	auto& mat = state.iterations;
 
 	auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
-	auto const min = *mat_min;
-	auto const max = *mat_max;
+	auto min = static_cast<r64>(*mat_min);
+	auto max = static_cast<r64>(*mat_max);
 
-	auto const diff = static_cast<r64>(max - min);
+	auto diff = max - min;
+
+	/*auto const f = 0.03;
+
+	min += f * diff;
+	max -= f * diff;*/
+
+	diff = max - min;
 
 	auto const to_platform_color = [&](u32 i) 
 	{
-		auto const r = (i - min) / diff;
+		auto r = (i - min) / diff;
+
+		if (r < 0.0)
+		{
+			r = 0.0;
+		}
+		else if (r > 1.0)
+		{
+			r = 1.0;
+		}
+
+		r = std::sqrt(r);
+
 		//return to_gray(r);
 		return to_rgb(r, state.rgb_option);
 	};
