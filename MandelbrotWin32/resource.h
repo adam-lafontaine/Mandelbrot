@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by MandlebrotWin32.rc
+// Used by MandelbrotWin32.rc
 //
 #define IDC_MYICON                      2
 #define IDD_APPLICATIONWIN32_DIALOG     102
@@ -8,8 +8,8 @@
 #define IDD_ABOUTBOX                    103
 #define IDM_ABOUT                       104
 #define IDM_EXIT                        105
-#define IDI_APPLICATIONWIN32            107
-#define IDI_SMALL                       108
+#define IDI_ICON                        107
+#define IDI_ICON_SMALL                  108
 #define IDC_APPLICATIONWIN32            109
 #define IDR_MAINFRAME                   128
 #define IDC_STATIC                      -1

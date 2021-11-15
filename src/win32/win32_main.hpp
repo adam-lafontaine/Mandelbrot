@@ -1,7 +1,7 @@
 #pragma once
 
 #include "framework.h"
-#include "../resources/resource.h"
+#include "../../MandelbrotWin32/resource.h"
 
 #include "../input/input.hpp"
 

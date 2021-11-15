@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{509a6dbc-6dca-4a3f-8b17-ed9b1f2a160f}</ProjectGuid>
-    <RootNamespace>MandlebrotWin32</RootNamespace>
+    <ProjectGuid>{5bfeeff9-f6d1-4c72-b78b-26c0d48fc869}</ProjectGuid>
+    <RootNamespace>MandelbrotWin32</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -86,7 +86,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -101,7 +101,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -116,7 +116,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -131,7 +131,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -148,26 +148,27 @@
     <ClInclude Include="..\src\input\input.hpp" />
     <ClInclude Include="..\src\input\keyboard.hpp" />
     <ClInclude Include="..\src\input\mouse.hpp" />
-    <ClInclude Include="..\src\utils\fixed_point.hpp" />
     <ClInclude Include="..\src\utils\image.hpp" />
     <ClInclude Include="..\src\utils\index_range.hpp" />
     <ClInclude Include="..\src\utils\stopwatch.hpp" />
     <ClInclude Include="..\src\utils\types.hpp" />
     <ClInclude Include="..\src\utils\win32_leak_check.h" />
     <ClInclude Include="..\src\win32\framework.h" />
+    <ClInclude Include="..\src\win32\targetver.h" />
     <ClInclude Include="..\src\win32\win32_main.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="..\src\resources\icon.ico" />
-    <Image Include="..\src\resources\small.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\src\resources\MandlebrotWin32.rc" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\app\app.cpp" />
     <ClCompile Include="..\src\win32\win32_input.cpp" />
     <ClCompile Include="..\src\win32\win32_main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MandelbrotWin32.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\src\resources\icon.ico" />
+    <Image Include="..\src\resources\small.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

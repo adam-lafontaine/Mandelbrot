@@ -14,28 +14,28 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
     <Filter Include="Header Files\app">
-      <UniqueIdentifier>{4101acbc-8524-46a4-8b03-def6dd858c1c}</UniqueIdentifier>
+      <UniqueIdentifier>{91517334-45cc-4cab-861f-c5b6ff6f4223}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\input">
-      <UniqueIdentifier>{90e0ca78-dcc4-4196-b9f9-d38bdaa873a3}</UniqueIdentifier>
+      <UniqueIdentifier>{66e61d81-28c9-4b46-9a87-e1fc7f046cea}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\utils">
-      <UniqueIdentifier>{edb8b57a-efdc-4696-9701-c7806bd6804f}</UniqueIdentifier>
+      <UniqueIdentifier>{fce8934d-cfea-4e72-bf24-fac8bc90b857}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\win32">
-      <UniqueIdentifier>{b1506a9e-3944-4f3f-a62b-678fbf68da54}</UniqueIdentifier>
+      <UniqueIdentifier>{0e969218-2827-406f-9eed-39d975970125}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\app">
-      <UniqueIdentifier>{7fbe6d74-b45c-49b5-bb22-50ca3c9cca63}</UniqueIdentifier>
+      <UniqueIdentifier>{3db77637-d5cf-47d4-88e2-99a6fb738f70}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\win32">
-      <UniqueIdentifier>{4deed8cd-c9a3-44d6-92f5-2016c59af136}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\utils">
-      <UniqueIdentifier>{a66b97b6-e43e-43b0-bf06-25bf5c0ff699}</UniqueIdentifier>
+      <UniqueIdentifier>{27f9f978-be34-44ed-9d83-2c8a665bdd50}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\app\app.hpp">
+      <Filter>Header Files\app</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\input\button_state.hpp">
       <Filter>Header Files\input</Filter>
     </ClInclude>
@@ -48,7 +48,19 @@
     <ClInclude Include="..\src\input\mouse.hpp">
       <Filter>Header Files\input</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\utils\image.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\index_range.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\stopwatch.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\utils\types.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\win32_leak_check.h">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
     <ClInclude Include="..\src\win32\framework.h">
@@ -57,47 +69,35 @@
     <ClInclude Include="..\src\win32\win32_main.hpp">
       <Filter>Header Files\win32</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\app\app.hpp">
-      <Filter>Header Files\app</Filter>
+    <ClInclude Include="..\src\win32\targetver.h">
+      <Filter>Header Files\win32</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\utils\stopwatch.hpp">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\index_range.hpp">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\image.hpp">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\win32_leak_check.h">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\fixed_point.hpp">
-      <Filter>Header Files\utils</Filter>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\src\resources\small.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="..\src\resources\icon.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\src\resources\MandlebrotWin32.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
+    <ClCompile Include="..\src\app\app.cpp">
+      <Filter>Source Files\app</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\win32\win32_input.cpp">
       <Filter>Source Files\win32</Filter>
     </ClCompile>
     <ClCompile Include="..\src\win32\win32_main.cpp">
       <Filter>Source Files\win32</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\app\app.cpp">
-      <Filter>Source Files\app</Filter>
-    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MandelbrotWin32.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\src\resources\icon.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\src\resources\small.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>
