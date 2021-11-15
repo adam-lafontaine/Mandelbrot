@@ -1,7 +1,7 @@
 #pragma once
 
 #include "framework.h"
-#include "resource.h"
+#include "../resources/resource.h"
 
 #include "../input/input.hpp"
 

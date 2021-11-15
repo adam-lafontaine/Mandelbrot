@@ -54,12 +54,6 @@
     <ClInclude Include="..\src\win32\framework.h">
       <Filter>Header Files\win32</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\win32\Resource.h">
-      <Filter>Header Files\win32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\win32\targetver.h">
-      <Filter>Header Files\win32</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\win32\win32_main.hpp">
       <Filter>Header Files\win32</Filter>
     </ClInclude>
@@ -86,7 +80,7 @@
     <Image Include="..\src\resources\small.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="..\src\resources\MandelbrotWin32.ico">
+    <Image Include="..\src\resources\icon.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
