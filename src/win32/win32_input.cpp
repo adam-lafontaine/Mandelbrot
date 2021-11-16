@@ -274,6 +274,28 @@ namespace win32
 			record_input(old_input.space_key, new_input.space_key, is_down);
 			break;
 #endif
+#if KEYBOARD_PLUS
+		case VK_ADD:
+			record_input(old_input.plus_key, new_input.plus_key, is_down);
+			break;
+#endif
+
+#if KEYBOARD_MINUS
+		case VK_SUBTRACT:
+			record_input(old_input.minus_key, new_input.minus_key, is_down);
+			break;
+#endif
+#if KEYBOARD_MULTIPLY
+		case VK_MULTIPLY:
+			record_input(old_input.mult_key, new_input.mult_key, is_down);
+			break;
+#endif
+#if KEYBOARD_DIVIDE
+		case VK_DIVIDE:
+			record_input(old_input.div_key, new_input.div_key, is_down);
+			break;
+#endif
+
 		}
 	}
 

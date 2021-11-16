@@ -2,12 +2,17 @@
 #include "../app/app.hpp"
 #include "../utils/stopwatch.hpp"
 
+//#define CHECK_LEAKS
+#if defined(_WIN32) && defined(_DEBUG) && defined(CHECK_LEAKS)
+#include "../utils/win32_leak_check.h"
+#endif
+
 #include <iostream>
 
 // size of window
 // bitmap buffer will be scaled to these dimensions Windows (StretchDIBits)
-constexpr int WINDOW_AREA_HEIGHT = 600;
-constexpr int WINDOW_AREA_WIDTH = WINDOW_AREA_HEIGHT * 16 / 9;
+constexpr int WINDOW_AREA_WIDTH = app::BUFFER_WIDTH;
+constexpr int WINDOW_AREA_HEIGHT = app::BUFFER_HEIGHT;
 
 // control the framerate of the application
 constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
@@ -25,6 +30,12 @@ void end_program()
 {
     g_running = false;
     app::end_program();
+}
+
+
+u32 platform_to_color_32(u8 red, u8 green, u8 blue)
+{
+    return red << 16 | green << 8 | blue;
 }
 
 
@@ -112,7 +123,7 @@ namespace win32
 
     static void process_keyboard_input(KeyboardInput const& old_input, KeyboardInput& new_input)
     {
-        reset_keyboard(new_input);
+        copy_keyboard_state(old_input, new_input);
 
         auto const key_was_down = [](MSG const& msg) { return (msg.lParam & (1u << 30)) != 0; };
         auto const key_is_down = [](MSG const& msg) { return (msg.lParam & (1u << 31)) == 0; };
@@ -130,12 +141,13 @@ namespace win32
                 case WM_SYSKEYUP:
                 case WM_KEYDOWN:
                 case WM_KEYUP:
-                {
+                {  
                     was_down = key_was_down(message);
                     is_down = key_is_down(message);
-
                     if (was_down == is_down)
+                    {
                         break;
+                    }
 
                     if (is_down && alt_key_down(message))
                     {
@@ -198,7 +210,7 @@ static app::PixelBuffer make_app_pixel_buffer()
     buffer.height = g_back_buffer.height;
     buffer.bytes_per_pixel = g_back_buffer.bytes_per_pixel;
 
-    buffer.to_color32 = [](u8 red, u8 green, u8 blue) { return red << 16 | green << 8 | blue; };
+    //buffer.to_color32 = [](u8 red, u8 green, u8 blue) { return red << 16 | green << 8 | blue; };
 
     return buffer;
 }
@@ -228,12 +240,12 @@ static WNDCLASSEXW make_window_class(HINSTANCE hInstance)
     wcex.cbClsExtra = 0;
     wcex.cbWndExtra = 0;
     wcex.hInstance = hInstance;
-    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_APPLICATIONWIN32));
+    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON));
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_APPLICATIONWIN32);
     wcex.lpszClassName = szWindowClass;
-    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_ICON_SMALL));
 
     return wcex;
 }
@@ -265,6 +277,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_ LPWSTR    lpCmdLine,
                      _In_ int       nCmdShow)
 {
+
+
+#if defined(_WIN32) && defined(_DEBUG) && defined(CHECK_LEAKS)
+    int dbgFlags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
+    dbgFlags |= _CRTDBG_CHECK_ALWAYS_DF;   // check block integrity
+    dbgFlags |= _CRTDBG_DELAY_FREE_MEM_DF; // don't recycle memory
+    dbgFlags |= _CRTDBG_LEAK_CHECK_DF;     // leak report on exit
+    _CrtSetDbgFlag(dbgFlags);
+#endif
+
+
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
@@ -345,6 +368,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     sw.start();
     while (g_running)
     {
+        new_input->dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
         win32::process_keyboard_input(old_input->keyboard, new_input->keyboard);        
         win32::record_mouse_input(window, old_input->mouse, new_input->mouse);
         app::update_and_render(app_memory, *new_input, app_pixel_buffer);
