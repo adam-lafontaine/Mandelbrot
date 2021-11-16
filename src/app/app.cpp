@@ -217,149 +217,57 @@ static pixel_t to_gray(r64 ratio)
 }
 
 
-using color_palette_t = std::array<u8, NUM_SHADES>;
-
-
-constexpr color_palette_t make_color_palette()
+constexpr std::array<u8, 2048> make_smooth_palette(u8 p, u8 q)
 {
-	color_palette_t palette = {};
+	assert(p + q == 4);
 
-	for (u32 i = 0; i < NUM_SHADES; ++i)
+	r64 a = p == 2 ? 16.0 : 9.45;
+
+	constexpr auto pow = [](r64 base, u8 exp)
 	{
-		palette[i] = static_cast<u8>(i);
-	}
+		r64 r = 1.0;
 
-	return palette;
-}
+		for (u8 i = 1; i <= exp; ++i)
+		{
+			r *= base;
+		}
 
+		return r;
+	};
 
-static pixel_t to_rgb(r64 ratio, u32 rgb_option)
-{
-	assert(ratio >= 0.0);
-	assert(ratio <= 1.0);
-
-	auto const p = std::sqrt(ratio);
-	auto const q = 1.0 - p;
-	auto const p2 = p * p;
-	auto const p3 = p2 * p;
-	auto const q2 = q * q;
-	auto const q3 = q2 * q;
-
-	constexpr auto palette = make_color_palette();
-	constexpr auto n_colors = static_cast<u32>(palette.size());
-
-	auto const max_low = 9.4 * q3 * p;
-	auto const max_high = 9.45 * q * p3;
-	auto const max_center = 16.0 * q2 * p2;
-	/*auto const low_to_high = p;
-	auto const high_to_low = q;
-	auto const high_to_low2 = q2;*/
-
-	r64 color_map[] = { max_high, max_low, max_center };
-	u32 c1 = 0;
-	u32 c2 = 0;
-	u32 c3 = 0;
-
-	switch (rgb_option)
-	{
-	case 1:
-		c1 = 0;
-		c2 = 2;
-		c3 = 1;		
-		break;
-	case 2:
-		c1 = 2;
-		c2 = 0;
-		c3 = 1;
-		break;
-	case 3:
-		c1 = 0;
-		c2 = 1;
-		c3 = 2;		
-		break;
-	case 4:
-		c1 = 2;
-		c2 = 1;
-		c3 = 0;		
-		break;
-	case 5:
-		c1 = 1;
-		c2 = 2;
-		c3 = 0;
-		break;
-	case 6:
-		c1 = 1;
-		c2 = 0;
-		c3 = 2;
-		break;
-	}
-
-	auto r = static_cast<u32>(color_map[c1] * (n_colors - 1));
-	if (r >= n_colors)
-	{
-		r = n_colors - 1;
-	}
-	
-	auto g = static_cast<u32>(color_map[c2] * (n_colors - 1));
-	if (g >= n_colors)
-	{
-		g = n_colors - 1;
-	}
-	
-	auto b = static_cast<u32>(color_map[c3] * (n_colors - 1));
-	if (b >= n_colors)
-	{
-		b = n_colors - 1;
-	}
-
-	u8 const red = palette[r];
-	u8 const green = palette[g];
-	u8 const blue = palette[b];
-
-	return to_platform_pixel(red, green, blue);
-}
-
-
-constexpr std::array<u8, 2048> make_palette(u32 begin, u32 middle, u32 end)
-{
 	std::array<u8, 2048> palette = {};
 
-	u8 c = 0;
-	u32 pitch = (end - middle) / 256;
-	for (u64 i = begin; i < middle; i += pitch)
+	for (u32 i = 0; i < 2048; ++i)
 	{
-		for (u32 p = 0; p < pitch; ++p)
+		auto r = 1.0 * i / 2047;
+		auto c = a * pow(r, p) * pow((1 - r), q);
+		if (c > 1.0)
 		{
-			palette[i + p] = c;
+			c = 1.0;
 		}
-		++c;
-	}
+		else if (c < 0.0)
+		{
+			c = 0;
+		}
 
-	c = 255;
-	pitch = (end - middle) / 256;
-	for (u64 i = middle; i < end; i += pitch)
-	{
-		for (u32 p = 0; p < pitch; ++p)
-		{
-			palette[i + p] = c;
-		}
-		--c;
+		palette[i] = static_cast<u8>(255.0 * c);
 	}
 
 	return palette;
 }
 
 
-static pixel_t to_rgb2(r64 ratio, u32 rgb_option)
+constexpr auto palette1 = make_smooth_palette(1, 3);
+constexpr auto palette2 = make_smooth_palette(2, 2);
+constexpr auto palette3 = make_smooth_palette(3, 1);
+
+
+static pixel_t to_rgb3(r64 ratio, u32 rgb_option)
 {
 	assert(ratio >= 0.0);
 	assert(ratio <= 1.0);
 
-	auto const p = std::sqrt(ratio);
-
-	constexpr auto palette1 = make_palette(0, 512, 2048);
-	constexpr auto palette2 = make_palette(0, 1024, 2048);
-	constexpr auto palette3 = make_palette(0, 1536, 2048);
+	auto const p = std::sqrt(ratio);	
 
 	auto index = static_cast<u32>(p * 2047);
 
@@ -373,33 +281,33 @@ static pixel_t to_rgb2(r64 ratio, u32 rgb_option)
 	{
 	case 1:
 		c1 = 0;
-		c2 = 2;
-		c3 = 1;
+		c2 = 1;
+		c3 = 2;
 		break;
 	case 2:
-		c1 = 2;
-		c2 = 0;
+		c1 = 0;
+		c2 = 2;
 		c3 = 1;
 		break;
 	case 3:
-		c1 = 0;
-		c2 = 1;
+		c1 = 1;
+		c2 = 0;
 		c3 = 2;
 		break;
 	case 4:
-		c1 = 2;
-		c2 = 1;
-		c3 = 0;
-		break;
-	case 5:
 		c1 = 1;
 		c2 = 2;
 		c3 = 0;
 		break;
-	case 6:
-		c1 = 1;
+	case 5:
+		c1 = 2;
 		c2 = 0;
-		c3 = 2;
+		c3 = 1;
+		break;
+	case 6:
+		c1 = 2;
+		c2 = 1;
+		c3 = 0;
 		break;
 	}
 
@@ -422,11 +330,11 @@ static void draw(image_t const& dst, AppState const& state)
 		auto r = (i - min) / diff;
 
 		//return to_gray(r);
-		return to_rgb2(r, state.rgb_option);
+		return to_rgb3(r, state.rgb_option);
 	};
 
-	std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
-	//std::transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
+	//std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
+	std::transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
 }
 
 
