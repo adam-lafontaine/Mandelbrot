@@ -5,10 +5,8 @@
 #include <cassert>
 #include <algorithm>
 #include <array>
-#include <limits>
 #include <execution>
 #include <cmath>
-#include <functional>
 
 
 constexpr r64 MBT_MIN_X = -2.0;
@@ -187,6 +185,9 @@ constexpr gray_palette_t make_gray_palette()
 }
 
 
+constexpr auto gray_palette = make_gray_palette();
+
+
 static pixel_t to_gray(r64 ratio)
 {
 	assert(ratio >= 0.0);
@@ -199,8 +200,8 @@ static pixel_t to_gray(r64 ratio)
 	auto const q2 = q * q;
 	auto const q3 = q2 * q;
 
-	constexpr auto palette = make_gray_palette();
-	constexpr auto n_colors = static_cast<u32>(palette.size());
+	
+	constexpr auto n_colors = static_cast<u32>(gray_palette.size());
 
 	auto const r = 16.0 * q2 * p2;
 
@@ -211,13 +212,13 @@ static pixel_t to_gray(r64 ratio)
 		g = n_colors - 1;
 	}
 
-	auto const shade = palette[g];
+	auto const shade = gray_palette[g];
 
 	return to_pixel(shade, shade, shade);
 }
 
 
-constexpr std::array<u8, 2048> make_smooth_palette(u8 p, u8 q)
+static constexpr std::array<u8, 2048> make_smooth_palette(u8 p, u8 q)
 {
 	assert(p + q == 4);
 
@@ -262,7 +263,7 @@ constexpr auto palette2 = make_smooth_palette(2, 2);
 constexpr auto palette3 = make_smooth_palette(3, 1);
 
 
-static pixel_t to_rgb3(r64 ratio, u32 rgb_option)
+static pixel_t to_rgb(r64 ratio, u32 rgb_option)
 {
 	assert(ratio >= 0.0);
 	assert(ratio <= 1.0);
@@ -330,22 +331,22 @@ static void draw(image_t const& dst, AppState const& state)
 		auto r = (i - min) / diff;
 
 		//return to_gray(r);
-		return to_rgb3(r, state.rgb_option);
+		return to_rgb(r, state.rgb_option);
 	};
 
-	//std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
-	std::transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
+	std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
+	//std::transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
 }
 
 
-static void for_each_row(image_t const& img, std::function<void(u32 y)> const& func)
-{
-	UnsignedRange y_ids(0u, img.height);
-	auto const y_id_begin = y_ids.begin();
-	auto const y_id_end = y_ids.end();
-
-	std::for_each(std::execution::par, y_id_begin, y_id_end, func);
-}
+//static void for_each_row(image_t const& img, std::function<void(u32 y)> const& func)
+//{
+//	UnsignedRange y_ids(0u, img.height);
+//	auto const y_id_begin = y_ids.begin();
+//	auto const y_id_end = y_ids.end();
+//
+//	std::for_each(std::execution::par, y_id_begin, y_id_end, func);
+//}
 
 
 static void for_each_row(mat_u32_t const& mat, std::function<void(u32 y)> const& func)
@@ -516,7 +517,7 @@ static void mandelbrot(AppState& state)
 			std::for_each(std::execution::par, x_id_begin, x_id_end, do_x);
 		};
 
-		std::for_each(y_id_begin, y_id_end, do_row);
+		std::for_each(std::execution::par, y_id_begin, y_id_end, do_row);
 	};
 
 	auto& shift = state.pixel_shift;
