@@ -238,7 +238,7 @@ static pixel_t to_rgb(r64 ratio, u32 rgb_option)
 	assert(ratio >= 0.0);
 	assert(ratio <= 1.0);
 
-	auto const p = ratio;
+	auto const p = std::sqrt(ratio);
 	auto const q = 1.0 - p;
 	auto const p2 = p * p;
 	auto const p3 = p2 * p;
@@ -256,55 +256,57 @@ static pixel_t to_rgb(r64 ratio, u32 rgb_option)
 	auto const high_to_low2 = q2;*/
 
 	r64 color_map[] = { max_high, max_low, max_center };
-	u32 rgb_idx[] = { 0, 1, 2 };
+	u32 c1 = 0;
+	u32 c2 = 0;
+	u32 c3 = 0;
 
 	switch (rgb_option)
 	{
 	case 1:
-		rgb_idx[0] = 0;
-		rgb_idx[1] = 2;
-		rgb_idx[2] = 1;		
+		c1 = 0;
+		c2 = 2;
+		c3 = 1;		
 		break;
 	case 2:
-		rgb_idx[0] = 2;
-		rgb_idx[1] = 0;
-		rgb_idx[2] = 1;
+		c1 = 2;
+		c2 = 0;
+		c3 = 1;
 		break;
 	case 3:
-		rgb_idx[0] = 0;
-		rgb_idx[1] = 1;
-		rgb_idx[2] = 2;		
+		c1 = 0;
+		c2 = 1;
+		c3 = 2;		
 		break;
 	case 4:
-		rgb_idx[0] = 2;
-		rgb_idx[1] = 1;
-		rgb_idx[2] = 0;		
+		c1 = 2;
+		c2 = 1;
+		c3 = 0;		
 		break;
 	case 5:
-		rgb_idx[0] = 1;
-		rgb_idx[1] = 2;
-		rgb_idx[2] = 0;
+		c1 = 1;
+		c2 = 2;
+		c3 = 0;
 		break;
 	case 6:
-		rgb_idx[0] = 1;
-		rgb_idx[1] = 0;
-		rgb_idx[2] = 2;
+		c1 = 1;
+		c2 = 0;
+		c3 = 2;
 		break;
 	}
 
-	auto r = static_cast<u32>(color_map[rgb_idx[0]] * (n_colors - 1));
+	auto r = static_cast<u32>(color_map[c1] * (n_colors - 1));
 	if (r >= n_colors)
 	{
 		r = n_colors - 1;
 	}
 	
-	auto g = static_cast<u32>(color_map[rgb_idx[1]] * (n_colors - 1));
+	auto g = static_cast<u32>(color_map[c2] * (n_colors - 1));
 	if (g >= n_colors)
 	{
 		g = n_colors - 1;
 	}
 	
-	auto b = static_cast<u32>(color_map[rgb_idx[2]] * (n_colors - 1));
+	auto b = static_cast<u32>(color_map[c3] * (n_colors - 1));
 	if (b >= n_colors)
 	{
 		b = n_colors - 1;
@@ -318,64 +320,90 @@ static pixel_t to_rgb(r64 ratio, u32 rgb_option)
 }
 
 
-constexpr pixel_t to_rgb2(r64 ratio)
+constexpr std::array<u8, 2048> make_palette(u32 begin, u32 middle, u32 end)
 {
-	constexpr u32 N = 16;
-	std::array<pixel_t, N> palette = 
-	{
-		to_pixel(66, 30, 15),
-		to_pixel(25, 7, 26),
-		to_pixel(9, 1, 47),
-		to_pixel(4, 4, 73),
-		to_pixel(0, 7, 100),
-		to_pixel(12, 44, 138),
-		to_pixel(24, 82, 177),
-		to_pixel(57, 125, 209),
-		to_pixel(134, 181, 229),
-		to_pixel(211, 236, 248),
-		to_pixel(241, 233, 191),
-		to_pixel(248, 201, 95),
-		to_pixel(255, 170, 0),
-		to_pixel(204, 128, 0),
-		to_pixel(153, 87, 0),
-		to_pixel(106, 52, 3),
-	};
+	std::array<u8, 2048> palette = {};
 
-	auto n = ratio * (N - 1);
-	if (n < 0.0)
+	u8 c = 0;
+	u32 pitch = (end - middle) / 256;
+	for (u64 i = begin; i < middle; i += pitch)
 	{
-		return palette[0];
+		for (u32 p = 0; p < pitch; ++p)
+		{
+			palette[i + p] = c;
+		}
+		++c;
 	}
 
-	auto low = static_cast<u32>(n);
-	if (low == 0)
+	c = 255;
+	pitch = (end - middle) / 256;
+	for (u64 i = middle; i < end; i += pitch)
 	{
-		return palette[0];
+		for (u32 p = 0; p < pitch; ++p)
+		{
+			palette[i + p] = c;
+		}
+		--c;
 	}
 
-	if (low >= N - 1)
+	return palette;
+}
+
+
+static pixel_t to_rgb2(r64 ratio, u32 rgb_option)
+{
+	assert(ratio >= 0.0);
+	assert(ratio <= 1.0);
+
+	auto const p = std::sqrt(ratio);
+
+	constexpr auto palette1 = make_palette(0, 512, 2048);
+	constexpr auto palette2 = make_palette(0, 1024, 2048);
+	constexpr auto palette3 = make_palette(0, 1536, 2048);
+
+	auto index = static_cast<u32>(p * 2047);
+
+	u8 color_map[] = { palette1[index], palette2[index], palette3[index] };
+
+	u32 c1 = 0;
+	u32 c2 = 0;
+	u32 c3 = 0;
+
+	switch (rgb_option)
 	{
-		return palette[N - 1];
+	case 1:
+		c1 = 0;
+		c2 = 2;
+		c3 = 1;
+		break;
+	case 2:
+		c1 = 2;
+		c2 = 0;
+		c3 = 1;
+		break;
+	case 3:
+		c1 = 0;
+		c2 = 1;
+		c3 = 2;
+		break;
+	case 4:
+		c1 = 2;
+		c2 = 1;
+		c3 = 0;
+		break;
+	case 5:
+		c1 = 1;
+		c2 = 2;
+		c3 = 0;
+		break;
+	case 6:
+		c1 = 1;
+		c2 = 0;
+		c3 = 2;
+		break;
 	}
 
-	auto high = low + 1;
-
-	auto t = (n - low);
-
-	auto p_low = palette[low];
-	auto p_high = palette[high];
-
-	auto const lerp_channel = [&](u32 c) 
-	{
-		auto const diff = static_cast<r32>(p_high.channels[c]) - p_low.channels[c];
-		return static_cast<u8>(p_low.channels[c] + t * diff);
-	};
-
-	auto red = lerp_channel(0);
-	auto green = lerp_channel(1);
-	auto blue = lerp_channel(2);
-
-	return to_pixel(red, green, blue);
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
 }
 
 
@@ -389,30 +417,12 @@ static void draw(image_t const& dst, AppState const& state)
 
 	auto diff = max - min;
 
-	/*auto const f = 0.03;
-
-	min += f * diff;
-	max -= f * diff;*/
-
-	diff = max - min;
-
 	auto const to_platform_color = [&](u32 i) 
 	{
 		auto r = (i - min) / diff;
 
-		if (r < 0.0)
-		{
-			r = 0.0;
-		}
-		else if (r > 1.0)
-		{
-			r = 1.0;
-		}
-
-		r = std::sqrt(r);
-
 		//return to_gray(r);
-		return to_rgb(r, state.rgb_option);
+		return to_rgb2(r, state.rgb_option);
 	};
 
 	std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
