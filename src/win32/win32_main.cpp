@@ -180,10 +180,8 @@ namespace win32
 
 
 
-static app::AppMemory allocate_app_memory(win32::MemoryState& win32_memory)
+static void allocate_app_memory(app::AppMemory& memory, win32::MemoryState& win32_memory)
 {
-    app::AppMemory memory = {};
-
     memory.permanent_storage_size = Megabytes(256);
     memory.transient_storage_size = 0; // Gigabytes(1);
 
@@ -196,8 +194,6 @@ static app::AppMemory allocate_app_memory(win32::MemoryState& win32_memory)
 
     win32_memory.total_size = total_size;
     win32_memory.memory_block = memory.permanent_storage;
-
-    return memory;
 }
 
 
@@ -320,8 +316,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HDC device_context = GetDC(window);
     auto window_dims = win32::get_window_dimensions(window);
 
+    app::AppMemory app_memory = {};
     win32::MemoryState win32_memory = {};
-    auto app_memory = allocate_app_memory(win32_memory);
+    allocate_app_memory(app_memory, win32_memory);
     if (!app_memory.permanent_storage || !app_memory.transient_storage)
     {
         return 0;

@@ -7,6 +7,7 @@
 #include <array>
 #include <execution>
 #include <cmath>
+#include <functional>
 
 
 constexpr r64 MBT_MIN_X = -2.0;
@@ -17,6 +18,8 @@ constexpr r64 MBT_WIDTH = MBT_MAX_X - MBT_MIN_X;
 constexpr r64 MBT_HEIGHT = MBT_MAX_Y - MBT_MIN_Y;
 
 constexpr u32 NUM_SHADES = 256;
+
+constexpr u32 NUM_COLORS = 2048;
 
 constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
 constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 50000;
@@ -55,6 +58,8 @@ class AppState
 {
 public:
 	bool render_new;
+
+	image_t buffer_image;
 
 	Point2Dr64 screen_pos;
 	Vec2Di32 pixel_shift;
@@ -218,7 +223,7 @@ static pixel_t to_gray(r64 ratio)
 }
 
 
-static constexpr std::array<u8, 2048> make_smooth_palette(u8 p, u8 q)
+static constexpr std::array<u8, NUM_COLORS> make_smooth_palette(u8 p, u8 q)
 {
 	assert(p + q == 4);
 
@@ -236,22 +241,24 @@ static constexpr std::array<u8, 2048> make_smooth_palette(u8 p, u8 q)
 		return r;
 	};
 
-	std::array<u8, 2048> palette = {};
+	std::array<u8, NUM_COLORS> palette = {};
 
-	for (u32 i = 0; i < 2048; ++i)
+	for (u32 i = 0; i < NUM_COLORS; ++i)
 	{
-		auto r = 1.0 * i / 2047;
+		auto r = 1.0 * i / (NUM_COLORS - 1);
 		auto c = a * pow(r, p) * pow((1 - r), q);
-		if (c > 1.0)
+		if (c >= 1.0)
 		{
-			c = 1.0;
+			palette[i] = 255;
 		}
-		else if (c < 0.0)
+		else if (c <= 0.0)
 		{
-			c = 0;
+			palette[i] = 0;
 		}
-
-		palette[i] = static_cast<u8>(255.0 * c);
+		else
+		{
+			palette[i] = static_cast<u8>(255.0 * c);
+		}
 	}
 
 	return palette;
@@ -270,7 +277,55 @@ static pixel_t to_rgb(r64 ratio, u32 rgb_option)
 
 	auto const p = std::sqrt(ratio);	
 
-	auto index = static_cast<u32>(p * 2047);
+	auto index = static_cast<u32>(p * (NUM_COLORS - 1));
+
+	u8 color_map[] = { palette1[index], palette2[index], palette3[index] };
+
+	u32 c1 = 0;
+	u32 c2 = 0;
+	u32 c3 = 0;
+
+	switch (rgb_option)
+	{
+	case 1:
+		c1 = 0;
+		c2 = 1;
+		c3 = 2;
+		break;
+	case 2:
+		c1 = 0;
+		c2 = 2;
+		c3 = 1;
+		break;
+	case 3:
+		c1 = 1;
+		c2 = 0;
+		c3 = 2;
+		break;
+	case 4:
+		c1 = 1;
+		c2 = 2;
+		c3 = 0;
+		break;
+	case 5:
+		c1 = 2;
+		c2 = 0;
+		c3 = 1;
+		break;
+	case 6:
+		c1 = 2;
+		c2 = 1;
+		c3 = 0;
+		break;
+	}
+
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_it(u32 iterations, u32 rgb_option)
+{
+	auto index = NUM_COLORS - iterations % NUM_COLORS;
 
 	u8 color_map[] = { palette1[index], palette2[index], palette3[index] };
 
@@ -320,33 +375,24 @@ static void draw(image_t const& dst, AppState const& state)
 {
 	auto& mat = state.iterations;
 
-	auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
+	/*auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
 	auto min = static_cast<r64>(*mat_min);
 	auto max = static_cast<r64>(*mat_max);
 
-	auto diff = max - min;
+	auto diff = max - min;*/
 
 	auto const to_platform_color = [&](u32 i) 
 	{
-		auto r = (i - min) / diff;
+		//auto r = (i - min) / diff;
 
 		//return to_gray(r);
-		return to_rgb(r, state.rgb_option);
+		//return to_rgb(r, state.rgb_option);
+		return to_rgb_it(i, state.rgb_option);
 	};
 
 	std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
 	//std::transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
 }
-
-
-//static void for_each_row(image_t const& img, std::function<void(u32 y)> const& func)
-//{
-//	UnsignedRange y_ids(0u, img.height);
-//	auto const y_id_begin = y_ids.begin();
-//	auto const y_id_end = y_ids.end();
-//
-//	std::for_each(std::execution::par, y_id_begin, y_id_end, func);
-//}
 
 
 static void for_each_row(mat_u32_t const& mat, std::function<void(u32 y)> const& func)
@@ -474,6 +520,8 @@ static void mandelbrot(AppState& state)
 	auto const re_step = screen_width(state) / dst.width;
 	auto const im_step = screen_height(state) / dst.height;
 
+	auto const no_change = [](r64 rhs, r64 lhs) { return std::abs((rhs - lhs) / rhs) < 0.000000000001; };
+
 	auto const do_mandelbrot = [&](Range2Du32 const& range)
 	{
 		auto x_ids = UnsignedRange(range.x_begin, range.x_end);
@@ -498,15 +546,25 @@ static void mandelbrot(AppState& state)
 				r64 im = 0.0;
 				r64 re2 = 0.0;
 				r64 im2 = 0.0;
+				r64 re2_old = 0.0;
+				r64 im2_old = 0.0;
 
 				while (iter < max_iter && re2 + im2 <= limit)
 				{
+					re2_old = re2;
+					im2_old = im2;
 					im = (re + re) * im + ci;
 					re = re2 - im2 + cr;
 					im2 = im * im;
 					re2 = re * re;
 
 					++iter;
+
+					if (no_change(re2_old, re2) && no_change(im2_old, im2))
+					{
+						iter = max_iter;
+						break;
+					}
 				}
 
 				--iter;
@@ -612,6 +670,8 @@ namespace app
 	static void initialize_memory(AppState& state, PixelBuffer const& buffer)
 	{
 		state.render_new = true;
+
+		state.buffer_image = make_buffer_image(buffer);
 
 		state.screen_pos.x = 0.0;
 		state.screen_pos.y = 0.0;
@@ -807,8 +867,7 @@ namespace app
 			return;
 		}
 
-		auto buffer_image = make_buffer_image(buffer);
-		render(buffer_image, state);
+		render(state.buffer_image, state);
 
 		state.render_new = false;
 	}
