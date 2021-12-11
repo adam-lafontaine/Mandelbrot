@@ -10,16 +10,6 @@ public:
 };
 
 
-class Point2Di32
-{
-public:
-	i32 x;
-	i32 y;
-};
-
-using Vec2Di32 = Point2Di32;
-
-
 class Range2Du32
 {
 public:

@@ -4,9 +4,37 @@
 
 #include <cassert>
 #include <algorithm>
-#include <execution>
+//#include <execution>
 #include <cmath>
 #include <functional>
+
+
+using ur_it = UnsignedRange::iterator;
+
+
+static void for_each(ur_it const& begin, ur_it const& end, std::function<void(u32)> const& func)
+{
+	//std::for_each(std::execution::par, begin, end, func);
+	std::for_each(begin, end, func);
+}
+
+
+static void transform(u32* src_begin, u32* src_end, pixel_t* dst_begin, std::function<pixel_t(u32)> const& f)
+{
+	//std::transform(std::execution::par, src_begin, src_end, dst_begin, f);
+	std::transform(src_begin, src_end, dst_begin, f);
+}
+
+
+static void copy(u32* src_begin, u32* src_end, u32* dst_begin)
+{
+	//std::copy(std::execution::par, src_begin, src_end, dst_begin);
+	std::copy(src_begin, src_end, dst_begin);
+}
+
+
+
+
 
 // platform dependent e.g. win32_main.cpp
 u32 platform_to_color_32(u8 red, u8 green, u8 blue);
@@ -202,9 +230,13 @@ static void draw(image_t const& dst, AppState const& state)
 {
 	auto& mat = state.iterations;
 
-	auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
-	auto min = *mat_min;
-	auto max = *mat_max;
+	//auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
+	//auto min = *mat_min;
+	//auto max = *mat_max;
+
+	auto mat_min_max = std::minmax_element(mat.begin(), mat.end());
+	auto min = *mat_min_max.first;
+	auto max = *mat_min_max.second;
 
 	auto diff = max - min;
 
@@ -213,7 +245,7 @@ static void draw(image_t const& dst, AppState const& state)
 		return to_rgb_64(i - min, diff, state.rgb_option);
 	};
 
-	std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
+	transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
 }
 
 
@@ -223,7 +255,7 @@ static void for_each_row(mat_u32_t const& mat, std::function<void(u32 y)> const&
 	auto const y_id_begin = y_ids.begin();
 	auto const y_id_end = y_ids.end();
 
-	std::for_each(std::execution::par, y_id_begin, y_id_end, func);
+	for_each(y_id_begin, y_id_end, func);
 }
 
 
@@ -321,7 +353,7 @@ static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
 
 		auto src_end = src_begin + x_len;
 
-		std::copy(std::execution::par, src_begin, src_end, dst_begin);
+		copy(src_begin, src_end, dst_begin);
 	}
 }
 
@@ -386,10 +418,10 @@ static void mandelbrot(AppState& state)
 				row[x] = iter;
 			};
 
-			std::for_each(std::execution::par, x_id_begin, x_id_end, do_x);
+			for_each(x_id_begin, x_id_end, do_x);
 		};
 
-		std::for_each(std::execution::par, y_id_begin, y_id_end, do_row);
+		for_each(y_id_begin, y_id_end, do_row);
 	};
 
 	auto& shift = state.pixel_shift;

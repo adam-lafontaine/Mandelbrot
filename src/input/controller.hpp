@@ -2,8 +2,6 @@
 
 #include "button_state.hpp"
 
-#include <cstddef>
-
 
 #define CONTROLLER_UP 1
 #define CONTROLLER_DOWN 1
