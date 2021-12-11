@@ -36,7 +36,7 @@
 #define KEYBOARD_4 1
 #define KEYBOARD_5 1
 #define KEYBOARD_6 1
-#define KEYBOARD_7 0
+#define KEYBOARD_7 1
 #define KEYBOARD_8 0
 #define KEYBOARD_9 0
 #define KEYBOARD_UP 1

@@ -4,7 +4,7 @@
 
 typedef union button_state_t
 {
-	b32 states[2];
+	b32 states[3];
 	struct
 	{
 		b32 pressed;
