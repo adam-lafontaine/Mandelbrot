@@ -36,9 +36,13 @@ namespace win32
 
 
     // win32_input.cpp
-    void record_keyboard_input(WPARAM wparam, KeyboardInput const& old_input, KeyboardInput& new_input, b32 is_down);
+    void process_keyboard_input(KeyboardInput const& old_input, KeyboardInput& new_input);
 
     // win32_input.cpp
-    void record_mouse_input(HWND window, MouseInput const& old_input, MouseInput& new_input);
+    void process_mouse_input(HWND window, MouseInput const& old_input, MouseInput& new_input);
+
+    // win_32_main.cpp
+    bool handle_alt_key_down(MSG const& msg);
+
 
 }

@@ -148,7 +148,9 @@
     <ClInclude Include="..\src\app\render.hpp" />
     <ClInclude Include="..\src\app\types.hpp" />
     <ClInclude Include="..\src\input\button_state.hpp" />
+    <ClInclude Include="..\src\input\controller.hpp" />
     <ClInclude Include="..\src\input\input.hpp" />
+    <ClInclude Include="..\src\input\input_state.hpp" />
     <ClInclude Include="..\src\input\keyboard.hpp" />
     <ClInclude Include="..\src\input\mouse.hpp" />
     <ClInclude Include="..\src\utils\image.hpp" />

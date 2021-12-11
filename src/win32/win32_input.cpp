@@ -1,17 +1,10 @@
 #include "win32_main.hpp"
-
-
-static void record_input(ButtonState const& old_state, ButtonState& new_state, b32 is_down)
-{
-    new_state.pressed = !old_state.is_down && is_down;
-    new_state.is_down = is_down;
-	new_state.raised = old_state.is_down && !is_down;
-}
+#include "../input/input_state.hpp"
 
 
 namespace win32
 {
-	void record_mouse_input(HWND window, MouseInput const& old_input, MouseInput& new_input)
+	void process_mouse_input(HWND window, MouseInput const& old_input, MouseInput& new_input)
 	{
 
 #ifdef MOUSE_POSITION
@@ -22,15 +15,16 @@ namespace win32
         GetCursorPos(&mouse_pos);
         ScreenToClient(window, &mouse_pos);
 
+		/*
         RECT client_rect;
         GetClientRect(window, &client_rect);
 
         int window_width = client_rect.right - client_rect.left;
         int window_height = client_rect.bottom - client_rect.top;
+		*/
 
-        new_input.mouse_x = static_cast<r64>(mouse_pos.x) / window_width;
-        new_input.mouse_y = static_cast<r64>(mouse_pos.y) / window_height;
-        new_input.mouse_z = 0.0;
+		new_input.win_pos.x = mouse_pos.x;
+		new_input.win_pos.y = mouse_pos.y;
 
 #endif
 
@@ -38,24 +32,25 @@ namespace win32
 
 
 #if MOUSE_LEFT
-        record_input(old_input.left, new_input.left, button_is_down(VK_LBUTTON));
+        record_input(old_input.button_left, new_input.button_left, button_is_down(VK_LBUTTON));
 #endif
 #if MOUSE_RIGHT
-        record_input(old_input.right, new_input.right, button_is_down(VK_RBUTTON));
+        record_input(old_input.button_right, new_input.button_right, button_is_down(VK_RBUTTON));
 #endif
 #if MOUSE_MIDDLE
-        record_input(old_input.middle, new_input.middle, button_is_down(VK_MBUTTON));
+        record_input(old_input.button_middle, new_input.button_middle, button_is_down(VK_MBUTTON));
 #endif
 #if MOUSE_X1
-        record_input(old_input.x1, new_input.x1, button_is_down(VK_XBUTTON1));
+        record_input(old_input.button_x1, new_input.button_x1, button_is_down(VK_XBUTTON1));
 #endif
 #if MOUSE_X2
-        record_input(old_input.x2, new_input.x2, button_is_down(VK_XBUTTON2));
+        record_input(old_input.button_x2, new_input.button_x2, button_is_down(VK_XBUTTON2));
 #endif
 	}
 
 
-	void record_keyboard_input(WPARAM wparam, KeyboardInput const& old_input, KeyboardInput& new_input, b32 is_down)
+
+	static void record_keyboard_input(WPARAM wparam, KeyboardInput const& old_input, KeyboardInput& new_input, b32 is_down)
 	{
 		switch (wparam)
 		{
@@ -300,6 +295,52 @@ namespace win32
 	}
 
 
+	void process_keyboard_input(KeyboardInput const& old_input, KeyboardInput& new_input)
+	{
+		copy_keyboard_state(old_input, new_input);
+
+		auto const key_was_down = [](MSG const& msg) { return (msg.lParam & (1u << 30)) != 0; };
+		auto const key_is_down = [](MSG const& msg) { return (msg.lParam & (1u << 31)) == 0; };
+		
+
+		MSG message;
+		b32 was_down = false;
+		b32 is_down = false;
+
+		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
+		{
+			switch (message.message)
+			{
+			case WM_SYSKEYDOWN:
+			case WM_SYSKEYUP:
+			case WM_KEYDOWN:
+			case WM_KEYUP:
+			{
+				was_down = key_was_down(message);
+				is_down = key_is_down(message);
+				if (was_down == is_down)
+				{
+					break;
+				}
+
+				if (is_down && handle_alt_key_down(message))
+				{
+					return;
+				}
+
+				record_keyboard_input(message.wParam, old_input, new_input, is_down);
+
+			} break;
+
+			default:
+			{
+				TranslateMessage(&message);
+				DispatchMessage(&message);
+			}
+			}
+		}
+	}
+	
 }
 
 

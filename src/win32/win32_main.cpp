@@ -121,59 +121,27 @@ namespace win32
     }
 
 
-    static void process_keyboard_input(KeyboardInput const& old_input, KeyboardInput& new_input)
+    bool handle_alt_key_down(MSG const& msg)
     {
-        copy_keyboard_state(old_input, new_input);
-
-        auto const key_was_down = [](MSG const& msg) { return (msg.lParam & (1u << 30)) != 0; };
-        auto const key_is_down = [](MSG const& msg) { return (msg.lParam & (1u << 31)) == 0; };
         auto const alt_key_down = [](MSG const& msg) { return (msg.lParam & (1u << 29)); };
 
-        MSG message;
-        b32 was_down = false;
-        b32 is_down = false;
-
-        while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
+        if (!alt_key_down(msg))
         {
-            switch (message.message)
-            {
-                case WM_SYSKEYDOWN:
-                case WM_SYSKEYUP:
-                case WM_KEYDOWN:
-                case WM_KEYUP:
-                {  
-                    was_down = key_was_down(message);
-                    is_down = key_is_down(message);
-                    if (was_down == is_down)
-                    {
-                        break;
-                    }
-
-                    if (is_down && alt_key_down(message))
-                    {
-                        switch (message.wParam)
-                        {
-                        case VK_RETURN:
-                            toggle_fullscreen(message.hwnd);
-                            return;
-
-                        case VK_F4:
-                            end_program();
-                            return;
-                        }
-                    }
-
-                    record_keyboard_input(message.wParam, old_input, new_input, is_down);
-
-                } break;
-
-                default:
-                {
-                    TranslateMessage(&message);
-                    DispatchMessage(&message);
-                }
-            }
+            return false;
         }
+
+        switch (msg.wParam)
+        {
+        case VK_RETURN:
+            toggle_fullscreen(msg.hwnd);
+            return true;
+
+        case VK_F4:
+            end_program();
+            return true;
+        }
+
+        return false;
     }
 
 }
@@ -265,6 +233,9 @@ static HWND make_window(HINSTANCE hInstance)
         hInstance,
         nullptr);
 }
+
+
+
 
 
 
@@ -370,7 +341,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     {
         new_input->dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
         win32::process_keyboard_input(old_input->keyboard, new_input->keyboard);        
-        win32::record_mouse_input(window, old_input->mouse, new_input->mouse);
+        win32::process_mouse_input(window, old_input->mouse, new_input->mouse);
         app::update_and_render(app_memory, *new_input, app_pixel_buffer);
 
         wait_for_framerate();
