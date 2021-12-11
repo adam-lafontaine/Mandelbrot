@@ -197,9 +197,9 @@ static void allocate_app_memory(app::AppMemory& memory, win32::MemoryState& win3
 }
 
 
-static app::PixelBuffer make_app_pixel_buffer()
+static app::ScreenBuffer make_app_pixel_buffer()
 {
-    app::PixelBuffer buffer = {};
+    app::ScreenBuffer buffer = {};
 
     buffer.memory = g_back_buffer.memory;
     buffer.width = g_back_buffer.width;
@@ -312,12 +312,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UpdateWindow(window);
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_APPLICATIONWIN32));
-
     HDC device_context = GetDC(window);
     auto window_dims = win32::get_window_dimensions(window);
 
-    app::AppMemory app_memory = {};
     win32::MemoryState win32_memory = {};
+    app::AppMemory app_memory = {};
+
+    
     allocate_app_memory(app_memory, win32_memory);
     if (!app_memory.permanent_storage || !app_memory.transient_storage)
     {

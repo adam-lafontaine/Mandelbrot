@@ -35,7 +35,7 @@ class AppState
 public:
 	bool render_new;
 
-	image_t buffer_image;
+	image_t screen_buffer;
 
 	Point2Dr64 screen_pos;
 	Vec2Di32 pixel_shift;

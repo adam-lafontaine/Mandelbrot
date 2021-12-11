@@ -23,7 +23,7 @@ namespace app
 	};
 
 
-	class  PixelBuffer
+	class  ScreenBuffer
 	{
 	public:
 		void* memory;
@@ -34,10 +34,10 @@ namespace app
 
 
 	// app.cpp
-	void initialize_memory(AppMemory& memory, PixelBuffer const& buffer);	
+	void initialize_memory(AppMemory& memory, ScreenBuffer const& buffer);	
 
 	// app.cpp
-	void update_and_render(AppMemory& memory, Input const& input, PixelBuffer const& buffer);
+	void update_and_render(AppMemory& memory, Input const& input, ScreenBuffer const& buffer);
 
 	// app.cpp
 	void end_program();

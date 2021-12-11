@@ -164,7 +164,7 @@ static void process_input(Input const& input, AppState& state)
 
 namespace app
 {
-	static image_t make_buffer_image(PixelBuffer const& buffer)
+	static image_t make_buffer_image(ScreenBuffer const& buffer)
 	{
 		assert(buffer.bytes_per_pixel == RGBA_CHANNELS);
 
@@ -178,7 +178,7 @@ namespace app
 	}
 
 
-	static AppState& get_state(AppMemory& memory, PixelBuffer const& buffer)
+	static AppState& get_state(AppMemory& memory, ScreenBuffer const& buffer)
 	{
 		auto const state_sz = sizeof(AppState);
 		auto const iter_sz = sizeof(u32) * buffer.width * buffer.height;
@@ -193,13 +193,13 @@ namespace app
 	}
 
 
-	void initialize_memory(AppMemory& memory, PixelBuffer const& buffer)
+	void initialize_memory(AppMemory& memory, ScreenBuffer const& buffer)
 	{
 		auto& state = get_state(memory, buffer);
 
 		state.render_new = true;
 
-		state.buffer_image = make_buffer_image(buffer);
+		state.screen_buffer = make_buffer_image(buffer);
 
 		state.screen_pos.x = 0.0;
 		state.screen_pos.y = 0.0;
@@ -222,7 +222,7 @@ namespace app
 	}
 
 
-	void update_and_render(AppMemory& memory, Input const& input, PixelBuffer const& buffer)
+	void update_and_render(AppMemory& memory, Input const& input, ScreenBuffer const& buffer)
 	{
 		if (!memory.is_app_initialized)
 		{
@@ -238,7 +238,7 @@ namespace app
 			return;
 		}
 
-		render(state.buffer_image, state);
+		render(state.screen_buffer, state);
 
 		state.render_new = false;
 	}
