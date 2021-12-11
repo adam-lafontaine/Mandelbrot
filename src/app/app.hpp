@@ -31,7 +31,10 @@ namespace app
 		u32 height;
 		u32 bytes_per_pixel;
 	};
-	
+
+
+	// app.cpp
+	void initialize_memory(AppMemory& memory, PixelBuffer const& buffer);	
 
 	// app.cpp
 	void update_and_render(AppMemory& memory, Input const& input, PixelBuffer const& buffer);

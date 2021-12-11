@@ -355,6 +355,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         sw.start();
     };
+
+    app::initialize_memory(app_memory, app_pixel_buffer);
     
 
     Input input[2] = {};
