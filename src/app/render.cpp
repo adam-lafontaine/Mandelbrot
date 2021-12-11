@@ -4,33 +4,57 @@
 
 #include <cassert>
 #include <algorithm>
-//#include <execution>
+//
 #include <cmath>
 #include <functional>
 
 
 using ur_it = UnsignedRange::iterator;
 
+#ifdef NO_CPP_17
 
 static void for_each(ur_it const& begin, ur_it const& end, std::function<void(u32)> const& func)
 {
-	//std::for_each(std::execution::par, begin, end, func);
 	std::for_each(begin, end, func);
 }
 
 
 static void transform(u32* src_begin, u32* src_end, pixel_t* dst_begin, std::function<pixel_t(u32)> const& f)
 {
-	//std::transform(std::execution::par, src_begin, src_end, dst_begin, f);
 	std::transform(src_begin, src_end, dst_begin, f);
 }
 
 
 static void copy(u32* src_begin, u32* src_end, u32* dst_begin)
 {
-	//std::copy(std::execution::par, src_begin, src_end, dst_begin);
 	std::copy(src_begin, src_end, dst_begin);
 }
+
+#else
+
+#include <execution>
+
+static void for_each(ur_it const& begin, ur_it const& end, std::function<void(u32)> const& func)
+{
+	std::for_each(std::execution::par, begin, end, func);
+}
+
+
+static void transform(u32* src_begin, u32* src_end, pixel_t* dst_begin, std::function<pixel_t(u32)> const& f)
+{
+	std::transform(std::execution::par, src_begin, src_end, dst_begin, f);
+}
+
+
+static void copy(u32* src_begin, u32* src_end, u32* dst_begin)
+{
+	std::copy(std::execution::par, src_begin, src_end, dst_begin);
+}
+
+#endif
+
+
+
 
 
 
