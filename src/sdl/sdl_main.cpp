@@ -6,6 +6,7 @@
 #include "sdl_input.hpp"
 
 #include <cstdio>
+#include <thread>
 
 
 constexpr u32 BYTES_PER_PIXEL = 4;
@@ -185,4 +186,248 @@ static void destroy_bitmap_buffer(BitmapBuffer& buffer)
     {
         free(buffer.memory);
     }
+}
+
+
+constexpr auto WINDOW_TITLE = "Mandelbrot";
+constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
+constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
+
+// control the framerate of the application
+constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
+constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
+
+GlobalVariable b32 g_running = false;
+
+u32 platform_to_color_32(u8 red, u8 green, u8 blue)
+{
+    return red << 16 | green << 8 | blue;
+}
+
+
+static void end_program()
+{
+    g_running = false;
+    app::end_program();
+}
+
+
+static void display_error(const char* msg)
+{
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "ERROR", msg, 0);
+}
+
+
+static void display_bitmap_in_window(BitmapBuffer const& buffer)
+{
+    auto error = SDL_UpdateTexture(buffer.texture, 0, buffer.memory, buffer.width * buffer.bytes_per_pixel);
+    if(error)
+    {
+        printf("%s\n", SDL_GetError());
+    }
+
+    SDL_RenderCopy(buffer.renderer, buffer.texture, 0, 0);
+    
+    SDL_RenderPresent(buffer.renderer);
+}
+
+
+static void handle_sdl_window_event(SDL_WindowEvent const& w_event)
+{
+    auto window = SDL_GetWindowFromID(w_event.windowID);
+    //auto renderer = SDL_GetRenderer(window);
+
+    switch(w_event.event)
+    {
+        case SDL_WINDOWEVENT_SIZE_CHANGED:
+        {
+            /*int width, height;
+            SDL_GetWindowSize(window, &width, &height);
+            resize_offscreen_buffer(g_back_buffer, width, height);
+            set_app_pixel_buffer(g_back_buffer, g_app_buffer);*/
+
+        }break;
+        case SDL_WINDOWEVENT_EXPOSED:
+        {
+            
+        } break;
+    }
+}
+
+
+static void handle_sdl_event(SDL_Event const& event)
+{
+    switch(event.type)
+    {
+        case SDL_WINDOWEVENT:
+        {
+            handle_sdl_window_event(event.window);
+        }break;
+        case SDL_QUIT:
+        {
+            printf("SDL_QUIT\n");
+            end_program();
+        } break;
+        case SDL_KEYDOWN:
+        case SDL_KEYUP:
+        {
+            auto key_code = event.key.keysym.sym;
+            auto alt = event.key.keysym.mod & KMOD_ALT;
+            if(key_code == SDLK_F4 && alt)
+            {
+                printf("ALT F4\n");
+                end_program();
+            }
+            else if(key_code == SDLK_ESCAPE)
+            {
+                printf("ESC\n");
+                end_program();
+            }
+
+        } break;
+        
+    }
+}
+
+
+void wait_for_framerate(Stopwatch& sw)
+{
+    auto frame_ms_elapsed = sw.get_time_milli();
+    auto sleep_ms = static_cast<u32>(TARGET_MS_PER_FRAME - frame_ms_elapsed);
+    if (frame_ms_elapsed < TARGET_MS_PER_FRAME && sleep_ms > 0)
+    {            
+        std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
+        while (frame_ms_elapsed < TARGET_MS_PER_FRAME)
+        {
+            frame_ms_elapsed = sw.get_time_milli();
+        }
+    }
+    else
+    {
+        // missed frame rate
+        printf("missed frame rate %f\n", frame_ms_elapsed);
+    }
+
+    sw.start();
+}
+
+
+static bool init_sdl()
+{
+    auto sdl_options = 
+        SDL_INIT_VIDEO | 
+        SDL_INIT_GAMECONTROLLER | 
+        SDL_INIT_HAPTIC;    
+    
+    if (SDL_Init(sdl_options) != 0)
+    {
+        printf("SDL_Init failed\n%s\n", SDL_GetError());
+        return false;
+    }
+
+    return true;
+}
+
+
+static void close_sdl()
+{
+    SDL_Quit();
+}
+
+
+int main(int argc, char *argv[])
+{
+    if(!init_sdl())
+    {
+        display_error("Init SDL failed");
+        return EXIT_FAILURE;
+    }
+
+    auto window = SDL_CreateWindow(
+                    WINDOW_TITLE,
+                    SDL_WINDOWPOS_UNDEFINED,
+                    SDL_WINDOWPOS_UNDEFINED,
+                    WINDOW_WIDTH,
+                    WINDOW_HEIGHT,
+                    SDL_WINDOW_RESIZABLE);
+    if(!window)
+    {
+        display_error("SDL_CreateWindow failed");
+        return EXIT_FAILURE;
+    }
+
+    app::AppMemory app_memory = {};
+    app::ScreenBuffer app_buffer = {};
+    BitmapBuffer back_buffer = {};
+    Input input[2] = {};
+    SDLInput sdl_input = {};
+
+    auto const cleanup = [&]()
+    {
+        close_game_controllers(sdl_input, input[0]);
+        close_sdl();
+        destroy_bitmap_buffer(back_buffer);
+        destroy_app_memory(app_memory);
+    };
+
+    open_game_controllers(sdl_input, input[0]);
+    input[1].num_controllers = input[0].num_controllers;
+    printf("controllers = %d\n", input[0].num_controllers);
+
+    if(!init_bitmap_buffer(back_buffer, window, WINDOW_WIDTH, WINDOW_HEIGHT))
+    {
+        display_error("Creating back buffer failed");
+        cleanup();
+
+        return EXIT_FAILURE;
+    }
+
+    set_app_screen_buffer(back_buffer, app_buffer);
+    
+    allocate_app_memory(app_memory);
+    if (!app_memory.permanent_storage || !app_memory.transient_storage)
+    {
+        display_error("Allocating application memory failed");
+        cleanup();
+
+        return EXIT_FAILURE;
+    }
+
+
+    app::initialize_memory(app_memory, app_buffer);
+    
+    u8 in_current = 0;
+    u8 in_old = 1;
+    Stopwatch sw;
+    g_running = true;
+    sw.start();
+    while(g_running)
+    {
+        SDL_Event event;
+        b32 has_event = SDL_PollEvent(&event);
+        if(has_event)
+        {            
+            handle_sdl_event(event);
+        }
+
+        process_keyboard_input(has_event, event, input[in_old], input[in_current]);
+
+        process_controller_input(sdl_input, input[in_old], input[in_current]);
+
+        process_mouse_input(has_event, event, input[in_old], input[in_current]);
+
+        app::update_and_render(app_memory, input[in_current], app_buffer);
+
+        wait_for_framerate(sw);
+        display_bitmap_in_window(back_buffer);
+
+        // swap inputs
+        auto temp = in_current;
+        in_current = in_old;
+        in_old = temp;
+    }
+
+    cleanup();
+
+    return EXIT_SUCCESS;
 }
