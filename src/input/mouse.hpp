@@ -27,9 +27,7 @@ typedef struct mouse_input_t
 {
 #if MOUSE_POSITION
 
-	r64 mouse_x;
-	r64 mouse_y;
-	r64 mouse_z;
+	Pt2Di32 win_pos;
 
 #endif	
 
@@ -39,19 +37,19 @@ typedef struct mouse_input_t
 		struct
 		{
 #if MOUSE_LEFT
-			ButtonState left;
+			ButtonState button_left;
 #endif
 #if MOUSE_RIGHT
-			ButtonState right;
+			ButtonState button_right;
 #endif
 #if MOUSE_MIDDLE
-			ButtonState middle;
+			ButtonState button_middle;
 #endif
 #if MOUSE_X1
-			ButtonState x1;
+			ButtonState button_x1;
 #endif
 #if MOUSE_X2
-			ButtonState x2;
+			ButtonState button_x2;
 #endif
 		};
 	};
