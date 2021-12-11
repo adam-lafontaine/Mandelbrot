@@ -1,41 +1,5 @@
 #include "sdl_input.hpp"
-
-
-static void record_input(ButtonState const& old_state, ButtonState& new_state, b32 is_down)
-{
-    new_state.pressed = !old_state.is_down && is_down;
-    new_state.is_down = is_down;
-	new_state.raised = old_state.is_down && !is_down;
-}
-
-
-static void reset_button_state(ButtonState& state)
-{
-	for (u32 i = 0; i < ArrayCount(state.states); ++i)
-	{
-		state.states[i] = false;
-	}
-}
-
-
-static void copy_button_state(ButtonState const& src, ButtonState& dst)
-{
-	for (u32 i = 0; i < ArrayCount(src.states); ++i)
-	{
-		dst.is_down = src.is_down;
-		dst.pressed = false;
-		dst.raised = false;
-	}
-}
-
-
-static void copy_controller_state(ControllerInput const& src, ControllerInput& dst)
-{
-	for (u32 i = 0; i < ArrayCount(src.buttons); ++i)
-	{
-		copy_button_state(src.buttons[i], dst.buttons[i]);
-	}
-}
+#include "../input/input_state.hpp"
 
 
 static r32 normalize_axis_value(i16 axis)
@@ -408,13 +372,7 @@ static void record_keyboard_input(SDL_Keycode key_code, KeyboardInput const& old
 }
 
 
-static void copy_keyboard_state(KeyboardInput const& src, KeyboardInput& dst)
-{
-	for (u32 i = 0; i < ArrayCount(src.keys); ++i)
-	{
-		copy_button_state(src.keys[i], dst.keys[i]);
-	}
-}
+
 
 
 void process_keyboard_input(b32 has_event, SDL_Event const& event, Input const& old_input, Input& new_input)
@@ -478,30 +436,6 @@ static void record_mouse_button_input(Uint8 button_code, MouseInput const& old_i
 			record_input(old_input.button_x1, new_input.button_x1, is_down);
 		} break;
 #endif
-	}
-}
-
-
-static void copy_mouse_state(MouseInput const& src, MouseInput& dst)
-{
-	dst.win_pos.x = src.win_pos.x;
-	dst.win_pos.y = src.win_pos.y;
-
-	for (u32 i = 0; i < ArrayCount(src.buttons); ++i)
-	{
-		copy_button_state(src.buttons[i], dst.buttons[i]);
-	}
-}
-
-
-static void reset_mouse(MouseInput& mouse)
-{
-	mouse.win_pos.x = 0;
-	mouse.win_pos.y = 0;
-
-	for (u32 i = 0; i < ArrayCount(mouse.buttons); ++i)
-	{
-		reset_button_state(mouse.buttons[i]);
 	}
 }
 

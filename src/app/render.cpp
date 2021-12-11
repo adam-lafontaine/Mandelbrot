@@ -4,7 +4,6 @@
 
 #include <cassert>
 #include <algorithm>
-//
 #include <cmath>
 #include <functional>
 
