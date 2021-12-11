@@ -17,10 +17,6 @@ constexpr r64 MBT_MAX_Y = 1.2;
 constexpr r64 MBT_WIDTH = MBT_MAX_X - MBT_MIN_X;
 constexpr r64 MBT_HEIGHT = MBT_MAX_Y - MBT_MIN_Y;
 
-constexpr u32 NUM_SHADES = 256;
-
-constexpr u32 NUM_COLORS = 2048;
-
 constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
 constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 50000;
 constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
@@ -100,18 +96,6 @@ static image_t make_buffer_image(app::PixelBuffer const& buffer)
 }
 
 
-static Range2Du32 get_range(image_t const& img)
-{
-	Range2Du32 r{};
-	r.x_begin = 0;
-	r.x_end = img.width;
-	r.y_begin = 0;
-	r.y_end = img.height;
-
-	return r;
-}
-
-
 static Range2Du32 get_range(mat_u32_t const& mat)
 {
 	Range2Du32 r{};
@@ -133,153 +117,110 @@ static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
 }
 
 
-static pixel_t to_platform_pixel(u8 gray)
-{
-	pixel_t p = {};
-	p.value = platform_to_color_32(gray, gray, gray);
-
-	return p;
-}
-
-
 static pixel_t to_platform_pixel(pixel_t const& p)
 {
 	return to_platform_pixel(p.red, p.green, p.blue);
 }
 
 
-constexpr pixel_t to_pixel(u8 red, u8 green, u8 blue)
+constexpr std::array< std::array<u8, 16>, 3> palettes16 = 
+{ {
+	{ 66, 25,  9,  4,   0,  12,  24,  57, 134, 211, 241, 248, 255, 204, 153, 106 },
+	{ 30,  7,  1,  4,   7,  44,  82, 125, 181, 236, 233, 201, 170, 128,  87,  57 },
+	{ 15, 26, 47, 73, 100, 138, 177, 209, 229, 248, 191,  95,   0,   0,   0,   3 }
+} };
+
+
+static constexpr std::array<u8, 32> make_palette32(u32 c)
 {
-	pixel_t p = {};
-	p.red = red;
-	p.green = green;
-	p.blue = blue;
+	assert(c < 3);
 
-	return p;
-}
+	auto& palette16 = palettes16[c];
 
-
-static void fill(image_t const& dst, pixel_t const& p)
-{
-	auto const platform_p = to_platform_pixel(p);
-	std::fill(dst.begin(), dst.end(), platform_p);
-}
-
-
-
-
-using gray_palette_t = std::array<u8, NUM_SHADES * 2 - 1>;
-
-
-constexpr gray_palette_t make_gray_palette()
-{
-	gray_palette_t palette = {};
-
-	for (u32 i = 0; i < NUM_SHADES; ++i)
+	auto const lerp = [](u8 a, u8 b, r64 t)
 	{
-		palette[i] = static_cast<u8>(i);
-	}
-
-	for (u32 i = NUM_SHADES; i < palette.size(); ++i)
-	{
-		u8 c = static_cast<u8>(palette.size() - 1 - i);
-		palette[i] = c;
-	}
-
-	return palette;
-}
-
-
-constexpr auto gray_palette = make_gray_palette();
-
-
-static pixel_t to_gray(r64 ratio)
-{
-	assert(ratio >= 0.0);
-	assert(ratio <= 1.0);
-
-	auto const p = ratio;
-	auto const q = 1.0 - p;
-	auto const p2 = p * p;
-	auto const p3 = p2 * p;
-	auto const q2 = q * q;
-	auto const q3 = q2 * q;
-
-	
-	constexpr auto n_colors = static_cast<u32>(gray_palette.size());
-
-	auto const r = 16.0 * q2 * p2;
-
-	auto g = static_cast<u32>(r * (n_colors - 1));
-
-	if (g >= n_colors)
-	{
-		g = n_colors - 1;
-	}
-
-	auto const shade = gray_palette[g];
-
-	return to_pixel(shade, shade, shade);
-}
-
-
-static constexpr std::array<u8, NUM_COLORS> make_smooth_palette(u8 p, u8 q)
-{
-	assert(p + q == 4);
-
-	r64 a = p == 2 ? 16.0 : 9.45;
-
-	constexpr auto pow = [](r64 base, u8 exp)
-	{
-		r64 r = 1.0;
-
-		for (u8 i = 1; i <= exp; ++i)
-		{
-			r *= base;
-		}
-
-		return r;
+		return static_cast<u8>(a + t * (b - a));
 	};
 
-	std::array<u8, NUM_COLORS> palette = {};
+	std::array<u8, 32> palette = {};
 
-	for (u32 i = 0; i < NUM_COLORS; ++i)
+	for (u32 i = 0; i < 15; ++i)
 	{
-		auto r = 1.0 * i / (NUM_COLORS - 1);
-		auto c = a * pow(r, p) * pow((1 - r), q);
-		if (c >= 1.0)
-		{
-			palette[i] = 255;
-		}
-		else if (c <= 0.0)
-		{
-			palette[i] = 0;
-		}
-		else
-		{
-			palette[i] = static_cast<u8>(255.0 * c);
-		}
+		u32 p = 2 * i;
+		u32 p1 = p + 1;
+		u32 i1 = i + 1;
+		palette[p] = palette16[i];
+		palette[p1] = lerp(palette16[i], palette16[i1], 0.5);
 	}
+
+	palette[30] = palette16[15];
+	palette[31] = lerp(palette16[15], palette16[0], 0.5);
 
 	return palette;
 }
 
 
-constexpr auto palette1 = make_smooth_palette(1, 3);
-constexpr auto palette2 = make_smooth_palette(2, 2);
-constexpr auto palette3 = make_smooth_palette(3, 1);
+constexpr std::array< std::array<u8, 32>, 3> palettes32 =
+{ {
+	make_palette32(0),
+	make_palette32(1),
+	make_palette32(2)
+} };
 
 
-static pixel_t to_rgb(r64 ratio, u32 rgb_option)
+static constexpr std::array<u8, 64> make_palette64(u32 c)
 {
-	assert(ratio >= 0.0);
-	assert(ratio <= 1.0);
+	assert(c < 3);
 
-	auto const p = std::sqrt(ratio);	
+	auto& palette16 = palettes16[c];
 
-	auto index = static_cast<u32>(p * (NUM_COLORS - 1));
+	auto const lerp = [](u8 a, u8 b, r64 t)
+	{
+		return static_cast<u8>(a + t * (b - a));
+	};
 
-	u8 color_map[] = { palette1[index], palette2[index], palette3[index] };
+	std::array<u8, 64> palette = {};
+
+	for (u32 i = 0; i < 15; ++i)
+	{
+		u32 p = 2 * i;
+		u32 p1 = p + 1;
+		u32 p2 = p1 + 1;
+		u32 p3 = p2 + 1;
+		u32 i1 = i + 1;
+		palette[p] = palette16[i];
+		palette[p1] = lerp(palette16[i], palette16[i1], 0.25);
+		palette[p2] = lerp(palette16[i], palette16[i1], 0.5);
+		palette[p3] = lerp(palette16[i], palette16[i1], 0.75);
+	}
+
+	palette[60] = palette16[15];
+	palette[61] = lerp(palette16[15], palette16[0], 0.25);
+	palette[62] = lerp(palette16[15], palette16[0], 0.5);
+	palette[63] = lerp(palette16[15], palette16[0], 0.75);
+
+	return palette;
+}
+
+
+constexpr std::array< std::array<u8, 64>, 3> palettes64 =
+{ {
+	make_palette64(0),
+	make_palette64(1),
+	make_palette64(2)
+} };
+
+
+static pixel_t to_rgb_64(u32 iterations, u32 max_iter, u32 rgb_option)
+{
+	if (iterations >= max_iter)
+	{
+		return to_platform_pixel(0, 0, 0);
+	}
+
+	auto i = iterations % 64;
+
+	u8 color_map[] = { palettes64[0][i], palettes64[1][i], palettes64[2][i] };
 
 	u32 c1 = 0;
 	u32 c2 = 0;
@@ -323,11 +264,16 @@ static pixel_t to_rgb(r64 ratio, u32 rgb_option)
 }
 
 
-static pixel_t to_rgb_it(u32 iterations, u32 rgb_option)
+static pixel_t to_rgb_32(u32 iterations, u32 max_iter, u32 rgb_option)
 {
-	auto index = NUM_COLORS - iterations % NUM_COLORS;
+	if (iterations >= max_iter)
+	{
+		return to_platform_pixel(0, 0, 0);
+	}
 
-	u8 color_map[] = { palette1[index], palette2[index], palette3[index] };
+	auto i = iterations % 32;
+
+	u8 color_map[] = { palettes32[0][i], palettes32[1][i], palettes32[2][i] };
 
 	u32 c1 = 0;
 	u32 c2 = 0;
@@ -365,6 +311,63 @@ static pixel_t to_rgb_it(u32 iterations, u32 rgb_option)
 		c2 = 1;
 		c3 = 0;
 		break;
+	}
+
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_16(u32 iterations, u32 max_iter, u32 rgb_option)
+{
+	if (iterations >= max_iter)
+	{
+		return to_platform_pixel(0, 0, 0);
+	}
+
+	auto i = iterations % 16;
+
+	u8 color_map[] = { palettes16[0][i], palettes16[1][i], palettes16[2][i] };
+
+	u32 c1 = 0;
+	u32 c2 = 0;
+	u32 c3 = 0;
+
+	switch (rgb_option)
+	{
+	case 1:
+		c1 = 0;
+		c2 = 1;
+		c3 = 2;
+		break;
+	case 2:
+		c1 = 0;
+		c2 = 2;
+		c3 = 1;
+		break;
+	case 3:
+		c1 = 1;
+		c2 = 0;
+		c3 = 2;
+		break;
+	case 4:
+		c1 = 1;
+		c2 = 2;
+		c3 = 0;
+		break;
+	case 5:
+		c1 = 2;
+		c2 = 0;
+		c3 = 1;
+		break;
+	case 6:
+		c1 = 2;
+		c2 = 1;
+		c3 = 0;
+		break;
+	case 7:
+		r64 r = (r64)iterations / max_iter;
+		u8 p = std::sqrt(r) > 0.7 ? 0 : 255;
+		return to_platform_pixel(p, p, p);
 	}
 
 	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
@@ -375,23 +378,18 @@ static void draw(image_t const& dst, AppState const& state)
 {
 	auto& mat = state.iterations;
 
-	/*auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
-	auto min = static_cast<r64>(*mat_min);
-	auto max = static_cast<r64>(*mat_max);
+	auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
+	auto min = *mat_min;
+	auto max = *mat_max;
 
-	auto diff = max - min;*/
+	auto diff = max - min;
 
 	auto const to_platform_color = [&](u32 i) 
-	{
-		//auto r = (i - min) / diff;
-
-		//return to_gray(r);
-		//return to_rgb(r, state.rgb_option);
-		return to_rgb_it(i, state.rgb_option);
+	{		
+		return to_rgb_64(i - min, diff, state.rgb_option);
 	};
 
 	std::transform(std::execution::par, mat.begin(), mat.end(), dst.begin(), to_platform_color);
-	//std::transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
 }
 
 
@@ -520,8 +518,6 @@ static void mandelbrot(AppState& state)
 	auto const re_step = screen_width(state) / dst.width;
 	auto const im_step = screen_height(state) / dst.height;
 
-	auto const no_change = [](r64 rhs, r64 lhs) { return std::abs((rhs - lhs) / rhs) < 0.000000000001; };
-
 	auto const do_mandelbrot = [&](Range2Du32 const& range)
 	{
 		auto x_ids = UnsignedRange(range.x_begin, range.x_end);
@@ -559,12 +555,6 @@ static void mandelbrot(AppState& state)
 					re2 = re * re;
 
 					++iter;
-
-					if (no_change(re2_old, re2) && no_change(im2_old, im2))
-					{
-						iter = max_iter;
-						break;
-					}
 				}
 
 				--iter;
@@ -838,6 +828,11 @@ namespace app
 		if (input.keyboard.six_key.is_down && state.rgb_option != 6)
 		{
 			state.rgb_option = 6;
+			state.render_new = true;
+		}
+		if (input.keyboard.seven_key.is_down && state.rgb_option != 7)
+		{
+			state.rgb_option = 7;
 			state.render_new = true;
 		}
 	}
