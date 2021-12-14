@@ -90,13 +90,46 @@ static pixel_t to_platform_pixel(pixel_t const& p)
 }
 
 
-static pixel_t to_rgb_64(u32 iterations, u32 max_iter, u32 rgb_option)
+static void set_rgb_channels(u32& c1, u32& c2, u32& c3, u32 rgb_option)
 {
-	if (iterations >= max_iter)
+	switch (rgb_option)
 	{
-		return to_platform_pixel(0, 0, 0);
+	case 1:
+		c1 = 0;
+		c2 = 1;
+		c3 = 2;
+		break;
+	case 2:
+		c1 = 0;
+		c2 = 2;
+		c3 = 1;
+		break;
+	case 3:
+		c1 = 1;
+		c2 = 0;
+		c3 = 2;
+		break;
+	case 4:
+		c1 = 1;
+		c2 = 2;
+		c3 = 0;
+		break;
+	case 5:
+		c1 = 2;
+		c2 = 0;
+		c3 = 1;
+		break;
+	case 6:
+		c1 = 2;
+		c2 = 1;
+		c3 = 0;
+		break;
 	}
+}
 
+
+static pixel_t to_rgb_64(u32 iterations, u32 rgb_option)
+{
 	auto i = iterations % 64;
 
 	u8 color_map[] = { palettes64[0][i], palettes64[1][i], palettes64[2][i] };
@@ -104,52 +137,14 @@ static pixel_t to_rgb_64(u32 iterations, u32 max_iter, u32 rgb_option)
 	u32 c1 = 0;
 	u32 c2 = 0;
 	u32 c3 = 0;
-
-	switch (rgb_option)
-	{
-	case 1:
-		c1 = 0;
-		c2 = 1;
-		c3 = 2;
-		break;
-	case 2:
-		c1 = 0;
-		c2 = 2;
-		c3 = 1;
-		break;
-	case 3:
-		c1 = 1;
-		c2 = 0;
-		c3 = 2;
-		break;
-	case 4:
-		c1 = 1;
-		c2 = 2;
-		c3 = 0;
-		break;
-	case 5:
-		c1 = 2;
-		c2 = 0;
-		c3 = 1;
-		break;
-	case 6:
-		c1 = 2;
-		c2 = 1;
-		c3 = 0;
-		break;
-	}
+	set_rgb_channels(c1, c2, c3, rgb_option);
 
 	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
 }
 
 
-static pixel_t to_rgb_32(u32 iterations, u32 max_iter, u32 rgb_option)
+static pixel_t to_rgb_32(u32 iterations, u32 rgb_option)
 {
-	if (iterations >= max_iter)
-	{
-		return to_platform_pixel(0, 0, 0);
-	}
-
 	auto i = iterations % 32;
 
 	u8 color_map[] = { palettes32[0][i], palettes32[1][i], palettes32[2][i] };
@@ -157,52 +152,14 @@ static pixel_t to_rgb_32(u32 iterations, u32 max_iter, u32 rgb_option)
 	u32 c1 = 0;
 	u32 c2 = 0;
 	u32 c3 = 0;
-
-	switch (rgb_option)
-	{
-	case 1:
-		c1 = 0;
-		c2 = 1;
-		c3 = 2;
-		break;
-	case 2:
-		c1 = 0;
-		c2 = 2;
-		c3 = 1;
-		break;
-	case 3:
-		c1 = 1;
-		c2 = 0;
-		c3 = 2;
-		break;
-	case 4:
-		c1 = 1;
-		c2 = 2;
-		c3 = 0;
-		break;
-	case 5:
-		c1 = 2;
-		c2 = 0;
-		c3 = 1;
-		break;
-	case 6:
-		c1 = 2;
-		c2 = 1;
-		c3 = 0;
-		break;
-	}
+	set_rgb_channels(c1, c2, c3, rgb_option);
 
 	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
 }
 
 
-static pixel_t to_rgb_16(u32 iterations, u32 max_iter, u32 rgb_option)
+static pixel_t to_rgb_16(u32 iterations, u32 rgb_option)
 {
-	if (iterations >= max_iter)
-	{
-		return to_platform_pixel(0, 0, 0);
-	}
-
 	auto i = iterations % 16;
 
 	u8 color_map[] = { palettes16[0][i], palettes16[1][i], palettes16[2][i] };
@@ -210,42 +167,64 @@ static pixel_t to_rgb_16(u32 iterations, u32 max_iter, u32 rgb_option)
 	u32 c1 = 0;
 	u32 c2 = 0;
 	u32 c3 = 0;
-
-	switch (rgb_option)
-	{
-	case 1:
-		c1 = 0;
-		c2 = 1;
-		c3 = 2;
-		break;
-	case 2:
-		c1 = 0;
-		c2 = 2;
-		c3 = 1;
-		break;
-	case 3:
-		c1 = 1;
-		c2 = 0;
-		c3 = 2;
-		break;
-	case 4:
-		c1 = 1;
-		c2 = 2;
-		c3 = 0;
-		break;
-	case 5:
-		c1 = 2;
-		c2 = 0;
-		c3 = 1;
-		break;
-	case 6:
-		c1 = 2;
-		c2 = 1;
-		c3 = 0;
-		break;
-	}
+	set_rgb_channels(c1, c2, c3, rgb_option);
 
 	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_128(u32 iterations, u32 rgb_option)
+{
+	auto i = iterations % 128;
+
+	u8 color_map[] = { palettes128[0][i], palettes128[1][i], palettes128[2][i] };
+
+	u32 c1 = 0;
+	u32 c2 = 0;
+	u32 c3 = 0;
+	set_rgb_channels(c1, c2, c3, rgb_option);
+
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_256(u32 iterations, u32 rgb_option)
+{
+	auto i = iterations % 256;
+
+	u8 color_map[] = { palettes256[0][i], palettes256[1][i], palettes256[2][i] };
+
+	u32 c1 = 0;
+	u32 c2 = 0;
+	u32 c3 = 0;
+	set_rgb_channels(c1, c2, c3, rgb_option);
+
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+std::function<pixel_t(u32, u32)> get_rgb_function(u32 iter)
+{
+	std::function<pixel_t(u32, u32)> to_rgb = to_rgb_256;
+
+	if (iter < 32)
+	{
+		to_rgb = to_rgb_16;
+	}
+	else if (iter < 64)
+	{
+		to_rgb = to_rgb_32;
+	}
+	else if (iter < 128)
+	{
+		to_rgb = to_rgb_64;
+	}
+	else if (iter < 256)
+	{
+		to_rgb = to_rgb_128;
+	}
+
+	return to_rgb;
 }
 
 
@@ -263,9 +242,16 @@ static void draw(image_t const& dst, AppState const& state)
 
 	auto diff = max - min;
 
+	auto const to_rgb = get_rgb_function(diff);
+
 	auto const to_platform_color = [&](u32 i)
 	{
-		return to_rgb_64(i - min, diff, state.rgb_option);
+		if (i >= max)
+		{
+			return to_platform_pixel(0, 0, 0);
+		}
+
+		return to_rgb(i - min, state.rgb_option);
 	};
 
 	transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);

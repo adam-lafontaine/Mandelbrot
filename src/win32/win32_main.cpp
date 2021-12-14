@@ -2,7 +2,7 @@
 #include "../app/app.hpp"
 #include "../utils/stopwatch.hpp"
 
-//#define CHECK_LEAKS
+#define CHECK_LEAKS
 #if defined(_WIN32) && defined(_DEBUG) && defined(CHECK_LEAKS)
 #include "../utils/win32_leak_check.h"
 #endif
