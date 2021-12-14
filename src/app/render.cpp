@@ -54,11 +54,6 @@ static void copy(u32* src_begin, u32* src_end, u32* dst_begin)
 
 
 
-
-
-
-
-
 // platform dependent e.g. win32_main.cpp
 u32 platform_to_color_32(u8 red, u8 green, u8 blue);
 
@@ -128,103 +123,171 @@ static void set_rgb_channels(u32& c1, u32& c2, u32& c3, u32 rgb_option)
 }
 
 
-static pixel_t to_rgb_64(u32 iterations, u32 rgb_option)
-{
-	auto i = iterations % 64;
-
-	u8 color_map[] = { palettes64[0][i], palettes64[1][i], palettes64[2][i] };
-
-	u32 c1 = 0;
-	u32 c2 = 0;
-	u32 c3 = 0;
-	set_rgb_channels(c1, c2, c3, rgb_option);
-
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_32(u32 iterations, u32 rgb_option)
-{
-	auto i = iterations % 32;
-
-	u8 color_map[] = { palettes32[0][i], palettes32[1][i], palettes32[2][i] };
-
-	u32 c1 = 0;
-	u32 c2 = 0;
-	u32 c3 = 0;
-	set_rgb_channels(c1, c2, c3, rgb_option);
-
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_16(u32 iterations, u32 rgb_option)
+static pixel_t to_rgb_16(u32 iterations, u32 c1, u32 c2, u32 c3)
 {
 	auto i = iterations % 16;
-
 	u8 color_map[] = { palettes16[0][i], palettes16[1][i], palettes16[2][i] };
-
-	u32 c1 = 0;
-	u32 c2 = 0;
-	u32 c3 = 0;
-	set_rgb_channels(c1, c2, c3, rgb_option);
-
 	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
 }
 
 
-static pixel_t to_rgb_128(u32 iterations, u32 rgb_option)
+static pixel_t to_rgb_32(u32 iterations, u32 c1, u32 c2, u32 c3)
+{
+	auto i = iterations % 32;
+	u8 color_map[] = { palettes32[0][i], palettes32[1][i], palettes32[2][i] };
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_48(u32 iterations, u32 c1, u32 c2, u32 c3)
+{
+	auto i = iterations % 48;
+	u8 color_map[] = { palettes48[0][i], palettes48[1][i], palettes48[2][i] };
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_64(u32 iterations, u32 c1, u32 c2, u32 c3)
+{
+	auto i = iterations % 64;
+	u8 color_map[] = { palettes64[0][i], palettes64[1][i], palettes64[2][i] };
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_80(u32 iterations, u32 c1, u32 c2, u32 c3)
+{
+	auto i = iterations % 80;
+	u8 color_map[] = { palettes80[0][i], palettes80[1][i], palettes80[2][i] };
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_96(u32 iterations, u32 c1, u32 c2, u32 c3)
+{
+	auto i = iterations % 96;
+	u8 color_map[] = { palettes96[0][i], palettes96[1][i], palettes96[2][i] };
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_112(u32 iterations, u32 c1, u32 c2, u32 c3)
+{
+	auto i = iterations % 112;
+	u8 color_map[] = { palettes112[0][i], palettes112[1][i], palettes112[2][i] };
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_128(u32 iterations, u32 c1, u32 c2, u32 c3)
 {
 	auto i = iterations % 128;
-
 	u8 color_map[] = { palettes128[0][i], palettes128[1][i], palettes128[2][i] };
-
-	u32 c1 = 0;
-	u32 c2 = 0;
-	u32 c3 = 0;
-	set_rgb_channels(c1, c2, c3, rgb_option);
-
 	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
 }
 
 
-static pixel_t to_rgb_256(u32 iterations, u32 rgb_option)
+static pixel_t to_rgb_144(u32 iterations, u32 c1, u32 c2, u32 c3)
+{
+	auto i = iterations % 144;
+	u8 color_map[] = { palettes144[0][i], palettes144[1][i], palettes144[2][i] };
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_160(u32 iterations, u32 c1, u32 c2, u32 c3)
+{
+	auto i = iterations % 160;
+	u8 color_map[] = { palettes160[0][i], palettes160[1][i], palettes160[2][i] };
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_176(u32 iterations, u32 c1, u32 c2, u32 c3)
+{
+	auto i = iterations % 176;
+	u8 color_map[] = { palettes176[0][i], palettes176[1][i], palettes176[2][i] };
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_192(u32 iterations, u32 c1, u32 c2, u32 c3)
+{
+	auto i = iterations % 192;
+	u8 color_map[] = { palettes192[0][i], palettes192[1][i], palettes192[2][i] };
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_208(u32 iterations, u32 c1, u32 c2, u32 c3)
+{
+	auto i = iterations % 208;
+	u8 color_map[] = { palettes208[0][i], palettes208[1][i], palettes208[2][i] };
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_224(u32 iterations, u32 c1, u32 c2, u32 c3)
+{
+	auto i = iterations % 224;
+	u8 color_map[] = { palettes224[0][i], palettes224[1][i], palettes224[2][i] };
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_240(u32 iterations, u32 c1, u32 c2, u32 c3)
+{
+	auto i = iterations % 240;
+	u8 color_map[] = { palettes240[0][i], palettes240[1][i], palettes240[2][i] };
+	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+}
+
+
+static pixel_t to_rgb_256(u32 iterations, u32 c1, u32 c2, u32 c3)
 {
 	auto i = iterations % 256;
-
 	u8 color_map[] = { palettes256[0][i], palettes256[1][i], palettes256[2][i] };
-
-	u32 c1 = 0;
-	u32 c2 = 0;
-	u32 c3 = 0;
-	set_rgb_channels(c1, c2, c3, rgb_option);
-
 	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
 }
 
 
-std::function<pixel_t(u32, u32)> get_rgb_function(u32 iter)
+std::function<pixel_t(u32, u32, u32, u32)> get_rgb_function(u32 max_iter)
 {
-	std::function<pixel_t(u32, u32)> to_rgb = to_rgb_256;
-
-	if (iter < 32)
+	switch (max_iter / 16)
 	{
-		to_rgb = to_rgb_16;
+	case 0:
+		return to_rgb_16;
+	case 1:
+		return to_rgb_32;
+	case 2:
+		return to_rgb_48;
+	case 3:
+		return to_rgb_64;
+	case 4:
+		return to_rgb_80;
+	case 5:
+		return to_rgb_96;
+	case 6:
+		return to_rgb_112;
+	case 7:
+		return to_rgb_128;
+	case 8:
+		return to_rgb_144;
+	case 9:
+		return to_rgb_160;
+	case 10:
+		return to_rgb_176;
+	case 11:
+		return to_rgb_192;
+	case 12:
+		return to_rgb_208;
+	case 13:
+		return to_rgb_224;
+	case 14:
+		return to_rgb_240;
+	default:
+		return to_rgb_256;
 	}
-	else if (iter < 64)
-	{
-		to_rgb = to_rgb_32;
-	}
-	else if (iter < 128)
-	{
-		to_rgb = to_rgb_64;
-	}
-	else if (iter < 256)
-	{
-		to_rgb = to_rgb_128;
-	}
-
-	return to_rgb;
 }
 
 
@@ -242,6 +305,11 @@ static void draw(image_t const& dst, AppState const& state)
 
 	auto diff = max - min;
 
+	u32 c1 = 0;
+	u32 c2 = 0;
+	u32 c3 = 0;
+	set_rgb_channels(c1, c2, c3, state.rgb_option);
+
 	auto const to_rgb = get_rgb_function(diff);
 
 	auto const to_platform_color = [&](u32 i)
@@ -251,7 +319,7 @@ static void draw(image_t const& dst, AppState const& state)
 			return to_platform_pixel(0, 0, 0);
 		}
 
-		return to_rgb(i - min, state.rgb_option);
+		return to_rgb(i - min, c1, c2, c3);
 	};
 
 	transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
