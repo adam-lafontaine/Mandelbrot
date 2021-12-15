@@ -84,6 +84,12 @@
     <ClInclude Include="..\src\app\render.hpp">
       <Filter>Header Files\app</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\input\controller.hpp">
+      <Filter>Header Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\input\input_state.hpp">
+      <Filter>Header Files\input</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\app\app.cpp">

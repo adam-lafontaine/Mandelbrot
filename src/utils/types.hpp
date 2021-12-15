@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstddef>
 
 using u8 = uint8_t;
 using u16 = uint16_t;
@@ -23,3 +24,24 @@ using b32 = uint32_t;
 #define Terabytes(value) (Gigabytes(value) * 1024LL)
 
 #define GlobalVariable static
+
+class Vec2Di32
+{
+public:
+    i32 x;
+    i32 y;
+};
+
+
+class Vec2Dr32
+{
+public:
+    r32 x;
+    r32 y;
+};
+
+
+using Pt2Di32 = Vec2Di32;
+using Pt2Dr32 = Vec2Di32;
+
+//#define NO_CPP_17
