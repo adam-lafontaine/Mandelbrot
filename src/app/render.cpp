@@ -253,7 +253,7 @@ static pixel_t to_rgb_256(u32 iterations, u32 c1, u32 c2, u32 c3)
 
 std::function<pixel_t(u32, u32, u32, u32)> get_rgb_function(u32 max_iter)
 {
-	switch (max_iter / 16)
+	switch (max_iter / 128)
 	{
 	case 0:
 		return to_rgb_16;
