@@ -79,12 +79,6 @@ static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
 }
 
 
-static pixel_t to_platform_pixel(pixel_t const& p)
-{
-	return to_platform_pixel(p.red, p.green, p.blue);
-}
-
-
 static void set_rgb_channels(u32& c1, u32& c2, u32& c3, u32 rgb_option)
 {
 	switch (rgb_option)
