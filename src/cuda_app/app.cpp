@@ -1,4 +1,5 @@
 #include "../app/app.hpp"
+#include "../app/colors.hpp"
 #include "render.hpp"
 
 #include <cmath>
@@ -224,19 +225,15 @@ namespace app
         auto iter_sz = sizeof(u32) * n_elements;
         auto screen_sz = sizeof(pixel_t) * n_elements;
 
-		state.iterations.width = width;
-		state.iterations.height = height;
-		state.iterations.data = (u32*)((u8*)(&state) + iter_sz);        
-
         auto device_sz = iter_sz + screen_sz;
         device_malloc(state.device_buffer, device_sz);
 
-        if(!make_array(state.device_iterations, n_elements, state.device_buffer))
+        if(!make_matrix(state.device_iterations, width, height, state.device_buffer))
         {
             return false;
         }
 
-        if(!make_array(state.device_pixels, n_elements, state.device_buffer))
+        if(!make_image(state.device_pixels, width, height, state.device_buffer))
         {
             return false;
         }
@@ -262,7 +259,7 @@ namespace app
 			return;
 		}
 
-		render(state.screen_buffer, state);
+		render(state);
 
 		state.render_new = false;
 	}

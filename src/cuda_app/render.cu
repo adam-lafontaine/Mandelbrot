@@ -1,17 +1,16 @@
 #include "render.hpp"
-//#include "../app/colors.hpp"
 
 
 
-
-
-void render(image_t const& dst, AppState& state)
+void render(AppState& state)
 {
     pixel_t p = {};
     p.alpha = 255;
     p.red = 255;
     p.green = 255;
     p.blue = 255;
+
+    auto& dst = state.screen_buffer;
 
     for(u32 y = 0; y < dst.height; ++y)
     {

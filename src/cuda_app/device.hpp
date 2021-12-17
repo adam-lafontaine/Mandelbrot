@@ -93,3 +93,80 @@ bool copy_to_device(std::vector<T> const& src, DeviceArray<T>& dst)
 
     return cuda_memcpy_to_device(src.data(), dst.data, bytes);
 }
+
+
+constexpr auto RGB_CHANNELS = 3u;
+constexpr auto RGBA_CHANNELS = 4u;
+
+
+typedef union Pixel
+{
+	struct
+	{
+		u8 red;
+		u8 green;
+		u8 blue;
+		u8 alpha;
+	};
+
+	u8 channels[RGBA_CHANNELS];
+
+	u32 value;
+
+} pixel_t;
+
+
+class Image
+{
+public:
+	using pixel_t = Pixel;
+
+	u32 width;
+	u32 height;
+
+	pixel_t* data;
+};
+
+
+using image_t = Image;
+using pixel_t = image_t::pixel_t;
+
+
+class DeviceImage
+{
+public:
+
+    u32 width;
+    u32 height;
+
+    pixel_t* data;
+};
+
+
+bool make_image(DeviceImage& image, u32 width, u32 height, DeviceBuffer& buffer);
+
+bool copy_to_device(image_t const& src, DeviceImage const& dst);
+
+bool copy_to_host(DeviceImage const& src, image_t const& dst);
+
+
+class DeviceMatrix
+{
+public:
+	u32 width;
+	u32 height;
+
+	u32* data;
+};
+
+
+bool make_matrix(DeviceMatrix& image, u32 width, u32 height, DeviceBuffer& buffer);
+
+
+class DeviceColorPalette
+{
+public:
+    u8* channels[RGB_CHANNELS];
+
+    u32 n_elements = 0;
+};

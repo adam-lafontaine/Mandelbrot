@@ -301,7 +301,7 @@ object_files += $(device_o)
 
 app_h := $(app)/app.hpp
 
-app_c := $(app)/app.cpp
+app_c := $(cuda_app)/app.cpp
 app_o := $(build)/app.o
 object_files += $(app_o)
 

@@ -21,4 +21,7 @@ inline r64 screen_height(AppState const& state)
 	return MBT_HEIGHT / state.zoom_level;
 }
 
-void render(image_t const& dst, AppState& state);
+
+void render(AppState& state);
+
+
