@@ -18,7 +18,7 @@ static void check_error(cudaError_t err)
     #ifdef CUDA_PRINT_ERROR
 
     printf("\n*** CUDA ERROR ***\n\n");
-    printf(cudaGetErrorString(err));
+    printf("%s", cudaGetErrorString(err));
     printf("\n\n******************\n\n");
 
     #endif

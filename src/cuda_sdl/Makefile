@@ -275,12 +275,13 @@ SDL2 := `sdl2-config --cflags --libs`
 # sudo killall ibus-daemon
 # apt-get install libsdl2-dev libsdl2-dbg
 
-build := ../../build/cuda_sdl
-code  := ..
-app   := $(code)/app
-input := $(code)/input
-utils := $(code)/utils
-sdl   := $(code)/sdl
+build    := ../../build/cuda_sdl
+code     := ..
+app      := $(code)/app
+cuda_app := $(code)/cuda_app
+input    := $(code)/input
+utils    := $(code)/utils
+sdl      := $(code)/sdl
 
 exe_name := mandelbrot_cuda
 
@@ -288,16 +289,26 @@ main_c         := $(sdl)/sdl_main.cpp
 main_o         := $(build)/main.o
 object_files   := $(main_o)
 
+types_h := $(app)/types.hpp
+types_h += $(cuda_app)/cuda_types.hpp
+
+device_h := $(cuda_app)/device.hpp
+device_h += $(cuda_app)/cuda_def.cuh
+
+device_c := $(cuda_app)/device.cu
+device_o := $(build)/device.o
+object_files += $(device_o)
+
 app_h := $(app)/app.hpp
 
 app_c := $(app)/app.cpp
 app_o := $(build)/app.o
 object_files += $(app_o)
 
-render_h := $(app)/render.hpp
+render_h := $(cuda_app)/render.hpp
 render_h += $(app)/colors.hpp
 
-render_c := $(app)/render.cpp
+render_c := $(cuda_app)/render.cu
 render_o := $(build)/render.o
 object_files += $(render_o)
 
@@ -316,17 +327,21 @@ program_exe := $(build)/$(exe_name)
 
 GPP += -O3
 
-$(render_o): $(render_c) $(render_h)
-	@echo "\n $(render_o)"
-	$(GPP) -o $@ -c $<
+$(device_o): $(device_c) $(device_h) $(types_h)
+	@echo "\n $(device_o)"
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
-$(app_o): $(app_c) $(app_h) $(input_h) $(render_h)
-	@echo "\n $(app_o)"
-	$(GPP) -o $@ -c $<
+$(render_o): $(render_c) $(render_h) $(device_h) $(types_h)
+	@echo "\n $(render_o)"
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
 $(input_o): $(input_c) $(input_h)
 	@echo "\n $(input_o)"
 	$(GPP) -o $@ -c $< $(SDL2)
+
+$(app_o): $(app_c) $(app_h) $(input_h) $(render_h)
+	@echo "\n $(app_o)"
+	$(GPP) -o $@ -c $<
 
 $(main_o): $(main_c) $(app_h) $(input_h)
 	@echo "\n $(main_o)"
@@ -334,7 +349,7 @@ $(main_o): $(main_c) $(app_h) $(input_h)
 
 $(program_exe): $(object_files)
 	@echo "\n $(exe_name)"
-	$(GPP) -o $@ $+ $(SDL2)
+	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES) $(SDL2)
 
 build: $(program_exe)
 

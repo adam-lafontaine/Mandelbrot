@@ -205,10 +205,10 @@ u32 platform_to_color_32(u8 red, u8 green, u8 blue)
 }
 
 
-static void end_program()
+static void end_program(app::AppMemory& memory)
 {
     g_running = false;
-    app::end_program();
+    app::end_program(memory);
 }
 
 
@@ -266,7 +266,7 @@ static void handle_sdl_event(SDL_Event const& event)
         case SDL_QUIT:
         {
             printf("SDL_QUIT\n");
-            end_program();
+            g_running = false;
         } break;
         case SDL_KEYDOWN:
         case SDL_KEYUP:
@@ -276,12 +276,12 @@ static void handle_sdl_event(SDL_Event const& event)
             if(key_code == SDLK_F4 && alt)
             {
                 printf("ALT F4\n");
-                end_program();
+                g_running = false;
             }
             else if(key_code == SDLK_ESCAPE)
             {
                 printf("ESC\n");
-                end_program();
+                g_running = false;
             }
 
         } break;
@@ -393,13 +393,12 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-
-    app::initialize_memory(app_memory, app_buffer);
+    g_running = app::initialize_memory(app_memory, app_buffer);    
     
     u8 in_current = 0;
     u8 in_old = 1;
     Stopwatch sw;
-    g_running = true;
+    
     sw.start();
     while(g_running)
     {
@@ -426,7 +425,8 @@ int main(int argc, char *argv[])
         in_current = in_old;
         in_old = temp;
     }
-
+    
+    app::end_program(app_memory);
     cleanup();
 
     return EXIT_SUCCESS;

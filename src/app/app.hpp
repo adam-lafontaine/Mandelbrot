@@ -34,13 +34,13 @@ namespace app
 
 
 	// app.cpp
-	void initialize_memory(AppMemory& memory, ScreenBuffer const& buffer);	
+	bool initialize_memory(AppMemory& memory, ScreenBuffer const& buffer);	
 
 	// app.cpp
 	void update_and_render(AppMemory& memory, Input const& input, ScreenBuffer const& buffer);
 
 	// app.cpp
-	void end_program();
+	void end_program(AppMemory& memory);
 }
 
 

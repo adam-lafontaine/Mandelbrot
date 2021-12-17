@@ -193,7 +193,7 @@ namespace app
 	}
 
 
-	void initialize_memory(AppMemory& memory, ScreenBuffer const& buffer)
+	bool initialize_memory(AppMemory& memory, ScreenBuffer const& buffer)
 	{
 		auto& state = get_state(memory, buffer);
 
@@ -219,6 +219,8 @@ namespace app
 		state.iterations.data = (u32*)((u8*)(&state) + sizeof(u32) * width * height);
 
 		memory.is_app_initialized = true;
+
+		return true;
 	}
 
 
@@ -244,7 +246,7 @@ namespace app
 	}
 
 
-	void end_program()
+	void end_program(AppMemory& memory)
 	{
 		
 	}

@@ -1,5 +1,6 @@
 #pragma once
-#include "../utils/types.hpp"
+
+#include "device.hpp"
 
 
 constexpr auto RGB_CHANNELS = 3u;
@@ -60,14 +61,6 @@ public:
 };
 
 
-class DeviceState
-{
-public:
-    
-    u32* iterations;
-};
-
-
 class AppState
 {
 public:
@@ -86,5 +79,7 @@ public:
 	u32 max_iter;
 	mat_u32_t iterations;
 
-    
+    DeviceBuffer device_buffer;
+    DeviceArray<u32> device_iterations;
+    DeviceArray<pixel_t> device_pixels;
 };

@@ -1,6 +1,5 @@
 #include "../app/app.hpp"
-#include "../app/render.hpp"
-#include "cuda_types.hpp"
+#include "render.hpp"
 
 #include <cmath>
 
@@ -193,16 +192,13 @@ namespace app
 	}
 
 
-    static DeviceState& get_device_memory(AppMemory& memory, ScreenBuffer const& buffer)
+    static AppState& get_state(AppMemory& memory)
     {
-        auto const state_sz = sizeof(DeviceState);
-        auto const iter_sz = sizeof(u32) * buffer.width * buffer.height;
-
-        auto const required_sz = state_sz + iter_sz;
+        return *(AppState*)memory.permanent_storage;
     }
 
 
-	void initialize_memory(AppMemory& memory, ScreenBuffer const& buffer)
+	bool initialize_memory(AppMemory& memory, ScreenBuffer const& buffer)
 	{
 		auto& state = get_state(memory, buffer);
 
@@ -223,11 +219,30 @@ namespace app
 		auto const width = buffer.width;
 		auto const height = buffer.height;
 
+        auto n_elements = width * height;
+
+        auto iter_sz = sizeof(u32) * n_elements;
+        auto screen_sz = sizeof(pixel_t) * n_elements;
+
 		state.iterations.width = width;
 		state.iterations.height = height;
-		state.iterations.data = (u32*)((u8*)(&state) + sizeof(u32) * width * height);
+		state.iterations.data = (u32*)((u8*)(&state) + iter_sz);        
+
+        auto device_sz = iter_sz + screen_sz;
+        device_malloc(state.device_buffer, device_sz);
+
+        if(!make_array(state.device_iterations, n_elements, state.device_buffer))
+        {
+            return false;
+        }
+
+        if(!make_array(state.device_pixels, n_elements, state.device_buffer))
+        {
+            return false;
+        }
 
 		memory.is_app_initialized = true;
+        return true;
 	}
 
 
@@ -253,8 +268,10 @@ namespace app
 	}
 
 
-	void end_program()
+	void end_program(AppMemory& memory)
 	{
-		
+		auto& state = get_state(memory);
+
+        device_free(state.device_buffer);
 	}
 }
