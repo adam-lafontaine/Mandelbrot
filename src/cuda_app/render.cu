@@ -31,8 +31,10 @@ static void mandelbrot(MandelbrotProps* props)
 
 
 GPU_KERNAL
-static void gpu_set_color(pixel_t* dst, u32 width, u32 height)
+static void gpu_set_color(DeviceImage image)
 {
+    auto const width = image.width;
+    auto const height = image.height;
     auto n_pixels = width * height;
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     if (i >= n_pixels)
@@ -77,7 +79,7 @@ static void gpu_set_color(pixel_t* dst, u32 width, u32 height)
         p.blue = 255;
     }
 
-    dst[i] = p;
+    image.data[i] = p;
 }
 
 
@@ -103,9 +105,7 @@ void render(AppState& state)
     assert(proc);
 
     gpu_set_color<<<blocks, threads_per_block>>>(
-        d_screen.data,
-        d_screen.width,
-        d_screen.height
+        d_screen
     );
 
     proc &= cuda_launch_success();
