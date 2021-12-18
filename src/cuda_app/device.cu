@@ -101,7 +101,7 @@ bool device_free(DeviceBuffer& buffer)
 }
 
 
-bool make_image(DeviceImage& image, u32 width, u32 height, DeviceBuffer& buffer)
+bool make_device_image(DeviceImage& image, u32 width, u32 height, DeviceBuffer& buffer)
 {
     assert(buffer.data);
     auto bytes = width * height * sizeof(pixel_t);
@@ -111,7 +111,7 @@ bool make_image(DeviceImage& image, u32 width, u32 height, DeviceBuffer& buffer)
     {
         image.width = width;
         image.height = height;
-        image.data = (pixel_t*)((u8*)buffer.data + buffer.offset);
+        image.data = (pixel_t*)(buffer.data + buffer.offset);
         buffer.offset += bytes;
     }
 
@@ -149,7 +149,7 @@ bool copy_to_host(DeviceImage const& src, image_t const& dst)
 }
 
 
-bool make_matrix(DeviceMatrix& matrix, u32 width, u32 height, DeviceBuffer& buffer)
+bool make_device_matrix(DeviceMatrix& matrix, u32 width, u32 height, DeviceBuffer& buffer)
 {
     assert(buffer.data);
     auto bytes = width * height * sizeof(u32);
@@ -159,8 +159,34 @@ bool make_matrix(DeviceMatrix& matrix, u32 width, u32 height, DeviceBuffer& buff
     {
         matrix.width = width;
         matrix.height = height;
-        matrix.data = (u32*)((u8*)buffer.data + buffer.offset);
+        matrix.data = (u32*)(buffer.data + buffer.offset);
         buffer.offset += bytes;
+    }
+
+    return result;
+}
+
+
+bool make_device_palette(DeviceColorPalette& palette, u32 n_colors, DeviceBuffer& buffer)
+{
+    assert(buffer.data);
+
+    auto bytes_per_channel = sizeof(u8) * n_colors;
+    auto bytes = RGB_CHANNELS * bytes_per_channel;
+
+    bool result = buffer.total_bytes - buffer.offset >= bytes;
+
+    if(!result)
+    {
+        return false;
+    }
+
+    palette.n_colors = n_colors;
+
+    for(u32 c = 0; c < RGB_CHANNELS; ++c)
+    {
+        palette.channels[c] = buffer.data + buffer.offset;
+        buffer.offset += bytes_per_channel;
     }
 
     return result;

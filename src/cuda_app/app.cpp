@@ -199,6 +199,49 @@ namespace app
     }
 
 
+    static bool init_device_memory(DeviceMemory& device, ScreenBuffer const& buffer)
+    {
+        auto const width = buffer.width;
+		auto const height = buffer.height;
+
+        auto const n_pixels = width * height;
+        auto const iter_sz = sizeof(u32) * n_pixels;
+        auto const screen_sz = sizeof(pixel_t) * n_pixels;
+
+        auto& color_palette = palettes256;
+        auto const n_colors = color_palette[0].size();
+        auto const color_sz = sizeof(u8) * RGB_CHANNELS * n_colors;
+
+        auto device_sz = iter_sz + screen_sz + color_sz;
+        if(!device_malloc(device.buffer, device_sz))
+        {
+            return false;
+        }
+
+        if(!make_device_matrix(device.iterations, width, height, device.buffer))
+        {
+            return false;
+        }
+
+        if(!make_device_image(device.pixels, width, height, device.buffer))
+        {
+            return false;
+        }
+
+        if(!make_device_palette(device.palette, n_colors, device.buffer))
+        {
+            return false;
+        }
+
+        if(!copy_to_device(color_palette, device.palette))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+
 	bool initialize_memory(AppMemory& memory, ScreenBuffer const& buffer)
 	{
 		auto& state = get_state(memory, buffer);
@@ -217,23 +260,7 @@ namespace app
 
 		state.rgb_option = 1;
 
-		auto const width = buffer.width;
-		auto const height = buffer.height;
-
-        auto n_elements = width * height;
-
-        auto iter_sz = sizeof(u32) * n_elements;
-        auto screen_sz = sizeof(pixel_t) * n_elements;
-
-        auto device_sz = iter_sz + screen_sz;
-        device_malloc(state.device_buffer, device_sz);
-
-        if(!make_matrix(state.device_iterations, width, height, state.device_buffer))
-        {
-            return false;
-        }
-
-        if(!make_image(state.device_pixels, width, height, state.device_buffer))
+		if(!init_device_memory(state.device, buffer))
         {
             return false;
         }
@@ -269,6 +296,6 @@ namespace app
 	{
 		auto& state = get_state(memory);
 
-        device_free(state.device_buffer);
+        device_free(state.device.buffer);
 	}
 }

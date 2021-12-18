@@ -11,6 +11,17 @@ public:
 };
 
 
+class DeviceMemory
+{
+public:
+    DeviceBuffer buffer;
+
+    DeviceMatrix iterations;
+    DeviceImage pixels;
+    DeviceColorPalette palette;
+};
+
+
 class AppState
 {
 public:
@@ -28,7 +39,5 @@ public:
 
 	u32 max_iter;
 
-    DeviceBuffer device_buffer;
-    DeviceMatrix device_iterations;
-    DeviceImage device_pixels;
+    DeviceMemory device;
 };

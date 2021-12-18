@@ -41,7 +41,7 @@ public:
 
 
 template <typename T>
-bool make_array(DeviceArray<T>& arr, u32 n_elements, DeviceBuffer& buffer)
+bool make_device_array(DeviceArray<T>& arr, u32 n_elements, DeviceBuffer& buffer)
 {
     assert(buffer.data);
 
@@ -143,7 +143,7 @@ public:
 };
 
 
-bool make_image(DeviceImage& image, u32 width, u32 height, DeviceBuffer& buffer);
+bool make_device_image(DeviceImage& image, u32 width, u32 height, DeviceBuffer& buffer);
 
 bool copy_to_device(image_t const& src, DeviceImage const& dst);
 
@@ -160,7 +160,7 @@ public:
 };
 
 
-bool make_matrix(DeviceMatrix& image, u32 width, u32 height, DeviceBuffer& buffer);
+bool make_device_matrix(DeviceMatrix& image, u32 width, u32 height, DeviceBuffer& buffer);
 
 
 class DeviceColorPalette
@@ -168,5 +168,28 @@ class DeviceColorPalette
 public:
     u8* channels[RGB_CHANNELS];
 
-    u32 n_elements = 0;
+    u32 n_colors = 0;
 };
+
+
+bool make_device_palette(DeviceColorPalette& palette, u32 n_colors, DeviceBuffer& buffer);
+
+
+template <size_t N>
+bool copy_to_device(std::array< std::array<u8, N>, 3> const& src, DeviceColorPalette& dst)
+{
+    assert(dst.channels[0]);
+    assert(dst.n_colors);
+    assert(dst.n_colors == src[0].size());
+
+    auto bytes = src[0].size() * sizeof(u8);
+    for(u32 c = 0; c < RGB_CHANNELS; ++c)
+    {
+        if(!cuda_memcpy_to_device(src[c].data(), dst.channels[c], bytes))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
