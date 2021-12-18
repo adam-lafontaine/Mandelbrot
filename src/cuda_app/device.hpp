@@ -103,10 +103,10 @@ typedef union Pixel
 {
 	struct
 	{
-		u8 red;
+        u8 blue;
 		u8 green;
-		u8 blue;
-		u8 alpha;
+		u8 red;
+		u8 alpha;		
 	};
 
 	u8 channels[RGBA_CHANNELS];

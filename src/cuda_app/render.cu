@@ -13,19 +13,51 @@ static u8 rgb_grayscale_standard(u8 red, u8 green, u8 blue)
 
 
 GPU_KERNAL
-static void gpu_set_color(pixel_t* dst, u32 n_pixels)
+static void gpu_set_color(pixel_t* dst, u32 width, u32 height)
 {
+    auto n_pixels = width * height;
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     if (i >= n_pixels)
     {
         return;
     }
 
+    // i = y * width + x
+
     pixel_t p = {};
     p.alpha = 255;
-    p.red = 255;
-    p.green = 255;
-    p.blue = 255;
+    p.red = 0;
+    p.green = 0;
+    p.blue = 0;
+
+    auto y = i / width;
+    auto x = i - y * width;
+
+    if(y < height / 3)
+    {
+        p.red = 255;
+    }
+    else if(y < height * 2 / 3)
+    {
+        p.green = 255;
+    }
+    else
+    {
+        p.blue = 255;
+    }
+
+    if(x < width / 3)
+    {
+        p.red = 255;
+    }
+    else if(x < width * 2 / 3)
+    {
+        p.green = 255;
+    }
+    else
+    {
+        p.blue = 255;
+    }
 
     dst[i] = p;
 }
@@ -34,6 +66,8 @@ static void gpu_set_color(pixel_t* dst, u32 n_pixels)
 void render(AppState& state)
 {
     auto& d_screen = state.device.pixels;
+    auto width = d_screen.width;
+    auto height = d_screen.height;
     u32 n_pixels = d_screen.width * d_screen.height;
     int threads_per_block = THREADS_PER_BLOCK;
     int blocks = (n_pixels + threads_per_block - 1) / threads_per_block;
@@ -43,7 +77,8 @@ void render(AppState& state)
 
     gpu_set_color<<<blocks, threads_per_block>>>(
         d_screen.data,
-        n_pixels
+        width,
+        height
     );
 
     proc &= cuda_launch_success();
