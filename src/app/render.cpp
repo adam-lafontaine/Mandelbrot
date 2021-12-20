@@ -469,13 +469,9 @@ static void mandelbrot(AppState& state)
 				r64 im = 0.0;
 				r64 re2 = 0.0;
 				r64 im2 = 0.0;
-				r64 re2_old = 0.0;
-				r64 im2_old = 0.0;
 
 				while (iter < max_iter && re2 + im2 <= limit)
 				{
-					re2_old = re2;
-					im2_old = im2;
 					im = (re + re) * im + ci;
 					re = re2 - im2 + cr;
 					im2 = im * im;
