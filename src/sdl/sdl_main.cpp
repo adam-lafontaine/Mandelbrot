@@ -310,7 +310,7 @@ void wait_for_framerate(Stopwatch& sw, SDL_Window* window)
         snprintf(buffer, 30, "%s %f", WINDOW_TITLE, frame_ms_elapsed);
         SDL_SetWindowTitle(window, buffer);
         // missed frame rate
-        printf("missed frame rate %f\n", frame_ms_elapsed);
+        //printf("missed frame rate %f\n", frame_ms_elapsed);
     }
 
     sw.start();

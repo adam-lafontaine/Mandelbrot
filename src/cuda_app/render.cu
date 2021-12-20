@@ -59,7 +59,7 @@ static void gpu_mandelbrot(MandelbrotProps props)
 }
 
 
-
+/*
 GPU_KERNAL
 static void gpu_set_color(DeviceImage image)
 {
@@ -112,17 +112,17 @@ static void gpu_set_color(DeviceImage image)
     image.data[i] = p;
 }
 
-
+*/
 
 GPU_FUNCTION
-static u32 min_value(u32* sorted)
+static u32 sorted_min(u32* sorted)
 {
     return sorted[0];
 }
 
 
 GPU_FUNCTION
-static u32 max_value(u32* sorted)
+static u32 sorted_max(u32* sorted)
 {
     return sorted[1];
 }
@@ -198,6 +198,80 @@ static void sort_min_max(DeviceMatrix& mat)
 }
 
 
+class DrawProps
+{
+public:    
+    DeviceMatrix iterations;
+    DeviceImage pixels;
+
+    u32 cr = 0;
+	u32 cg = 0;
+	u32 cb = 0;
+    DeviceColorPalette palette;
+};
+
+
+GPU_KERNAL
+static void gpu_draw(DrawProps props)
+{    
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= props.pixels.width * props.pixels.height)
+    {
+        return;
+    }
+
+    auto min = sorted_min(props.iterations.data_mirror);
+    //auto max = sorted_max(props.iterations.data_mirror);
+    //auto diff = max - min;
+    auto c = (props.iterations.data[i] - min) % props.palette.n_colors;
+    pixel_t p{};
+    p.alpha = 255;
+    p.red = props.palette.channels[props.cr][c];
+    p.green = props.palette.channels[props.cg][c];
+    p.blue = props.palette.channels[props.cb][c];
+
+    props.pixels.data[i] = p;
+}
+
+
+static void set_rgb_channels(u32& cr, u32& cg, u32& cb, u32 rgb_option)
+{
+	switch (rgb_option)
+	{
+	case 1:
+		cr = 0;
+		cg = 1;
+		cb = 2;
+		break;
+	case 2:
+		cr = 0;
+		cg = 2;
+		cb = 1;
+		break;
+	case 3:
+		cr = 1;
+		cg = 0;
+		cb = 2;
+		break;
+	case 4:
+		cr = 1;
+		cg = 2;
+		cb = 0;
+		break;
+	case 5:
+		cr = 2;
+		cg = 0;
+		cb = 1;
+		break;
+	case 6:
+		cr = 2;
+		cg = 1;
+		cb = 0;
+		break;
+	}
+}
+
+
 void render(AppState& state)
 {
     auto& d_screen = state.device.pixels;
@@ -210,7 +284,13 @@ void render(AppState& state)
 	m_props.min_im = MBT_MIN_Y + state.mbt_pos.y;
 	m_props.re_step = state.mbt_screen_width / d_screen.width;
 	m_props.im_step = state.mbt_screen_height / d_screen.height;
-    m_props.iterations = state.device.iterations;    
+    m_props.iterations = state.device.iterations;
+
+    DrawProps d_props{};
+    d_props.iterations = state.device.iterations;
+    d_props.palette = state.device.palette;
+    d_props.pixels = state.device.pixels;
+    set_rgb_channels(d_props.cr, d_props.cg, d_props.cb, state.rgb_option);
 
     bool proc = cuda_no_errors();
     assert(proc);
@@ -222,7 +302,7 @@ void render(AppState& state)
 
     sort_min_max(state.device.iterations);
 
-    gpu_set_color<<<blocks, THREADS_PER_BLOCK>>>(d_screen);
+    gpu_draw<<<blocks, THREADS_PER_BLOCK>>>(d_props);
 
     proc &= cuda_launch_success();
     assert(proc);
