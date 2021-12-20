@@ -290,20 +290,25 @@ static void handle_sdl_event(SDL_Event const& event)
 }
 
 
-void wait_for_framerate(Stopwatch& sw)
+void wait_for_framerate(Stopwatch& sw, SDL_Window* window)
 {
     auto frame_ms_elapsed = sw.get_time_milli();
     auto sleep_ms = static_cast<u32>(TARGET_MS_PER_FRAME - frame_ms_elapsed);
     if (frame_ms_elapsed < TARGET_MS_PER_FRAME && sleep_ms > 0)
-    {            
+    {    
+        SDL_SetWindowTitle(window, WINDOW_TITLE);
+
         std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
         while (frame_ms_elapsed < TARGET_MS_PER_FRAME)
         {
             frame_ms_elapsed = sw.get_time_milli();
-        }
+        }        
     }
     else
     {
+        char buffer[30];
+        snprintf(buffer, 30, "%s %f", WINDOW_TITLE, frame_ms_elapsed);
+        SDL_SetWindowTitle(window, buffer);
         // missed frame rate
         printf("missed frame rate %f\n", frame_ms_elapsed);
     }
@@ -417,7 +422,7 @@ int main(int argc, char *argv[])
 
         app::update_and_render(app_memory, input[in_current], app_buffer);
 
-        wait_for_framerate(sw);
+        wait_for_framerate(sw, window);
         display_bitmap_in_window(back_buffer);
 
         // swap inputs

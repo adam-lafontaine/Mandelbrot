@@ -295,7 +295,7 @@ namespace app
 
 		render(state);
 
-		state.render_new = false;
+		state.render_new = true;
 	}
 
 
