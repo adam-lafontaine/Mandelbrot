@@ -291,6 +291,7 @@ object_files   := $(main_o)
 
 types_h := $(app)/types.hpp
 types_h += $(cuda_app)/cuda_types.hpp
+types_h += $(utils)/types.hpp
 
 device_h := $(cuda_app)/device.hpp
 device_h += $(cuda_app)/cuda_def.cuh

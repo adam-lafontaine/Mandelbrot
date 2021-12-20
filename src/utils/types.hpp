@@ -45,3 +45,4 @@ using Pt2Di32 = Vec2Di32;
 using Pt2Dr32 = Vec2Di32;
 
 #define NO_CPP_17
+//#define NDEBUG

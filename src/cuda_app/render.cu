@@ -124,10 +124,10 @@ void render(AppState& state)
     
     MandelbrotProps m_props{};
     m_props.max_iter = state.max_iter;
-	m_props.min_re = MBT_MIN_X + state.screen_pos.x;
-	m_props.min_im = MBT_MIN_Y + state.screen_pos.y;
-	m_props.re_step = screen_width(state) / d_screen.width;
-	m_props.im_step = screen_height(state) / d_screen.height;
+	m_props.min_re = MBT_MIN_X + state.mbt_pos.x;
+	m_props.min_im = MBT_MIN_Y + state.mbt_pos.y;
+	m_props.re_step = state.mbt_screen_width / d_screen.width;
+	m_props.im_step = state.mbt_screen_height / d_screen.height;
     m_props.iterations = state.device.iterations;    
 
     bool proc = cuda_no_errors();

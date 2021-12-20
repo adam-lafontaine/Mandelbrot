@@ -30,40 +30,40 @@ static void process_input(Input const& input, AppState& state)
 	// pan image with arrow keys
 	if (input.keyboard.right_key.is_down)
 	{
-		auto distance_per_pixel = screen_width(state) / app::BUFFER_WIDTH;
+		auto distance_per_pixel = state.mbt_screen_width / app::BUFFER_WIDTH;
 
 		state.pixel_shift.x -= pixel_shift;
-		state.screen_pos.x += pixel_shift * distance_per_pixel;
+		state.mbt_pos.x += pixel_shift * distance_per_pixel;
 
 		direction = true;
 		state.render_new = true;
 	}
 	if (input.keyboard.left_key.is_down)
 	{
-		auto distance_per_pixel = screen_width(state) / app::BUFFER_WIDTH;
+		auto distance_per_pixel = state.mbt_screen_width / app::BUFFER_WIDTH;
 
 		state.pixel_shift.x += pixel_shift;
-		state.screen_pos.x -= pixel_shift * distance_per_pixel;
+		state.mbt_pos.x -= pixel_shift * distance_per_pixel;
 
 		direction = true;
 		state.render_new = true;
 	}
 	if (input.keyboard.up_key.is_down)
 	{
-		auto distance_per_pixel = screen_height(state) / app::BUFFER_HEIGHT;
+		auto distance_per_pixel = state.mbt_screen_height / app::BUFFER_HEIGHT;
 
 		state.pixel_shift.y += pixel_shift;
-		state.screen_pos.y -= pixel_shift * distance_per_pixel;
+		state.mbt_pos.y -= pixel_shift * distance_per_pixel;
 
 		direction = true;
 		state.render_new = true;
 	}
 	if (input.keyboard.down_key.is_down)
 	{
-		auto distance_per_pixel = screen_height(state) / app::BUFFER_HEIGHT;
+		auto distance_per_pixel = state.mbt_screen_height / app::BUFFER_HEIGHT;
 
 		state.pixel_shift.y -= pixel_shift;
-		state.screen_pos.y += pixel_shift * distance_per_pixel;
+		state.mbt_pos.y += pixel_shift * distance_per_pixel;
 
 		direction = true;
 		state.render_new = true;
@@ -85,27 +85,31 @@ static void process_input(Input const& input, AppState& state)
 	// zoom in/out with +, -
 	if (input.keyboard.plus_key.is_down && !direction)
 	{
-		auto old_w = screen_width(state);
-		auto old_h = screen_height(state);
-		state.zoom_level *= zoom();
-		auto new_w = screen_width(state);
-		auto new_h = screen_height(state);
+		auto old_w = state.mbt_screen_width;
+		auto old_h = state.mbt_screen_height;
 
-		state.screen_pos.x += 0.5 * (old_w - new_w);
-		state.screen_pos.y += 0.5 * (old_h - new_h);
+		state.zoom_level *= zoom();
+
+		state.mbt_screen_width = mbt_screen_width(state.zoom_level);
+		state.mbt_screen_height = mbt_screen_height(state.zoom_level);
+
+		state.mbt_pos.x += 0.5 * (old_w - state.mbt_screen_width);
+		state.mbt_pos.y += 0.5 * (old_h - state.mbt_screen_height);
 
 		state.render_new = true;
 	}
 	if (input.keyboard.minus_key.is_down && !direction)
 	{
-		auto old_w = screen_width(state);
-		auto old_h = screen_height(state);
-		state.zoom_level /= zoom();
-		auto new_w = screen_width(state);
-		auto new_h = screen_height(state);
+		auto old_w = state.mbt_screen_width;
+		auto old_h = state.mbt_screen_height;
 
-		state.screen_pos.x += 0.5 * (old_w - new_w);
-		state.screen_pos.y += 0.5 * (old_h - new_h);
+		state.zoom_level /= zoom();
+
+		state.mbt_screen_width = mbt_screen_width(state.zoom_level);
+		state.mbt_screen_height = mbt_screen_height(state.zoom_level);
+
+		state.mbt_pos.x += 0.5 * (old_w - state.mbt_screen_width);
+		state.mbt_pos.y += 0.5 * (old_h - state.mbt_screen_height);
 
 		state.render_new = true;
 	}
@@ -250,11 +254,14 @@ namespace app
 
 		state.screen_buffer = make_buffer_image(buffer);
 
-		state.screen_pos.x = 0.0;
-		state.screen_pos.y = 0.0;
+		state.mbt_pos.x = 0.0;
+		state.mbt_pos.y = 0.0;
 
 		state.zoom_level = 1.0;
 		state.zoom_speed = ZOOM_SPEED_LOWER_LIMIT;
+
+        state.mbt_screen_width = mbt_screen_width(state.zoom_level);
+		state.mbt_screen_height = mbt_screen_height(state.zoom_level);
 
 		state.max_iter = MAX_ITERATIONS_START;
 
@@ -288,7 +295,7 @@ namespace app
 
 		render(state);
 
-		state.render_new = false;
+		state.render_new = true;
 	}
 
 

@@ -10,15 +10,15 @@ constexpr r64 MBT_MAX_Y = 1.2;
 constexpr r64 MBT_WIDTH = MBT_MAX_X - MBT_MIN_X;
 constexpr r64 MBT_HEIGHT = MBT_MAX_Y - MBT_MIN_Y;
 
-inline r64 screen_width(AppState const& state)
+inline r64 mbt_screen_width(r64 zoom)
 {
-	return MBT_WIDTH / state.zoom_level;
+	return MBT_WIDTH / zoom;
 }
 
 
-inline r64 screen_height(AppState const& state)
+inline r64 mbt_screen_height(r64 zoom)
 {
-	return MBT_HEIGHT / state.zoom_level;
+	return MBT_HEIGHT / zoom;
 }
 
 
