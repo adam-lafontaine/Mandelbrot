@@ -3,9 +3,9 @@
 
 constexpr int THREADS_PER_BLOCK = 1024;
 
-constexpr int calc_thread_blocks(u32 n_elements)
+constexpr int calc_thread_blocks(u32 n_threads)
 {
-    return (n_elements + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+    return (n_threads + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 }
 
 
@@ -55,7 +55,7 @@ static void gpu_mandelbrot(MandelbrotProps props)
         ++iter;
     }
 
-    props.iterations.data[i] = iter - 1;
+    props.iterations.data[i] = props.iterations.data_mirror[i] = iter - 1;
 }
 
 
@@ -114,6 +114,88 @@ static void gpu_set_color(DeviceImage image)
 
 
 
+GPU_FUNCTION
+static u32 min_value(u32* sorted)
+{
+    return sorted[0];
+}
+
+
+GPU_FUNCTION
+static u32 max_value(u32* sorted)
+{
+    return sorted[1];
+}
+
+
+GPU_KERNAL
+static void gpu_sort_high_low(u32* values, u32 n_elements)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= n_elements)
+    {
+        return;
+    }
+
+    u32* low = values;
+    u32* high = values + n_elements / 2;
+
+    if(high[i] < low[i])
+    {
+        auto h = low[i];
+        low[i] = high[i];
+        high[i] = h;
+    }    
+}
+
+
+GPU_KERNAL
+static void gpu_reduce_min_max(u32* values, u32 n_elements)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= n_elements)
+    {
+        return;
+    }
+
+    auto half = n_elements / 2;
+
+    if(i < half)
+    {
+        values[i] = min(values[i], values[i + 1]);
+    }
+    else
+    {
+        values[i] = max(values[i + half], values[i + half + 1]);
+    }
+}
+
+
+HOST_FUNCTION
+static void sort_min_max(DeviceMatrix& mat)
+{
+    u32 n_elements = mat.width * mat.height;
+
+    assert(n_elements % 2 == 0);
+
+    auto values = mat.data_mirror;
+
+    bool proc = cuda_no_errors();
+    assert(proc);
+
+    gpu_sort_high_low<<<calc_thread_blocks(n_elements), THREADS_PER_BLOCK>>>(values, n_elements);
+
+    proc &= cuda_launch_success();
+    assert(proc);
+
+    for(u32 n = n_elements / 2; n > 1; n /= 2)
+    {
+        gpu_reduce_min_max<<<calc_thread_blocks(n), THREADS_PER_BLOCK>>>(values, n);
+
+        proc &= cuda_launch_success();
+        assert(proc);
+    }
+}
 
 
 void render(AppState& state)
@@ -137,6 +219,8 @@ void render(AppState& state)
 
     proc &= cuda_launch_success();
     assert(proc);
+
+    sort_min_max(state.device.iterations);
 
     gpu_set_color<<<blocks, THREADS_PER_BLOCK>>>(d_screen);
 

@@ -209,7 +209,7 @@ namespace app
 		auto const height = buffer.height;
 
         auto const n_pixels = width * height;
-        auto const iter_sz = sizeof(u32) * n_pixels;
+        auto const iter_sz = 2 * sizeof(u32) * n_pixels;
         auto const screen_sz = sizeof(pixel_t) * n_pixels;
 
         auto& color_palette = palettes256;
@@ -295,7 +295,7 @@ namespace app
 
 		render(state);
 
-		state.render_new = true;
+		state.render_new = false;
 	}
 
 
