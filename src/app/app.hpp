@@ -5,7 +5,7 @@
 namespace app
 {
 	// allocate memory
-	constexpr u32 BUFFER_HEIGHT = 450;
+	constexpr u32 BUFFER_HEIGHT = 900;
 	constexpr u32 BUFFER_WIDTH = BUFFER_HEIGHT * 9 / 8;
 	constexpr u32 PIXELS_PER_SECOND = static_cast<u32>(0.4 * BUFFER_HEIGHT);
 
