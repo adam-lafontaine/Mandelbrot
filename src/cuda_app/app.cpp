@@ -75,7 +75,7 @@ static void process_input(Input const& input, AppState& state)
 		state.zoom_speed *= zoom_speed_factor;
 		state.render_new = true;
 	}
-	if (input.keyboard.div_key.is_down)
+	if (input.keyboard.div_key.is_down && state.zoom_speed > ZOOM_SPEED_LOWER_LIMIT)
 	{
 		state.zoom_speed = std::max(state.zoom_speed / zoom_speed_factor, ZOOM_SPEED_LOWER_LIMIT);
 
@@ -115,7 +115,7 @@ static void process_input(Input const& input, AppState& state)
 	}
 
 	// resolution with F, D
-	if (input.keyboard.f_key.is_down)
+	if (input.keyboard.f_key.is_down && state.max_iter < MAX_ITERATIONS_UPPER_LIMIT)
 	{
 		u32 adj = static_cast<u32>(iteration_adjustment_factor * state.max_iter);
 		adj = std::max(adj, 5u);
@@ -123,7 +123,7 @@ static void process_input(Input const& input, AppState& state)
 		state.max_iter = std::min(state.max_iter + adj, MAX_ITERATIONS_UPPER_LIMIT);
 		state.render_new = true;
 	}
-	if (input.keyboard.d_key.is_down)
+	if (input.keyboard.d_key.is_down && state.max_iter > MAX_ITERTAIONS_LOWER_LIMIT)
 	{
 		u32 adj = static_cast<u32>(iteration_adjustment_factor * state.max_iter);
 		adj = std::max(adj, 5u);

@@ -267,8 +267,6 @@ endif
 
 ################################################################################
 
-# $(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
-
 GPP := g++-10 -std=c++17
 SDL2 := `sdl2-config --cflags --libs`
 

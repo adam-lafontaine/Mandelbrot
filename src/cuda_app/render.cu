@@ -73,16 +73,16 @@ static u32 sorted_max(u32* sorted)
 
 
 GPU_KERNAL
-static void gpu_sort_high_low(u32* values, u32 n_elements)
+static void gpu_sort_high_low(u32* values, u32 n_half)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
-    if (i >= n_elements)
+    if (i >= n_half)
     {
         return;
     }
 
     u32* low = values;
-    u32* high = values + n_elements / 2;
+    u32* high = values + n_half;
 
     if(high[i] < low[i])
     {
@@ -122,17 +122,19 @@ static void sort_min_max(DeviceMatrix& mat)
 
     assert(n_elements % 2 == 0);
 
+    auto n_half = n_elements / 2;
+
     auto values = mat.data_mirror;
 
     bool proc = cuda_no_errors();
     assert(proc);
 
-    gpu_sort_high_low<<<calc_thread_blocks(n_elements), THREADS_PER_BLOCK>>>(values, n_elements);
+    gpu_sort_high_low<<<calc_thread_blocks(n_half), THREADS_PER_BLOCK>>>(values, n_half);
 
     proc &= cuda_launch_success();
     assert(proc);
 
-    for(u32 n = n_elements / 2; n > 1; n /= 2)
+    for(u32 n = n_half; n > 1; n /= 2)
     {
         gpu_reduce_min_max<<<calc_thread_blocks(n), THREADS_PER_BLOCK>>>(values, n);
 
