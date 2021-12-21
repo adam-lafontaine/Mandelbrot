@@ -23,5 +23,3 @@ inline r64 mbt_screen_height(r64 zoom)
 
 
 void render(AppState& state);
-
-

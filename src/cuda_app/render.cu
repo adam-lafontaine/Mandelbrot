@@ -58,62 +58,6 @@ static void gpu_mandelbrot(MandelbrotProps props)
     props.iterations.data[i] = props.iterations.data_mirror[i] = iter - 1;
 }
 
-
-/*
-GPU_KERNAL
-static void gpu_set_color(DeviceImage image)
-{
-    auto const width = image.width;
-    auto const height = image.height;
-    auto n_pixels = width * height;
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
-    if (i >= n_pixels)
-    {
-        return;
-    }
-
-    // i = y * width + x
-
-    pixel_t p = {};
-    p.alpha = 255;
-    p.red = 0;
-    p.green = 0;
-    p.blue = 0;
-
-    auto y = i / width;
-    auto x = i - y * width;
-
-    if(y < height / 3)
-    {
-        p.red = 255;
-    }
-    else if(y < height * 2 / 3)
-    {
-        p.green = 255;
-    }
-    else
-    {
-        p.blue = 255;
-    }
-
-    if(x < width / 3)
-    {
-        p.red = 255;
-    }
-    else if(x < width * 2 / 3)
-    {
-        p.green = 255;
-    }
-    else
-    {
-        p.blue = 255;
-    }
-
-    image.data[i] = p;
-}
-
-*/
-
 GPU_FUNCTION
 static u32 sorted_min(u32* sorted)
 {
@@ -220,15 +164,28 @@ static void gpu_draw(DrawProps props)
         return;
     }
 
-    auto min = sorted_min(props.iterations.data_mirror);
-    //auto max = sorted_max(props.iterations.data_mirror);
+    auto iter_min = sorted_min(props.iterations.data_mirror);
+    auto iter_max = sorted_max(props.iterations.data_mirror);
     //auto diff = max - min;
-    auto c = (props.iterations.data[i] - min) % props.palette.n_colors;
     pixel_t p{};
     p.alpha = 255;
-    p.red = props.palette.channels[props.cr][c];
-    p.green = props.palette.channels[props.cg][c];
-    p.blue = props.palette.channels[props.cb][c];
+
+    auto iter = props.iterations.data[i];
+    if(iter >= iter_max)
+    {
+        p.red = 0;
+        p.green = 0;
+        p.blue = 0;
+    }
+    else
+    {
+        auto n_colors = ((iter_max - iter_min) / 128 + 1) * 16;
+        n_colors = min(n_colors, props.palette.n_colors);
+        auto c = (iter - iter_min) % n_colors * props.palette.n_colors / n_colors;    
+        p.red = props.palette.channels[props.cr][c];
+        p.green = props.palette.channels[props.cg][c];
+        p.blue = props.palette.channels[props.cb][c];
+    }
 
     props.pixels.data[i] = p;
 }
