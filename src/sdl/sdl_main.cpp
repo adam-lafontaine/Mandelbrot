@@ -307,7 +307,7 @@ void wait_for_framerate(Stopwatch& sw, SDL_Window* window)
     else
     {
         char buffer[30];
-        snprintf(buffer, 30, "%s %f", WINDOW_TITLE, frame_ms_elapsed);
+        snprintf(buffer, 30, "%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
         SDL_SetWindowTitle(window, buffer);
         // missed frame rate
         //printf("missed frame rate %f\n", frame_ms_elapsed);
@@ -413,6 +413,8 @@ int main(int argc, char *argv[])
         {            
             handle_sdl_event(event);
         }
+
+        input[in_current].dt_frame = TARGET_MS_PER_FRAME / 1000.0f; // TODO:
 
         process_keyboard_input(has_event, event, input[in_old], input[in_current]);
 

@@ -339,7 +339,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     sw.start();
     while (g_running)
     {
-        new_input->dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
+        new_input->dt_frame = TARGET_MS_PER_FRAME / 1000.0f; // TODO: check
         win32::process_keyboard_input(old_input->keyboard, new_input->keyboard);        
         win32::process_mouse_input(window, old_input->mouse, new_input->mouse);
         app::update_and_render(app_memory, *new_input, app_pixel_buffer);

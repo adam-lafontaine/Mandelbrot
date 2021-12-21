@@ -11,6 +11,68 @@ constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
 constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
 
 
+static bool pan_right(Input const& input)
+{
+    return input.keyboard.right_key.is_down;
+}
+
+
+static bool pan_left(Input const& input)
+{
+    return input.keyboard.left_key.is_down;
+}
+
+
+static bool pan_up(Input const& input)
+{
+    return input.keyboard.up_key.is_down;
+}
+
+
+static bool pan_down(Input const& input)
+{
+    return input.keyboard.down_key.is_down;
+}
+
+
+static bool increase_zoom_speed(Input const& input)
+{
+    return input.keyboard.mult_key.is_down;
+}
+
+
+static bool decrease_zoom_speed(Input const& input, AppState const& state)
+{
+    return input.keyboard.div_key.is_down && state.zoom_speed > ZOOM_SPEED_LOWER_LIMIT;
+}
+
+
+static bool zoom_in(Input const& input)
+{
+    return input.keyboard.plus_key.is_down || input.controllers[0].trigger_right.end > 0;
+}
+
+
+static bool zoom_out(Input const& input)
+{
+    return input.keyboard.minus_key.is_down || input.controllers[0].trigger_left.end > 0;
+}
+
+
+static bool increase_resolution(Input const& input, AppState const& state)
+{
+    return (input.keyboard.f_key.is_down || input.controllers[0].shoulder_left.is_down) && 
+        state.max_iter < MAX_ITERATIONS_UPPER_LIMIT;
+}
+
+
+static bool decrease_resolution(Input const& input, AppState const& state)
+{
+    return (input.keyboard.d_key.is_down || input.controllers[0].shoulder_right.is_down) && 
+        state.max_iter > MAX_ITERTAIONS_LOWER_LIMIT;
+}
+
+
 static void process_input(Input const& input, AppState& state)
 {
 	constexpr r64 zoom_speed_factor_per_second = 0.1;
@@ -28,7 +90,7 @@ static void process_input(Input const& input, AppState& state)
 	auto direction = false;
 
 	// pan image with arrow keys
-	if (input.keyboard.right_key.is_down)
+	if (pan_right(input))
 	{
 		auto distance_per_pixel = state.mbt_screen_width / app::BUFFER_WIDTH;
 
@@ -38,7 +100,7 @@ static void process_input(Input const& input, AppState& state)
 		direction = true;
 		state.render_new = true;
 	}
-	if (input.keyboard.left_key.is_down)
+	if (pan_left(input))
 	{
 		auto distance_per_pixel = state.mbt_screen_width / app::BUFFER_WIDTH;
 
@@ -48,7 +110,7 @@ static void process_input(Input const& input, AppState& state)
 		direction = true;
 		state.render_new = true;
 	}
-	if (input.keyboard.up_key.is_down)
+	if (pan_up(input))
 	{
 		auto distance_per_pixel = state.mbt_screen_height / app::BUFFER_HEIGHT;
 
@@ -58,7 +120,7 @@ static void process_input(Input const& input, AppState& state)
 		direction = true;
 		state.render_new = true;
 	}
-	if (input.keyboard.down_key.is_down)
+	if (pan_down(input))
 	{
 		auto distance_per_pixel = state.mbt_screen_height / app::BUFFER_HEIGHT;
 
@@ -70,12 +132,12 @@ static void process_input(Input const& input, AppState& state)
 	}
 
 	// zoom speed with *, /
-	if (input.keyboard.mult_key.is_down)
+	if (increase_zoom_speed(input))
 	{
 		state.zoom_speed *= zoom_speed_factor;
 		state.render_new = true;
 	}
-	if (input.keyboard.div_key.is_down && state.zoom_speed > ZOOM_SPEED_LOWER_LIMIT)
+	if (decrease_zoom_speed(input, state))
 	{
 		state.zoom_speed = std::max(state.zoom_speed / zoom_speed_factor, ZOOM_SPEED_LOWER_LIMIT);
 
@@ -83,7 +145,7 @@ static void process_input(Input const& input, AppState& state)
 	}
 
 	// zoom in/out with +, -
-	if (input.keyboard.plus_key.is_down && !direction)
+	if (zoom_in(input) && !direction)
 	{
 		auto old_w = state.mbt_screen_width;
 		auto old_h = state.mbt_screen_height;
@@ -98,7 +160,7 @@ static void process_input(Input const& input, AppState& state)
 
 		state.render_new = true;
 	}
-	if (input.keyboard.minus_key.is_down && !direction)
+	if (zoom_out(input) && !direction)
 	{
 		auto old_w = state.mbt_screen_width;
 		auto old_h = state.mbt_screen_height;
@@ -115,7 +177,7 @@ static void process_input(Input const& input, AppState& state)
 	}
 
 	// resolution with F, D
-	if (input.keyboard.f_key.is_down && state.max_iter < MAX_ITERATIONS_UPPER_LIMIT)
+	if (increase_resolution(input, state))
 	{
 		u32 adj = static_cast<u32>(iteration_adjustment_factor * state.max_iter);
 		adj = std::max(adj, 5u);
@@ -123,7 +185,7 @@ static void process_input(Input const& input, AppState& state)
 		state.max_iter = std::min(state.max_iter + adj, MAX_ITERATIONS_UPPER_LIMIT);
 		state.render_new = true;
 	}
-	if (input.keyboard.d_key.is_down && state.max_iter > MAX_ITERTAIONS_LOWER_LIMIT)
+	if (decrease_resolution(input, state))
 	{
 		u32 adj = static_cast<u32>(iteration_adjustment_factor * state.max_iter);
 		adj = std::max(adj, 5u);
@@ -295,7 +357,7 @@ namespace app
 
 		render(state);
 
-		//state.render_new = false;
+		state.render_new = false;
 	}
 
 
