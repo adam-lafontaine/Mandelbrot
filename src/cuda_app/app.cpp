@@ -74,6 +74,12 @@ static bool decrease_resolution(Input const& input, AppState const& state)
 }
 
 
+static bool stop_application(Input const& input)
+{
+    return input.controllers[0].button_b.pressed;
+}
+
+
 static void process_input(Input const& input, AppState& state)
 {
 	constexpr r64 zoom_speed_factor_per_second = 0.1;
@@ -226,6 +232,11 @@ static void process_input(Input const& input, AppState& state)
 		state.rgb_option = 6;
 		state.render_new = true;
 	}
+
+    if(stop_application(input))
+    {
+        platform_signal_stop();
+    }
 }
 
 

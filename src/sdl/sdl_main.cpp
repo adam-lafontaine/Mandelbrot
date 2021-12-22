@@ -205,6 +205,12 @@ u32 platform_to_color_32(u8 red, u8 green, u8 blue)
 }
 
 
+void platform_signal_stop()
+{
+    g_running = false;
+}
+
+
 static void end_program(app::AppMemory& memory)
 {
     g_running = false;
@@ -287,33 +293,6 @@ static void handle_sdl_event(SDL_Event const& event)
         } break;
         
     }
-}
-
-
-void wait_for_framerate(Stopwatch& sw, SDL_Window* window)
-{
-    auto frame_ms_elapsed = sw.get_time_milli();
-    auto sleep_ms = static_cast<u32>(TARGET_MS_PER_FRAME - frame_ms_elapsed);
-    if (frame_ms_elapsed < TARGET_MS_PER_FRAME && sleep_ms > 0)
-    {    
-        SDL_SetWindowTitle(window, WINDOW_TITLE);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
-        while (frame_ms_elapsed < TARGET_MS_PER_FRAME)
-        {
-            frame_ms_elapsed = sw.get_time_milli();
-        }        
-    }
-    else
-    {
-        char buffer[30];
-        snprintf(buffer, 30, "%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
-        SDL_SetWindowTitle(window, buffer);
-        // missed frame rate
-        //printf("missed frame rate %f\n", frame_ms_elapsed);
-    }
-
-    sw.start();
 }
 
 
@@ -403,6 +382,31 @@ int main(int argc, char *argv[])
     u8 in_current = 0;
     u8 in_old = 1;
     Stopwatch sw;
+    r64 frame_ms_elapsed = TARGET_MS_PER_FRAME;
+
+    auto const wait_for_framerate = [&]()
+    {
+        frame_ms_elapsed = sw.get_time_milli();
+        auto sleep_ms = static_cast<u32>(TARGET_MS_PER_FRAME - frame_ms_elapsed);
+        if (frame_ms_elapsed < TARGET_MS_PER_FRAME && sleep_ms > 0)
+        {    
+            SDL_SetWindowTitle(window, WINDOW_TITLE);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
+            while (frame_ms_elapsed < TARGET_MS_PER_FRAME)
+            {
+                frame_ms_elapsed = sw.get_time_milli();
+            }        
+        }
+        else
+        {
+            char buffer[30];
+            snprintf(buffer, 30, "%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
+            SDL_SetWindowTitle(window, buffer);
+        }
+
+        sw.start();
+    };
     
     sw.start();
     while(g_running)
@@ -414,7 +418,7 @@ int main(int argc, char *argv[])
             handle_sdl_event(event);
         }
 
-        input[in_current].dt_frame = TARGET_MS_PER_FRAME / 1000.0f; // TODO:
+        input[in_current].dt_frame = frame_ms_elapsed / 1000.0f; // TODO:
 
         process_keyboard_input(has_event, event, input[in_old], input[in_current]);
 
@@ -424,7 +428,7 @@ int main(int argc, char *argv[])
 
         app::update_and_render(app_memory, input[in_current], app_buffer);
 
-        wait_for_framerate(sw, window);
+        wait_for_framerate();
         display_bitmap_in_window(back_buffer);
 
         // swap inputs

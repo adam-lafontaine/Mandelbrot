@@ -149,9 +149,10 @@ static void draw(DrawProps const& props, u32 i)
     }
     else
     {
-        auto n_colors = ((iter_max - iter_min) / 128 + 1) * 16;
+        auto n_colors = ((iter_max - iter_min) / 64 + 1) * 16;
         n_colors = min(n_colors, props.palette.n_colors);
-        auto c = (iter - iter_min) % n_colors * props.palette.n_colors / n_colors;    
+        auto c = (iter - iter_min) % n_colors * props.palette.n_colors / n_colors;
+
         p.red = props.palette.channels[props.cr][c];
         p.green = props.palette.channels[props.cg][c];
         p.blue = props.palette.channels[props.cb][c];
