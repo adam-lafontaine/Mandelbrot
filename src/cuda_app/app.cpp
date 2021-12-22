@@ -1,83 +1,9 @@
 #include "../app/app.hpp"
 #include "../app/colors.hpp"
 #include "render.hpp"
+#include "../app/input_controls.hpp"
 
 #include <cmath>
-
-
-constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
-constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 50000;
-constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
-constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
-
-
-static bool pan_right(Input const& input)
-{
-    return input.keyboard.right_key.is_down || input.controllers[0].stick_right_x.end >= 0.5f;
-}
-
-
-static bool pan_left(Input const& input)
-{
-    return input.keyboard.left_key.is_down || input.controllers[0].stick_right_x.end <= -0.5f;
-}
-
-
-static bool pan_up(Input const& input)
-{
-    return input.keyboard.up_key.is_down || input.controllers[0].stick_right_y.end >= 0.5f;
-}
-
-
-static bool pan_down(Input const& input)
-{
-    return input.keyboard.down_key.is_down || input.controllers[0].stick_right_y.end <= -0.5f;
-}
-
-
-static bool increase_zoom_speed(Input const& input)
-{
-    return input.keyboard.mult_key.is_down || input.controllers[0].trigger_right.end >= 0.5f;
-}
-
-
-static bool decrease_zoom_speed(Input const& input, AppState const& state)
-{
-    return (input.keyboard.div_key.is_down || input.controllers[0].trigger_left.end >= 0.5f) && 
-        state.zoom_speed > ZOOM_SPEED_LOWER_LIMIT;
-}
-
-
-static bool zoom_in(Input const& input)
-{
-    return input.keyboard.plus_key.is_down || input.controllers[0].stick_left_y.end >= 0.5f;
-}
-
-
-static bool zoom_out(Input const& input)
-{
-    return input.keyboard.minus_key.is_down || input.controllers[0].stick_left_y.end <= -0.5f;
-}
-
-
-static bool increase_resolution(Input const& input, AppState const& state)
-{
-    return (input.keyboard.f_key.is_down || input.controllers[0].shoulder_right.is_down) && 
-        state.max_iter < MAX_ITERATIONS_UPPER_LIMIT;
-}
-
-
-static bool decrease_resolution(Input const& input, AppState const& state)
-{
-    return (input.keyboard.d_key.is_down || input.controllers[0].shoulder_left.is_down) && 
-        state.max_iter > MAX_ITERTAIONS_LOWER_LIMIT;
-}
-
-
-static bool stop_application(Input const& input)
-{
-    return input.controllers[0].button_b.pressed;
-}
 
 
 static void process_input(Input const& input, AppState& state)
@@ -95,8 +21,7 @@ static void process_input(Input const& input, AppState& state)
 	auto const zoom = [&]() { return state.zoom_speed * (1.0 + zoom_per_second * input.dt_frame); };
 
 	auto direction = false;
-
-	// pan image with arrow keys
+    
 	if (pan_right(input))
 	{
 		auto distance_per_pixel = state.mbt_screen_width / app::BUFFER_WIDTH;
@@ -137,21 +62,19 @@ static void process_input(Input const& input, AppState& state)
 		direction = true;
 		state.render_new = true;
 	}
-
-	// zoom speed with *, /
+    
 	if (increase_zoom_speed(input))
 	{
 		state.zoom_speed *= zoom_speed_factor;
 		state.render_new = true;
 	}
-	if (decrease_zoom_speed(input, state))
+	if (state.zoom_speed > ZOOM_SPEED_LOWER_LIMIT && decrease_zoom_speed(input))
 	{
 		state.zoom_speed = std::max(state.zoom_speed / zoom_speed_factor, ZOOM_SPEED_LOWER_LIMIT);
 
 		state.render_new = true;
-	}
+	}    
 
-	// zoom in/out with +, -
 	if (zoom_in(input) && !direction)
 	{
 		auto old_w = state.mbt_screen_width;
@@ -182,9 +105,8 @@ static void process_input(Input const& input, AppState& state)
 
 		state.render_new = true;
 	}
-
-	// resolution with F, D
-	if (increase_resolution(input, state))
+    
+	if (state.max_iter < MAX_ITERATIONS_UPPER_LIMIT && increase_resolution(input))
 	{
 		u32 adj = static_cast<u32>(iteration_adjustment_factor * state.max_iter);
 		adj = std::max(adj, 5u);
@@ -192,7 +114,7 @@ static void process_input(Input const& input, AppState& state)
 		state.max_iter = std::min(state.max_iter + adj, MAX_ITERATIONS_UPPER_LIMIT);
 		state.render_new = true;
 	}
-	if (decrease_resolution(input, state))
+	if (state.max_iter > MAX_ITERTAIONS_LOWER_LIMIT && decrease_resolution(input))
 	{
 		u32 adj = static_cast<u32>(iteration_adjustment_factor * state.max_iter);
 		adj = std::max(adj, 5u);
