@@ -5,7 +5,7 @@
 namespace app
 {
 	// allocate memory
-	constexpr u32 BUFFER_HEIGHT = 450;
+	constexpr u32 BUFFER_HEIGHT = 800;
 	constexpr u32 BUFFER_WIDTH = BUFFER_HEIGHT * 9 / 8;
 	constexpr u32 PIXELS_PER_SECOND = static_cast<u32>(0.4 * BUFFER_HEIGHT);
 
@@ -15,11 +15,7 @@ namespace app
 	public:
 		b32 is_app_initialized;
 		size_t permanent_storage_size;
-		void* permanent_storage; // required to be zero at startup
-
-		size_t transient_storage_size;
-		void* transient_storage; // required to be zero at startup
-
+		void* permanent_storage;
 	};
 
 

@@ -29,12 +29,10 @@ public:
 static void allocate_app_memory(app::AppMemory& memory)
 {
     memory.permanent_storage_size = Megabytes(256);
-    memory.transient_storage_size = 0; // Gigabytes(1);
 
-    size_t total_size = memory.permanent_storage_size + memory.transient_storage_size;
+    size_t total_size = memory.permanent_storage_size;
 
     memory.permanent_storage = malloc(total_size);
-    memory.transient_storage = (u8*)memory.permanent_storage + memory.permanent_storage_size;
 }
 
 
@@ -369,7 +367,7 @@ int main(int argc, char *argv[])
     set_app_screen_buffer(back_buffer, app_buffer);
     
     allocate_app_memory(app_memory);
-    if (!app_memory.permanent_storage || !app_memory.transient_storage)
+    if (!app_memory.permanent_storage)
     {
         display_error("Allocating application memory failed");
         cleanup();

@@ -436,14 +436,14 @@ static void mandelbrot(AppState& state)
 	auto const max_iter = state.max_iter;
 	constexpr r64 limit = 4.0;
 
-	auto const x_pos = state.screen_pos.x;
-	auto const y_pos = state.screen_pos.y;
+	auto const x_pos = state.mbt_pos.x;
+	auto const y_pos = state.mbt_pos.y;
 
 	auto const min_re = MBT_MIN_X + x_pos;
 	auto const min_im = MBT_MIN_Y + y_pos;
 
-	auto const re_step = screen_width(state) / dst.width;
-	auto const im_step = screen_height(state) / dst.height;
+	auto const re_step = state.mbt_screen_width / dst.width;
+	auto const im_step = state.mbt_screen_height / dst.height;
 
 	auto const do_mandelbrot = [&](Range2Du32 const& range)
 	{
