@@ -2,9 +2,9 @@
 #include "../input/input_state.hpp"
 
 
-static r32 normalize_axis_value(i16 axis)
+static r32 normalize_axis_value(r32 axis)
 {
-	r32 norm = -1.0f * axis / 32768.0f;
+	r32 norm = axis / 32768.0f;
 	if(norm > 1.0f)
 	{
 		return 1.0f;
@@ -19,7 +19,7 @@ static r32 normalize_axis_value(i16 axis)
 }
 
 
-static void record_input(AxisState const& old_state, AxisState& new_state, i16 value)
+static void record_input(AxisState const& old_state, AxisState& new_state, r32 value)
 {
 	new_state.start = old_state.end;
 	new_state.end = normalize_axis_value(value);
@@ -93,14 +93,16 @@ static void record_controller_input(SDL_GameController* sdl, ControllerInput con
 #if CONTROLLER_STICK_LEFT
 	axis = SDL_GameControllerGetAxis(sdl, SDL_CONTROLLER_AXIS_LEFTX);
 	record_input(old_controller.stick_left_x, new_controller.stick_left_x, axis);
+
 	axis = SDL_GameControllerGetAxis(sdl, SDL_CONTROLLER_AXIS_LEFTY);
-	record_input(old_controller.stick_left_y, new_controller.stick_left_y, axis);
+	record_input(old_controller.stick_left_y, new_controller.stick_left_y, -1.0f * axis);
 #endif
 #if CONTROLLER_STICK_RIGHT
 	axis = SDL_GameControllerGetAxis(sdl, SDL_CONTROLLER_AXIS_RIGHTX);
 	record_input(old_controller.stick_right_x, new_controller.stick_right_x, axis);
+
 	axis = SDL_GameControllerGetAxis(sdl, SDL_CONTROLLER_AXIS_RIGHTY);
-	record_input(old_controller.stick_right_y, new_controller.stick_right_y, axis);
+	record_input(old_controller.stick_right_y, new_controller.stick_right_y, -1.0f * axis);
 #endif
 #if CONTROLLER_TRIGGER_LEFT
 	axis = SDL_GameControllerGetAxis(sdl, SDL_CONTROLLER_AXIS_TRIGGERLEFT);

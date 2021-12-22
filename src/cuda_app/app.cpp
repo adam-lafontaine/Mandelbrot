@@ -13,64 +13,63 @@ constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
 
 static bool pan_right(Input const& input)
 {
-    return input.keyboard.right_key.is_down || input.controllers[0].dpad_right.is_down;
+    return input.keyboard.right_key.is_down || input.controllers[0].stick_right_x.end >= 0.5f;
 }
 
 
 static bool pan_left(Input const& input)
 {
-    return input.keyboard.left_key.is_down || input.controllers[0].dpad_left.is_down;
+    return input.keyboard.left_key.is_down || input.controllers[0].stick_right_x.end <= -0.5f;
 }
 
 
 static bool pan_up(Input const& input)
 {
-    return input.keyboard.up_key.is_down || input.controllers[0].dpad_up.is_down;
+    return input.keyboard.up_key.is_down || input.controllers[0].stick_right_y.end >= 0.5f;
 }
 
 
 static bool pan_down(Input const& input)
 {
-    return input.keyboard.down_key.is_down || input.controllers[0].dpad_down.is_down;
+    return input.keyboard.down_key.is_down || input.controllers[0].stick_right_y.end <= -0.5f;
 }
 
 
 static bool increase_zoom_speed(Input const& input)
 {
-    return input.keyboard.mult_key.is_down || input.controllers[0].trigger_left.end >= 0.9f;
+    return input.keyboard.mult_key.is_down || input.controllers[0].trigger_right.end >= 0.5f;
 }
 
 
 static bool decrease_zoom_speed(Input const& input, AppState const& state)
 {
-    return (input.keyboard.div_key.is_down || input.controllers[0].trigger_right.end >= 0.9f) && 
+    return (input.keyboard.div_key.is_down || input.controllers[0].trigger_left.end >= 0.5f) && 
         state.zoom_speed > ZOOM_SPEED_LOWER_LIMIT;
 }
 
 
 static bool zoom_in(Input const& input)
 {
-    return input.keyboard.plus_key.is_down || input.controllers[0].stick_left_y.end >= 0.9f;
+    return input.keyboard.plus_key.is_down || input.controllers[0].stick_left_y.end >= 0.5f;
 }
-
 
 
 static bool zoom_out(Input const& input)
 {
-    return input.keyboard.minus_key.is_down || input.controllers[0].stick_left_y.end <= -0.9f;
+    return input.keyboard.minus_key.is_down || input.controllers[0].stick_left_y.end <= -0.5f;
 }
 
 
 static bool increase_resolution(Input const& input, AppState const& state)
 {
-    return (input.keyboard.f_key.is_down || input.controllers[0].shoulder_left.is_down) && 
+    return (input.keyboard.f_key.is_down || input.controllers[0].shoulder_right.is_down) && 
         state.max_iter < MAX_ITERATIONS_UPPER_LIMIT;
 }
 
 
 static bool decrease_resolution(Input const& input, AppState const& state)
 {
-    return (input.keyboard.d_key.is_down || input.controllers[0].shoulder_right.is_down) && 
+    return (input.keyboard.d_key.is_down || input.controllers[0].shoulder_left.is_down) && 
         state.max_iter > MAX_ITERTAIONS_LOWER_LIMIT;
 }
 
