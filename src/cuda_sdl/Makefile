@@ -304,6 +304,8 @@ app_c := $(cuda_app)/app.cpp
 app_o := $(build)/app.o
 object_files += $(app_o)
 
+controls_h := $(app)/input_controls.hpp
+
 render_h := $(cuda_app)/render.hpp
 render_h += $(app)/colors.hpp
 
@@ -338,7 +340,7 @@ $(input_o): $(input_c) $(input_h)
 	@echo "\n $(input_o)"
 	$(GPP) -o $@ -c $< $(SDL2)
 
-$(app_o): $(app_c) $(app_h) $(input_h) $(render_h) $(device_h) $(types_h)
+$(app_o): $(app_c) $(app_h) $(input_h) $(render_h) $(device_h) $(types_h) $(controls_h)
 	@echo "\n $(app_o)"
 	$(GPP) -o $@ -c $<
 

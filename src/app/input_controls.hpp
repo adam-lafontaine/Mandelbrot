@@ -59,13 +59,13 @@ inline bool zoom_out(Input const& input)
 
 inline bool increase_resolution(Input const& input)
 {
-    return (input.keyboard.f_key.is_down || input.controllers[0].shoulder_right.is_down);
+    return input.keyboard.f_key.is_down || input.controllers[0].shoulder_right.is_down;
 }
 
 
 inline bool decrease_resolution(Input const& input)
 {
-    return (input.keyboard.d_key.is_down || input.controllers[0].shoulder_left.is_down);
+    return input.keyboard.d_key.is_down || input.controllers[0].shoulder_left.is_down;
 }
 
 
@@ -74,3 +74,13 @@ inline bool stop_application(Input const& input)
     return input.controllers[0].button_b.pressed;
 }
 
+
+inline bool cycle_color_scheme_up(Input const& input)
+{
+    return input.controllers[0].dpad_up.pressed || input.controllers[0].dpad_right.pressed;
+}
+
+inline bool cycle_color_scheme_down(Input const& input)
+{
+    return input.controllers[0].dpad_down.pressed || input.controllers[0].dpad_left.pressed;
+}

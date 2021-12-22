@@ -123,6 +123,27 @@ static void process_input(Input const& input, AppState& state)
 		state.render_new = true;
 	}
 
+    if(cycle_color_scheme_up(input))
+    {
+        ++state.rgb_option;
+        if(state.rgb_option > 6)
+        {
+            state.rgb_option = 1;
+        }
+
+        state.render_new = true;
+    }
+    if(cycle_color_scheme_down(input))
+    {
+        --state.rgb_option;
+        if(state.rgb_option < 1)
+        {
+            state.rgb_option = 6;
+        }
+
+        state.render_new = true;
+    }
+
 	// color scheme with 1 - 6
 	if (input.keyboard.one_key.is_down && state.rgb_option != 1)
 	{
