@@ -157,8 +157,6 @@ public:
 	u32 height;
 
 	u32* data;
-
-    u32* data_mirror;
 };
 
 

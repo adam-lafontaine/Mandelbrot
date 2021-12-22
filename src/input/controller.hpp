@@ -35,17 +35,15 @@ CONTROLLER_X +
 CONTROLLER_Y;
 
 
-typedef union axis_state_t
+class AxisState
 {
-    r32 states[4];
-    struct
-    {
-        r32 start;
-        r32 end;
-        r32 min;
-        r32 max;
-    };
-} AxisState;
+public:
+    r32 start;
+    r32 end;
+    
+    r32 min;
+    r32 max;
+};
 
 
 typedef union controller_input_t

@@ -19,6 +19,8 @@ public:
     DeviceMatrix iterations;
     DeviceImage pixels;
     DeviceColorPalette palette;
+    DeviceArray<u32> min_values;
+    DeviceArray<u32> max_values;
 };
 
 
@@ -30,7 +32,7 @@ public:
 	Point2Dr64 mbt_pos;
     r64 mbt_screen_width;
     r64 mbt_screen_height;
-    
+
 	Vec2Di32 pixel_shift;
 
 	r64 zoom_level;

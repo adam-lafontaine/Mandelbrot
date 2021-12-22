@@ -2,34 +2,50 @@
 #include "cuda_def.cuh"
 
 
+static void set_rgb_channels(u32& cr, u32& cg, u32& cb, u32 rgb_option)
+{
+	switch (rgb_option)
+	{
+	case 1:
+		cr = 0;
+		cg = 1;
+		cb = 2;
+		break;
+	case 2:
+		cr = 0;
+		cg = 2;
+		cb = 1;
+		break;
+	case 3:
+		cr = 1;
+		cg = 0;
+		cb = 2;
+		break;
+	case 4:
+		cr = 1;
+		cg = 2;
+		cb = 0;
+		break;
+	case 5:
+		cr = 2;
+		cg = 0;
+		cb = 1;
+		break;
+	case 6:
+		cr = 2;
+		cg = 1;
+		cb = 0;
+		break;
+	}
+}
+
+
 constexpr int THREADS_PER_BLOCK = 1024;
 
 constexpr int calc_thread_blocks(u32 n_threads)
 {
     return (n_threads + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 }
-
-/*
-constexpr u32 MAX_THREADS = 2048;
-
-
-class ThreadChunk
-{
-public:
-    u32 n_chunks;
-    u32 chunk_size;
-};
-
-
-constexpr ThreadChunk calc_chunks(u32 n_elements)
-{
-    ThreadChunk chunk{};
-
-    chunk.n_chunks = MAX_THREADS;
-    chunk.chunk_size = n_elements / MAX_THREADS;
-
-    return chunk;
-}*/
 
 
 class MandelbrotProps
@@ -47,6 +63,19 @@ public:
 };
 
 
+class MinMaxProps
+{
+public:
+    u32* values;
+    u32 n_values;
+
+    u32* thread_list_min;
+    u32* thread_list_max;
+
+    u32 n_threads;
+};
+
+
 class DrawProps
 {
 public:    
@@ -60,26 +89,15 @@ public:
 
     u32 n_threads;
     u32 n_chunks;
+
+    u32* min_iter;
+    u32* max_iter;
 };
 
 
 namespace gpu
 {
 /**********/
-
-    
-GPU_FUNCTION
-static u32 sorted_min(u32* sorted)
-{
-    return sorted[0];
-}
-
-
-GPU_FUNCTION
-static u32 sorted_max(u32* sorted)
-{
-    return sorted[1];
-}
 
 
 GPU_FUNCTION
@@ -109,19 +127,19 @@ static void mandelbrot(MandelbrotProps const& props, u32 i)
         ++iter;
     }
 
-    props.iterations.data[i] = props.iterations.data_mirror[i] = iter - 1;
+    props.iterations.data[i] = iter - 1;
 }
 
 
 GPU_FUNCTION
 static void draw(DrawProps const& props, u32 i)
 {
-    auto iter_min = gpu::sorted_min(props.iterations.data_mirror);
-    auto iter_max = gpu::sorted_max(props.iterations.data_mirror);
+    auto iter_min = *props.min_iter;
+    auto iter_max = *props.max_iter;
     //auto diff = max - min;
     pixel_t p{};
     p.alpha = 255;
-
+    
     auto iter = props.iterations.data[i];
     if(iter >= iter_max)
     {
@@ -140,6 +158,40 @@ static void draw(DrawProps const& props, u32 i)
     }
 
     props.pixels.data[i] = p;
+}
+
+
+GPU_FUNCTION
+static u32 find_min(u32* values, u32 n_elements)
+{
+    u32 min = values[0];
+
+    for(u32 i = 1; i < n_elements; ++i)
+    {
+        if(values[i] < min)
+        {
+            min = values[i];
+        }
+    }
+
+    return min;
+}
+
+
+GPU_FUNCTION
+static u32 find_max(u32* values, u32 n_elements)
+{
+    u32 max = values[0];
+
+    for(u32 i = 1; i < n_elements; ++i)
+    {
+        if(values[i] > max)
+        {
+            max = values[i];
+        }
+    }
+
+    return max;
 }
 
 
@@ -184,162 +236,105 @@ static void gpu_draw(DrawProps props)
 }
 
 
-
-
-
-
-
 GPU_KERNAL
-static void gpu_sort_high_low(u32* values, u32 n_half)
+static void gpu_find_min_max(MinMaxProps props)
 {
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
-    if (i >= n_half)
+    int t = blockDim.x * blockIdx.x + threadIdx.x;
+    if (t >= props.n_threads)
     {
         return;
     }
+    
+    auto chunk_size = (r32)props.n_values / props.n_threads;    
 
-    u32* low = values;
-    u32* high = values + n_half;
+    auto i_begin = lround(t * chunk_size);
+    auto i_end = min(lround((t + 1) * chunk_size), (long)props.n_values - 1);
 
-    if(high[i] < low[i])
+    u32 min = props.values[i_begin];
+    u32 max = props.values[i_end];
+    u32 val = 0;
+    for(u32 i = i_begin + 1; i < i_end; ++i)
     {
-        auto h = low[i];
-        low[i] = high[i];
-        high[i] = h;
-    }    
-}
-
-
-GPU_KERNAL
-static void gpu_reduce_min_max(u32* values, u32 n_elements)
-{
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
-    if (i >= n_elements)
-    {
-        return;
+        val = props.values[i];
+        if(val < min)
+        {
+            min = val;
+        }
+        else if(val > max)
+        {
+            max = val;
+        }
     }
 
-    auto half = n_elements / 2;
+    props.thread_list_min[t] = min;
+    props.thread_list_max[t] = max;
 
-    if(i < half)
+    cuda_barrier();
+
+    switch(t)
     {
-        values[i] = min(values[i], values[i + 1]);
-    }
-    else
-    {
-        values[i] = max(values[i + half], values[i + half + 1]);
-    }
-}
+        case 0:
+        props.thread_list_min[0] = gpu::find_min(props.thread_list_min, props.n_threads);
+        break;
 
+        case 1:
+        props.thread_list_max[0] = gpu::find_max(props.thread_list_max, props.n_threads);
+        break;
 
-HOST_FUNCTION
-static void sort_min_max(DeviceMatrix& mat)
-{
-    u32 n_elements = mat.width * mat.height;
-
-    assert(n_elements % 2 == 0);
-
-    auto n_half = n_elements / 2;
-
-    auto values = mat.data_mirror;
-
-    bool proc = cuda_no_errors();
-    assert(proc);
-
-    gpu_sort_high_low<<<calc_thread_blocks(n_half), THREADS_PER_BLOCK>>>(values, n_half);
-
-    proc &= cuda_launch_success();
-    assert(proc);
-
-    for(u32 n = n_half; n > 1; n /= 2)
-    {
-        gpu_reduce_min_max<<<calc_thread_blocks(n), THREADS_PER_BLOCK>>>(values, n);
-
-        proc &= cuda_launch_success();
-        assert(proc);
+        default:
+        break;
     }
 }
 
-
-
-
-
-
-
-
-static void set_rgb_channels(u32& cr, u32& cg, u32& cb, u32 rgb_option)
-{
-	switch (rgb_option)
-	{
-	case 1:
-		cr = 0;
-		cg = 1;
-		cb = 2;
-		break;
-	case 2:
-		cr = 0;
-		cg = 2;
-		cb = 1;
-		break;
-	case 3:
-		cr = 1;
-		cg = 0;
-		cb = 2;
-		break;
-	case 4:
-		cr = 1;
-		cg = 2;
-		cb = 0;
-		break;
-	case 5:
-		cr = 2;
-		cg = 0;
-		cb = 1;
-		break;
-	case 6:
-		cr = 2;
-		cg = 1;
-		cb = 0;
-		break;
-	}
-}
 
 
 void render(AppState& state)
 {
     auto& d_screen = state.device.pixels;
     u32 n_elements = d_screen.width * d_screen.height;
-    u32 n_chunks = 4;
+    u32 n_chunks = 1;
     
-    MandelbrotProps m_props{};
-    m_props.max_iter = state.max_iter;
-	m_props.min_re = MBT_MIN_X + state.mbt_pos.x;
-	m_props.min_im = MBT_MIN_Y + state.mbt_pos.y;
-	m_props.re_step = state.mbt_screen_width / d_screen.width;
-	m_props.im_step = state.mbt_screen_height / d_screen.height;
-    m_props.iterations = state.device.iterations;
-    m_props.n_threads = n_elements / n_chunks;
-    m_props.n_chunks = n_chunks;
-
-    DrawProps d_props{};
-    d_props.iterations = state.device.iterations;
-    d_props.palette = state.device.palette;
-    d_props.pixels = state.device.pixels;
-    d_props.n_threads = n_elements / n_chunks;
-    d_props.n_chunks = n_chunks;
-    set_rgb_channels(d_props.cr, d_props.cg, d_props.cb, state.rgb_option);
+    MandelbrotProps mb_props{};
+    mb_props.max_iter = state.max_iter;
+	mb_props.min_re = MBT_MIN_X + state.mbt_pos.x;
+	mb_props.min_im = MBT_MIN_Y + state.mbt_pos.y;
+	mb_props.re_step = state.mbt_screen_width / d_screen.width;
+	mb_props.im_step = state.mbt_screen_height / d_screen.height;
+    mb_props.iterations = state.device.iterations;
+    mb_props.n_threads = n_elements / n_chunks;
+    mb_props.n_chunks = n_chunks;    
 
     bool proc = cuda_no_errors();
     assert(proc);
 
-    gpu_mandelbrot<<<calc_thread_blocks(m_props.n_threads), THREADS_PER_BLOCK>>>(m_props);
+    gpu_mandelbrot<<<calc_thread_blocks(mb_props.n_threads), THREADS_PER_BLOCK>>>(mb_props);
 
     proc &= cuda_launch_success();
     assert(proc);
 
-    sort_min_max(state.device.iterations);
+    MinMaxProps mm_props{};
+    mm_props.values = state.device.iterations.data;
+    mm_props.n_values = n_elements;
+    mm_props.thread_list_max = state.device.max_values.data;
+    mm_props.thread_list_min = state.device.min_values.data;
+    mm_props.n_threads = state.device.min_values.n_elements;    
 
-    gpu_draw<<<calc_thread_blocks(d_props.n_threads), THREADS_PER_BLOCK>>>(d_props);
+    gpu_find_min_max<<<calc_thread_blocks(mm_props.n_threads), THREADS_PER_BLOCK>>>(mm_props);
+
+    proc &= cuda_launch_success();
+    assert(proc);
+
+    DrawProps dr_props{};
+    dr_props.iterations = state.device.iterations;
+    dr_props.palette = state.device.palette;
+    dr_props.pixels = state.device.pixels;
+    dr_props.n_threads = n_elements / n_chunks;
+    dr_props.n_chunks = n_chunks;
+    dr_props.min_iter = mm_props.thread_list_min;
+    dr_props.max_iter = mm_props.thread_list_max;
+    set_rgb_channels(dr_props.cr, dr_props.cg, dr_props.cb, state.rgb_option);
+
+    gpu_draw<<<calc_thread_blocks(dr_props.n_threads), THREADS_PER_BLOCK>>>(dr_props);
 
     proc &= cuda_launch_success();
     assert(proc);

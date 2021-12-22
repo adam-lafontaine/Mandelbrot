@@ -13,49 +13,51 @@ constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
 
 static bool pan_right(Input const& input)
 {
-    return input.keyboard.right_key.is_down;
+    return input.keyboard.right_key.is_down || input.controllers[0].dpad_right.is_down;
 }
 
 
 static bool pan_left(Input const& input)
 {
-    return input.keyboard.left_key.is_down;
+    return input.keyboard.left_key.is_down || input.controllers[0].dpad_left.is_down;
 }
 
 
 static bool pan_up(Input const& input)
 {
-    return input.keyboard.up_key.is_down;
+    return input.keyboard.up_key.is_down || input.controllers[0].dpad_up.is_down;
 }
 
 
 static bool pan_down(Input const& input)
 {
-    return input.keyboard.down_key.is_down;
+    return input.keyboard.down_key.is_down || input.controllers[0].dpad_down.is_down;
 }
 
 
 static bool increase_zoom_speed(Input const& input)
 {
-    return input.keyboard.mult_key.is_down;
+    return input.keyboard.mult_key.is_down || input.controllers[0].trigger_left.end >= 0.9f;
 }
 
 
 static bool decrease_zoom_speed(Input const& input, AppState const& state)
 {
-    return input.keyboard.div_key.is_down && state.zoom_speed > ZOOM_SPEED_LOWER_LIMIT;
+    return (input.keyboard.div_key.is_down || input.controllers[0].trigger_right.end >= 0.9f) && 
+        state.zoom_speed > ZOOM_SPEED_LOWER_LIMIT;
 }
 
 
 static bool zoom_in(Input const& input)
 {
-    return input.keyboard.plus_key.is_down || input.controllers[0].trigger_right.end > 0;
+    return input.keyboard.plus_key.is_down || input.controllers[0].stick_left_y.end >= 0.9f;
 }
+
 
 
 static bool zoom_out(Input const& input)
 {
-    return input.keyboard.minus_key.is_down || input.controllers[0].trigger_left.end > 0;
+    return input.keyboard.minus_key.is_down || input.controllers[0].stick_left_y.end <= -0.9f;
 }
 
 
@@ -271,14 +273,17 @@ namespace app
 		auto const height = buffer.height;
 
         auto const n_pixels = width * height;
-        auto const iter_sz = 2 * sizeof(u32) * n_pixels;
+        auto const iter_sz = sizeof(u32) * n_pixels;
         auto const screen_sz = sizeof(pixel_t) * n_pixels;
 
         auto& color_palette = palettes256;
         auto const n_colors = color_palette[0].size();
         auto const color_sz = sizeof(u8) * RGB_CHANNELS * n_colors;
 
-        auto device_sz = iter_sz + screen_sz + color_sz;
+        auto const min_val_sz = sizeof(u32) * MAX_GPU_THREADS;
+        auto const max_val_sz = sizeof(u32) * MAX_GPU_THREADS;
+
+        auto device_sz = iter_sz + screen_sz + color_sz + min_val_sz + max_val_sz;
         if(!device_malloc(device.buffer, device_sz))
         {
             return false;
@@ -300,6 +305,16 @@ namespace app
         }
 
         if(!copy_to_device(color_palette, device.palette))
+        {
+            return false;
+        }
+
+        if(!make_device_array(device.min_values, MAX_GPU_THREADS, device.buffer))
+        {
+            return false;
+        }
+
+        if(!make_device_array(device.max_values, MAX_GPU_THREADS, device.buffer))
         {
             return false;
         }

@@ -152,7 +152,7 @@ bool copy_to_host(DeviceImage const& src, image_t const& dst)
 bool make_device_matrix(DeviceMatrix& matrix, u32 width, u32 height, DeviceBuffer& buffer)
 {
     assert(buffer.data);
-    auto bytes = 2 * width * height * sizeof(u32);
+    auto bytes = width * height * sizeof(u32);
 
     bool result = buffer.total_bytes - buffer.offset >= bytes;
     if(result)
@@ -160,7 +160,6 @@ bool make_device_matrix(DeviceMatrix& matrix, u32 width, u32 height, DeviceBuffe
         matrix.width = width;
         matrix.height = height;
         matrix.data = (u32*)(buffer.data + buffer.offset);
-        matrix.data_mirror = matrix.data + width * height;
         buffer.offset += bytes;
     }
 

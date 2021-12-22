@@ -4,7 +4,7 @@
 
 static r32 normalize_axis_value(i16 axis)
 {
-	r32 norm = axis / 32768.0f;
+	r32 norm = -1.0f * axis / 32768.0f;
 	if(norm > 1.0f)
 	{
 		return 1.0f;
@@ -14,8 +14,6 @@ static r32 normalize_axis_value(i16 axis)
 	{
 		return -1.0f;
 	}
-
-	// TODO: may need to invert sign
 
 	return norm;
 }
