@@ -17,11 +17,16 @@ main_c         := $(sdl)/sdl_main.cpp
 main_o         := $(build)/main.o
 object_files   := $(main_o)
 
+types_h := $(app)/types.hpp
+types_h += $(utils)/types.hpp
+
 app_h := $(app)/app.hpp
 
 app_c := $(app)/app.cpp
 app_o := $(build)/app.o
 object_files += $(app_o)
+
+controls_h := $(app)/input_controls.hpp
 
 render_h := $(app)/render.hpp
 render_h += $(app)/colors.hpp
@@ -45,11 +50,11 @@ program_exe := $(build)/$(exe_name)
 
 GPP += -O3
 
-$(render_o): $(render_c) $(render_h)
+$(render_o): $(render_c) $(render_h) $(types_h)
 	@echo "\n $(render_o)"
 	$(GPP) -o $@ -c $<
 
-$(app_o): $(app_c) $(app_h) $(input_h) $(render_h)
+$(app_o): $(app_c) $(app_h) $(input_h) $(render_h) $(controls_h) $(types_h)
 	@echo "\n $(app_o)"
 	$(GPP) -o $@ -c $<
 
