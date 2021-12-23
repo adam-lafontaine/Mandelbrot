@@ -285,39 +285,7 @@ std::function<pixel_t(u32, u32, u32, u32)> get_rgb_function(u32 max_iter)
 }
 
 
-static void draw(image_t const& dst, AppState const& state)
-{
-	auto& mat = state.iterations;
 
-	//auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
-	//auto min = *mat_min;
-	//auto max = *mat_max;
-
-	auto mat_min_max = std::minmax_element(mat.begin(), mat.end());
-	auto min = *mat_min_max.first;
-	auto max = *mat_min_max.second;
-
-	auto diff = max - min;
-
-	u32 c1 = 0;
-	u32 c2 = 0;
-	u32 c3 = 0;
-	set_rgb_channels(c1, c2, c3, state.rgb_option);
-
-	auto const to_rgb = get_rgb_function(diff);
-
-	auto const to_platform_color = [&](u32 i)
-	{
-		if (i >= max)
-		{
-			return to_platform_pixel(0, 0, 0);
-		}
-
-		return to_rgb(i - min, c1, c2, c3);
-	};
-
-	transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
-}
 
 
 static void for_each_row(mat_u32_t const& mat, std::function<void(u32 y)> const& func)
@@ -429,13 +397,8 @@ static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
 }
 
 
-static void mandelbrot(AppState& state)
+static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 {
-	auto& dst = state.iterations;
-
-	auto const max_iter = state.max_iter;
-	constexpr r64 limit = 4.0;
-
 	auto const x_pos = state.mbt_pos.x;
 	auto const y_pos = state.mbt_pos.y;
 
@@ -470,7 +433,7 @@ static void mandelbrot(AppState& state)
 				r64 re2 = 0.0;
 				r64 im2 = 0.0;
 
-				while (iter < max_iter && re2 + im2 <= limit)
+				while (iter < state.iter_limit && re2 + im2 <= 4.0)
 				{
 					im = (re + re) * im + ci;
 					re = re2 - im2 + cr;
@@ -565,14 +528,59 @@ static void mandelbrot(AppState& state)
 	}
 
 	do_mandelbrot(r);
-	do_mandelbrot(r2);
+	do_mandelbrot(r2);	
 }
 
 
-void render(image_t const& dst, AppState& state)
+static void find_min_max_iter(AppState& state)
+{
+	auto& mat = state.iterations;
+	//auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
+	//auto min = *mat_min;
+	//auto max = *mat_max;
+
+	auto mat_min_max = std::minmax_element(mat.begin(), mat.end());
+	state.iter_min = *mat_min_max.first;
+	state.iter_max = *mat_min_max.second;
+}
+
+
+static void draw(image_t const& dst, AppState const& state)
+{
+	auto const min = state.iter_min;
+	auto const max = state.iter_max;	
+
+	auto diff = max - min;
+
+	u32 c1 = 0;
+	u32 c2 = 0;
+	u32 c3 = 0;
+	set_rgb_channels(c1, c2, c3, state.rgb_option);
+
+	auto const to_rgb = get_rgb_function(diff);
+
+	auto const to_color = [&](u32 i)
+	{
+		if (i >= max)
+		{
+			return to_platform_pixel(0, 0, 0);
+		}
+
+		return to_rgb(i - min, c1, c2, c3);
+	};
+
+	auto& mat = state.iterations;
+
+	transform(mat.begin(), mat.end(), dst.begin(), to_color);
+}
+
+
+void render(AppState& state)
 {
 	copy(state.iterations, state.pixel_shift);
-	mandelbrot(state);
 
-	draw(dst, state);
+	mandelbrot(state.iterations, state);
+	find_min_max_iter(state);
+
+	draw(state.screen_buffer, state);
 }

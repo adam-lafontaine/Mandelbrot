@@ -19,8 +19,9 @@ public:
     DeviceMatrix iterations;
     DeviceImage pixels;
     DeviceColorPalette palette;
-    DeviceArray<u32> min_values;
-    DeviceArray<u32> max_values;
+
+    DeviceArray<u32> min_iters;
+    DeviceArray<u32> max_iters;
 };
 
 
@@ -39,9 +40,8 @@ public:
 	r64 zoom_speed;
 
 	u32 rgb_option;
-
-	u32 max_iter;
-
-    image_t screen_buffer;
+	u32 iter_limit;
+    
     DeviceMemory device;
+    image_t screen_buffer;
 };

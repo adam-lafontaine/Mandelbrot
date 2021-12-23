@@ -25,8 +25,6 @@ class AppState
 public:
 	bool render_new;
 
-	
-
 	Point2Dr64 mbt_pos;
     r64 mbt_screen_width;
     r64 mbt_screen_height;
@@ -37,8 +35,10 @@ public:
 	r64 zoom_speed;
 
 	u32 rgb_option;
+	u32 iter_limit;
 
-	u32 max_iter;
 	mat_u32_t iterations;
+	u32 iter_min;
+	u32 iter_max;
 	image_t screen_buffer;
 };

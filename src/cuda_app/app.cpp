@@ -106,20 +106,20 @@ static void process_input(Input const& input, AppState& state)
 		state.render_new = true;
 	}
     
-	if (state.max_iter < MAX_ITERATIONS_UPPER_LIMIT && increase_resolution(input))
+	if (state.iter_limit < MAX_ITERATIONS_UPPER_LIMIT && increase_resolution(input))
 	{
-		u32 adj = static_cast<u32>(iteration_adjustment_factor * state.max_iter);
+		u32 adj = static_cast<u32>(iteration_adjustment_factor * state.iter_limit);
 		adj = std::max(adj, 5u);
 
-		state.max_iter = std::min(state.max_iter + adj, MAX_ITERATIONS_UPPER_LIMIT);
+		state.iter_limit = std::min(state.iter_limit + adj, MAX_ITERATIONS_UPPER_LIMIT);
 		state.render_new = true;
 	}
-	if (state.max_iter > MAX_ITERTAIONS_LOWER_LIMIT && decrease_resolution(input))
+	if (state.iter_limit > MAX_ITERTAIONS_LOWER_LIMIT && decrease_resolution(input))
 	{
-		u32 adj = static_cast<u32>(iteration_adjustment_factor * state.max_iter);
+		u32 adj = static_cast<u32>(iteration_adjustment_factor * state.iter_limit);
 		adj = std::max(adj, 5u);
 
-		state.max_iter = std::max(state.max_iter - adj, MAX_ITERTAIONS_LOWER_LIMIT);
+		state.iter_limit = std::max(state.iter_limit - adj, MAX_ITERTAIONS_LOWER_LIMIT);
 		state.render_new = true;
 	}
 
@@ -262,12 +262,12 @@ namespace app
             return false;
         }
 
-        if(!make_device_array(device.min_values, MAX_GPU_THREADS, device.buffer))
+        if(!make_device_array(device.min_iters, MAX_GPU_THREADS, device.buffer))
         {
             return false;
         }
 
-        if(!make_device_array(device.max_values, MAX_GPU_THREADS, device.buffer))
+        if(!make_device_array(device.max_iters, MAX_GPU_THREADS, device.buffer))
         {
             return false;
         }
@@ -293,7 +293,7 @@ namespace app
         state.mbt_screen_width = mbt_screen_width(state.zoom_level);
 		state.mbt_screen_height = mbt_screen_height(state.zoom_level);
 
-		state.max_iter = MAX_ITERATIONS_START;
+		state.iter_limit = MAX_ITERATIONS_START;
 
 		state.rgb_option = 1;
 
