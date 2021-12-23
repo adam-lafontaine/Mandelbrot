@@ -94,6 +94,16 @@ public:
 };
 
 
+class CopyProps
+{
+public:
+    DeviceMatrix iterations;
+    u32 n_cols;
+
+    u32 n_threads;
+};
+
+
 namespace gpu
 {
 /**********/
@@ -289,16 +299,6 @@ static void gpu_find_min_max(MinMaxProps props)
 }
 
 
-class CopyProps
-{
-public:
-    DeviceMatrix iterations;
-    u32 n_cols;
-
-    u32 n_threads;
-};
-
-
 GPU_KERNAL
 static void gpu_copy_left(CopyProps props)
 {
@@ -308,11 +308,24 @@ static void gpu_copy_left(CopyProps props)
         return;
     }
 
-    auto y = t / props.n_cols;
-    auto dst_i = y * props.iterations.width;
-    auto src_i = dst_i + props.n_cols;
+    auto n_cols = props.n_cols;
+    auto width = props.iterations.width;
+    auto y = t / n_cols;
+    auto offset = t - y * n_cols;
 
-    props.iterations.data[dst_i] = props.iterations.data[src_i];
+    for(u32 c = 0; c < width - n_cols; c += n_cols)
+    {
+        auto dst_x = c + offset;
+        auto src_x = dst_x + n_cols;
+        if(src_x < width)
+        {
+            auto dst_i = y * width + dst_x;
+            auto src_i = dst_i + n_cols;
+            props.iterations.data[dst_i] = props.iterations.data[src_i];
+        }
+
+        cuda_barrier();
+    }
 }
 
 
@@ -325,12 +338,23 @@ static void gpu_copy_right(CopyProps props)
         return;
     }
 
-    auto y = t / props.n_cols;
+    auto n_cols = props.n_cols;
     auto width = props.iterations.width;
-    auto dst_i = y * width + width - 1;
-    auto src_i = dst_i - props.n_cols;
+    auto y = t / n_cols;
+    auto offset = t - y * n_cols;
 
-    props.iterations.data[dst_i] = props.iterations.data[src_i];
+    for(u32 c = 0; c < width - n_cols; c += n_cols)
+    {
+        if(c + offset + n_cols < width)
+        {
+            auto src_x = width - 1 - c;
+            auto src_i = y * width + src_x;
+            auto dst_i = src_i - n_cols;
+            props.iterations.data[dst_i] = props.iterations.data[src_i];
+        }
+
+        cuda_barrier();
+    }
 }
 
 
