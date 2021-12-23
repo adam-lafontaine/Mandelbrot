@@ -289,6 +289,137 @@ static void gpu_find_min_max(MinMaxProps props)
 }
 
 
+class CopyProps
+{
+public:
+    DeviceMatrix iterations;
+    u32 n_cols;
+
+    u32 n_threads;
+};
+
+
+GPU_KERNAL
+static void gpu_copy_left(CopyProps props)
+{
+    int t = blockDim.x * blockIdx.x + threadIdx.x;
+    if (t >= props.n_threads)
+    {
+        return;
+    }
+
+    auto y = t / props.n_cols;
+    auto dst_i = y * props.iterations.width;
+    auto src_i = dst_i + props.n_cols;
+
+    props.iterations.data[dst_i] = props.iterations.data[src_i];
+}
+
+
+GPU_KERNAL
+static void gpu_copy_right(CopyProps props)
+{
+    int t = blockDim.x * blockIdx.x + threadIdx.x;
+    if (t >= props.n_threads)
+    {
+        return;
+    }
+
+    auto y = t / props.n_cols;
+    auto width = props.iterations.width;
+    auto dst_i = y * width + width - 1;
+    auto src_i = dst_i - props.n_cols;
+
+    props.iterations.data[dst_i] = props.iterations.data[src_i];
+}
+
+
+static void copy_left(DeviceMatrix const& mat, u32 n_cols)
+{
+    CopyProps props{};
+    props.iterations = mat;
+    props.n_cols = n_cols;
+    props.n_threads = n_cols * mat.height;
+
+    bool proc = cuda_no_errors();
+    assert(proc);
+    
+    gpu_copy_left<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
+
+    proc &= cuda_launch_success();
+    assert(proc);
+}
+
+
+static void copy_right(DeviceMatrix const& mat, u32 n_cols)
+{
+    CopyProps props{};
+    props.iterations = mat;
+    props.n_cols = n_cols;
+    props.n_threads = n_cols * mat.height;
+
+    bool proc = cuda_no_errors();
+    assert(proc);
+    
+    gpu_copy_right<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
+
+    proc &= cuda_launch_success();
+    assert(proc);
+}
+
+
+static void copy(DeviceMatrix const& mat, Vec2Di32 const& direction)
+{    
+	auto right = direction.x > 0;
+
+	auto const n_cols = static_cast<u32>(std::abs(direction.x));
+	auto const n_rows = static_cast<u32>(std::abs(direction.y));
+
+	if (n_cols == 0 && n_rows == 0)
+	{
+		return;
+	}
+
+	if (n_rows == 0)
+	{
+		if (right)
+		{
+			copy_right(mat, n_cols);
+		}
+		else
+		{
+			copy_left(mat, n_cols);
+		}
+
+		return;
+	}
+
+    auto up = direction.y < 0;
+
+    u32 const x_len = mat.width - n_cols;
+	u32 const y_len = mat.height - n_rows;
+
+	u32 src_x_begin = right ? 0 : n_cols;
+	u32 dst_x_begin = src_x_begin + direction.x;
+
+	u32 src_y_begin = 0;
+	i32 dy = 0;
+	if (up)
+	{
+		src_y_begin = n_rows;
+		dy = 1;
+	}
+	else
+	{
+		src_y_begin = y_len - 1;
+		dy = -1;
+	}
+
+
+
+}
+
+
 static void mandelbrot(DeviceMatrix const& dst, AppState& state)
 {
     u32 width = dst.width;
