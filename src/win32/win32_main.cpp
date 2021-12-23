@@ -26,17 +26,24 @@ GlobalVariable win32::BitmapBuffer g_back_buffer = {};
 GlobalVariable WINDOWPLACEMENT g_window_placement = { sizeof(g_window_placement) };
 
 
-void end_program()
-{
-    g_running = false;
-    app::end_program();
-}
-
-
 u32 platform_to_color_32(u8 red, u8 green, u8 blue)
 {
     return red << 16 | green << 8 | blue;
 }
+
+
+void platform_signal_stop()
+{
+    g_running = false;
+}
+
+
+static void end_program(app::AppMemory& memory)
+{
+    g_running = false;
+    app::end_program(memory);
+}
+
 
 
 namespace win32
@@ -137,7 +144,7 @@ namespace win32
             return true;
 
         case VK_F4:
-            end_program();
+            g_running = false;
             return true;
         }
 
@@ -151,14 +158,12 @@ namespace win32
 static void allocate_app_memory(app::AppMemory& memory, win32::MemoryState& win32_memory)
 {
     memory.permanent_storage_size = Megabytes(256);
-    memory.transient_storage_size = 0; // Gigabytes(1);
 
-    size_t total_size = memory.permanent_storage_size + memory.transient_storage_size;
+    size_t total_size = memory.permanent_storage_size;
 
     LPVOID base_address = 0;
 
     memory.permanent_storage = VirtualAlloc(base_address, (SIZE_T)total_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-    memory.transient_storage = (u8*)memory.permanent_storage + memory.permanent_storage_size;
 
     win32_memory.total_size = total_size;
     win32_memory.memory_block = memory.permanent_storage;
@@ -291,7 +296,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     
     allocate_app_memory(app_memory, win32_memory);
-    if (!app_memory.permanent_storage || !app_memory.transient_storage)
+    if (!app_memory.permanent_storage)
     {
         return 0;
     }    
@@ -386,7 +391,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             case IDM_EXIT: // File > Exit
                 DestroyWindow(hWnd);
-                end_program();
+                g_running = false;
                 break;
 
             default:
@@ -404,7 +409,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_DESTROY: // X button
         PostQuitMessage(0);
-        end_program();
+        g_running = false;
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
