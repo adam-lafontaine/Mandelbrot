@@ -24,6 +24,7 @@ Keyboard Controls
 * Increase resolution with 'F'
 * Decrease resolution with 'D'
 * Change color scheme with '1' - '6'
+* End program with ESC key
 
 Controller Controls
 * Zoom in and out with left thumbstick
@@ -33,3 +34,4 @@ Controller Controls
 * Increase resolution with right bumper
 * Decrease resolution with left bumber
 * Cycle color scheme with D pad
+* End program with B button
