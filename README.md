@@ -15,6 +15,7 @@ Features
 * Select color scheme
 * Color contrast maximized for the current visible section
 
+
 Keyboard Controls
 * Zoom in with '+' (numpad)
 * Zoom out with '-' (numpad)
@@ -25,6 +26,7 @@ Keyboard Controls
 * Decrease resolution with 'D'
 * Change color scheme with '1' - '6'
 * End program with ESC key
+
 
 Controller Controls (Linux only)
 * Zoom in and out with left thumbstick

@@ -416,7 +416,11 @@ int main(int argc, char *argv[])
             handle_sdl_event(event);
         }
 
-        input[in_current].dt_frame = frame_ms_elapsed / 1000.0f; // TODO:
+        // does not miss frames but slows animation
+        input[in_current].dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
+
+        // animation speed maintained but frames missed
+        //input[in_current].dt_frame = frame_ms_elapsed / 1000.0f; // TODO:
 
         process_keyboard_input(has_event, event, input[in_old], input[in_current]);
 
