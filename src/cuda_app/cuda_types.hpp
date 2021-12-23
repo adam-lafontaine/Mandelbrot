@@ -29,6 +29,7 @@ class AppState
 {
 public:
 	bool render_new;
+    bool draw_new;
 
 	Point2Dr64 mbt_pos;
     r64 mbt_screen_width;
@@ -43,5 +44,6 @@ public:
 	u32 iter_limit;
     
     DeviceMemory device;
+
     image_t screen_buffer;
 };

@@ -24,6 +24,7 @@ class AppState
 {
 public:
 	bool render_new;
+	bool draw_new;
 
 	Point2Dr64 mbt_pos;
     r64 mbt_screen_width;
@@ -40,5 +41,6 @@ public:
 	mat_u32_t iterations;
 	u32 iter_min;
 	u32 iter_max;
+
 	image_t screen_buffer;
 };

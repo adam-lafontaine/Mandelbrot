@@ -371,12 +371,18 @@ static void draw(image_t const& dst, AppState const& state)
 }
 
 
-
 void render(AppState& state)
 {
-    mandelbrot(state.device.iterations, state);
+    if(state.render_new)
+    {
+        mandelbrot(state.device.iterations, state);
+        find_min_max_iter(state);
 
-    find_min_max_iter(state);
-
-    draw(state.screen_buffer, state);
+        state.draw_new = true;
+    }
+    
+    if(state.draw_new)
+    {
+        draw(state.screen_buffer, state);
+    }
 }

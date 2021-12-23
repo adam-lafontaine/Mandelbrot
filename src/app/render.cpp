@@ -577,10 +577,18 @@ static void draw(image_t const& dst, AppState const& state)
 
 void render(AppState& state)
 {
-	copy(state.iterations, state.pixel_shift);
+	if(state.render_new)
+	{
+		copy(state.iterations, state.pixel_shift);
 
-	mandelbrot(state.iterations, state);
-	find_min_max_iter(state);
+		mandelbrot(state.iterations, state);
+		find_min_max_iter(state);
 
-	draw(state.screen_buffer, state);
+		state.draw_new = true;
+	}
+    
+    if(state.draw_new)
+    {
+        draw(state.screen_buffer, state);
+    }
 }
