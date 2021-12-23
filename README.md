@@ -26,7 +26,7 @@ Keyboard Controls
 * Change color scheme with '1' - '6'
 * End program with ESC key
 
-Controller Controls
+Controller Controls (Linux only)
 * Zoom in and out with left thumbstick
 * Pan left, right, up, down with right thumbstick
 * Increase zoom rate with right trigger
