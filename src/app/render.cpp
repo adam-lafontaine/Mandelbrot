@@ -337,8 +337,7 @@ static void copy_right(mat_u32_t const& mat, u32 n_cols)
 
 
 static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
-{
-	auto up = direction.y < 0;
+{	
 	auto right = direction.x > 0;
 
 	auto const n_cols = static_cast<u32>(std::abs(direction.x));
@@ -362,6 +361,8 @@ static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
 
 		return;
 	}
+
+	auto up = direction.y < 0;
 
 	u32 const x_len = mat.width - n_cols;
 	u32 const y_len = mat.height - n_rows;

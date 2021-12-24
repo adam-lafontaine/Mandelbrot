@@ -94,11 +94,11 @@ public:
 };
 
 
-class CopyProps
+class CopyProps1D
 {
 public:
     DeviceMatrix iterations;
-    u32 n_cols;
+    u32 n_dim;
 
     u32 n_threads;
 };
@@ -300,7 +300,7 @@ static void gpu_find_min_max(MinMaxProps props)
 
 
 GPU_KERNAL
-static void gpu_copy_left(CopyProps props)
+static void gpu_copy_left(CopyProps1D props)
 {
     int t = blockDim.x * blockIdx.x + threadIdx.x;
     if (t >= props.n_threads)
@@ -308,7 +308,7 @@ static void gpu_copy_left(CopyProps props)
         return;
     }
 
-    auto n_cols = props.n_cols;
+    auto n_cols = props.n_dim;
     auto width = props.iterations.width;
     auto y = t / n_cols;
     auto offset = t - y * n_cols;
@@ -330,7 +330,7 @@ static void gpu_copy_left(CopyProps props)
 
 
 GPU_KERNAL
-static void gpu_copy_right(CopyProps props)
+static void gpu_copy_right(CopyProps1D props)
 {
     int t = blockDim.x * blockIdx.x + threadIdx.x;
     if (t >= props.n_threads)
@@ -338,7 +338,7 @@ static void gpu_copy_right(CopyProps props)
         return;
     }
 
-    auto n_cols = props.n_cols;
+    auto n_cols = props.n_dim;
     auto width = props.iterations.width;
     auto y = t / n_cols;
     auto offset = t - y * n_cols;
@@ -358,11 +358,113 @@ static void gpu_copy_right(CopyProps props)
 }
 
 
+GPU_KERNAL
+static void gpu_copy_up(CopyProps1D props)
+{
+    int t = blockDim.x * blockIdx.x + threadIdx.x;
+    if (t >= props.n_threads)
+    {
+        return;
+    }
+
+    auto n_rows = props.n_dim;
+    auto width = props.iterations.width;
+    auto height = props.iterations.height;
+
+    for(u32 r = 0; r < height - n_rows; r += n_rows)
+    {
+        auto ti = (r + 1) * n_rows * width + t;
+        if(ti < width * height)
+        {
+            auto src_i = ti;
+            auto dst_i = src_i - n_rows * width;
+            props.iterations.data[dst_i] = props.iterations.data[src_i];
+        }
+
+        cuda_barrier();
+    }
+}
+
+
+GPU_KERNAL
+static void gpu_copy_down(CopyProps1D props)
+{
+    int t = blockDim.x * blockIdx.x + threadIdx.x;
+    if (t >= props.n_threads)
+    {
+        return;
+    }
+
+    auto n_rows = props.n_dim;
+    auto width = props.iterations.width;
+    auto height = props.iterations.height;
+
+    for(u32 r = 0; r < height - n_rows; r += n_rows)
+    {
+        auto ti = (r + 1) * n_rows * width + t;
+        if(ti < width * height)
+        {
+            auto dst_i = width * height - 1 - ti;
+            auto src_i = dst_i - n_rows * width;
+            props.iterations.data[dst_i] = props.iterations.data[src_i];
+        }
+
+        cuda_barrier();
+    }
+}
+
+
+class CopyProps2D
+{
+public:
+    DeviceMatrix iterations;
+    u32 n_rows;
+    u32 n_cols;
+    i32 dx;
+    i32 dy;
+
+    u32 n_threads;
+};
+
+
+GPU_KERNAL
+static void gpu_copy_2d(CopyProps2D props)
+{
+    int t = blockDim.x * blockIdx.x + threadIdx.x;
+    if (t >= props.n_threads)
+    {
+        return;
+    }
+
+    auto width = props.iterations.width;
+    auto height = props.iterations.height;
+
+    auto y_len = height - props.n_rows;
+    auto src_y_begin = props.dy < 0 ? props.n_rows : y_len - 1;
+
+    u32 src_x_begin = props.dx ? 0 : props.n_cols;
+	u32 dst_x_begin = src_x_begin + props.dx * props.n_cols;
+
+    for (u32 iy = 0; iy < y_len; ++iy)
+    {
+        auto src_y = src_y_begin + props.dy * iy;
+        auto dst_y = src_y + props.dy * props.n_rows;
+
+        auto src_i = src_y * width + src_x_begin + t;
+        auto dst_i = dst_y * width + dst_x_begin + t;
+
+        props.iterations.data[dst_i] = props.iterations.data[src_i];
+
+        cuda_barrier();
+    }
+}
+
+
 static void copy_left(DeviceMatrix const& mat, u32 n_cols)
 {
-    CopyProps props{};
+    CopyProps1D props{};
     props.iterations = mat;
-    props.n_cols = n_cols;
+    props.n_dim = n_cols;
     props.n_threads = n_cols * mat.height;
 
     bool proc = cuda_no_errors();
@@ -377,9 +479,9 @@ static void copy_left(DeviceMatrix const& mat, u32 n_cols)
 
 static void copy_right(DeviceMatrix const& mat, u32 n_cols)
 {
-    CopyProps props{};
+    CopyProps1D props{};
     props.iterations = mat;
-    props.n_cols = n_cols;
+    props.n_dim = n_cols;
     props.n_threads = n_cols * mat.height;
 
     bool proc = cuda_no_errors();
@@ -392,10 +494,61 @@ static void copy_right(DeviceMatrix const& mat, u32 n_cols)
 }
 
 
+static void copy_up(DeviceMatrix const& mat, u32 n_rows)
+{
+    CopyProps1D props{};
+    props.iterations = mat;
+    props.n_dim = n_rows;
+    props.n_threads = n_rows * mat.width;
+
+    bool proc = cuda_no_errors();
+    assert(proc);
+    
+    gpu_copy_up<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
+
+    proc &= cuda_launch_success();
+    assert(proc);
+}
+
+
+static void copy_down(DeviceMatrix const& mat, u32 n_rows)
+{
+    CopyProps1D props{};
+    props.iterations = mat;
+    props.n_dim = n_rows;
+    props.n_threads = n_rows * mat.width;
+
+    bool proc = cuda_no_errors();
+    assert(proc);
+    
+    gpu_copy_up<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
+
+    proc &= cuda_launch_success();
+    assert(proc);
+}
+
+
+static void copy_2D(DeviceMatrix const& mat, Vec2Di32 const& direction)
+{
+    CopyProps2D props{};
+    props.iterations = mat;
+    props.n_cols = static_cast<u32>(std::abs(direction.x));
+    props.n_rows = static_cast<u32>(std::abs(direction.y));
+    props.dx = direction.x < 0 ? -1 : 1;
+    props.dy = direction.y < 0 ? -1 : 1;
+
+    bool proc = cuda_no_errors();
+    assert(proc);
+    
+    gpu_copy_2d<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
+
+    proc &= cuda_launch_success();
+    assert(proc);
+}
+
+
 static void copy(DeviceMatrix const& mat, Vec2Di32 const& direction)
 {    
-	auto right = direction.x > 0;
-
 	auto const n_cols = static_cast<u32>(std::abs(direction.x));
 	auto const n_rows = static_cast<u32>(std::abs(direction.y));
 
@@ -403,6 +556,8 @@ static void copy(DeviceMatrix const& mat, Vec2Di32 const& direction)
 	{
 		return;
 	}
+
+    auto right = direction.x > 0;
 
 	if (n_rows == 0)
 	{
@@ -420,27 +575,21 @@ static void copy(DeviceMatrix const& mat, Vec2Di32 const& direction)
 
     auto up = direction.y < 0;
 
-    u32 const x_len = mat.width - n_cols;
-	u32 const y_len = mat.height - n_rows;
+    if(n_cols == 0)
+    {
+        if(up)
+        {
+            copy_up(mat, n_rows);
+        }
+        else
+        {
+            copy_down(mat, n_rows);
+        }
 
-	u32 src_x_begin = right ? 0 : n_cols;
-	u32 dst_x_begin = src_x_begin + direction.x;
-
-	u32 src_y_begin = 0;
-	i32 dy = 0;
-	if (up)
-	{
-		src_y_begin = n_rows;
-		dy = 1;
-	}
-	else
-	{
-		src_y_begin = y_len - 1;
-		dy = -1;
-	}
-
-
-
+        return;
+    }
+    
+    copy_2D(mat, direction);
 }
 
 
