@@ -334,6 +334,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     auto new_input = &input[0];
     auto old_input = &input[1];
 
+    // TODO:
+    //bool in_current = 0;
+    //bool in_old = 1;
+
     g_running = true;
     sw.start();
     while (g_running)

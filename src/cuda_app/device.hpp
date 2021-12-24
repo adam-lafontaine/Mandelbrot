@@ -115,11 +115,13 @@ typedef union Pixel
 
 } pixel_t;
 
+using pixel_t = Pixel;
+
 
 class Image
 {
 public:
-	using pixel_t = Pixel;
+	
 
 	u32 width;
 	u32 height;
@@ -127,9 +129,7 @@ public:
 	pixel_t* data;
 };
 
-
 using image_t = Image;
-using pixel_t = image_t::pixel_t;
 
 
 class DeviceImage
@@ -156,7 +156,9 @@ public:
 	u32 width;
 	u32 height;
 
-	u32* data;
+	u32* data_src;
+    u32* data_dst;
+    //u32* data;    
 };
 
 

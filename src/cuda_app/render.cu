@@ -56,7 +56,10 @@ public:
     r64 min_im;
     r64 re_step;
     r64 im_step;
-    DeviceMatrix iterations_dst;
+
+    u32* iterations_dst;
+    u32 width;
+
     Range2Du32 r1;
     Range2Du32 r2;
 
@@ -80,7 +83,7 @@ public:
 class DrawProps
 {
 public:    
-    DeviceMatrix iterations;
+    u32* iterations;
 
     u32 cr = 0;
 	u32 cg = 0;
@@ -90,7 +93,7 @@ public:
     u32* min_iter;
     u32* max_iter;
 
-    DeviceImage pixels_dst;
+    pixel_t* pixels_dst;
 
     u32 n_threads;
 };
@@ -114,7 +117,7 @@ namespace gpu
 GPU_FUNCTION
 static void mandelbrot(MandelbrotProps const& props, u32 i)
 {
-    auto const width = props.iterations_dst.width;
+    auto const width = props.width;
 
     auto y = i / width;
     auto x = i - y * width;
@@ -138,7 +141,7 @@ static void mandelbrot(MandelbrotProps const& props, u32 i)
         ++iter;
     }
 
-    props.iterations_dst.data[i] = iter - 1;
+    props.iterations_dst[i] = iter - 1;
 }
 
 
@@ -151,7 +154,7 @@ static void draw(DrawProps const& props, u32 i)
     pixel_t p{};
     p.alpha = 255;
     
-    auto iter = props.iterations.data[i];
+    auto iter = props.iterations[i];
     if(iter >= iter_max)
     {
         p.red = 0;
@@ -169,7 +172,7 @@ static void draw(DrawProps const& props, u32 i)
         p.blue = props.palette.channels[props.cb][c];
     }
 
-    props.pixels_dst.data[i] = p;
+    props.pixels_dst[i] = p;
 }
 
 
@@ -261,7 +264,7 @@ static void gpu_mandelbrot(MandelbrotProps props)
     }
 
     auto pos = gpu::get_position(props.r1, props.r2, t);
-    auto i = props.iterations_dst.width * pos.y + pos.x;
+    auto i = props.width * pos.y + pos.x;
 
     gpu::mandelbrot(props, i);
 }
@@ -330,7 +333,7 @@ static void gpu_find_min_max(MinMaxProps props)
     }
 }
 
-
+/*
 GPU_KERNAL
 static void gpu_copy_left(CopyProps1D props)
 {
@@ -624,7 +627,7 @@ static void copy(DeviceMatrix const& mat, Vec2Di32 const& direction)
     
     copy_2D(mat, direction);
 }
-
+*/
 
 static void mandelbrot(DeviceMatrix const& dst, AppState& state)
 {
@@ -649,9 +652,17 @@ static void mandelbrot(DeviceMatrix const& dst, AppState& state)
     r1.y_end = height;
     auto r2 = r1;
 
+    r2.x_begin = 0;
+    r2.x_end = 0;
+    r2.y_begin = 0;
+    r2.y_end = 0;
+    /*
     if (no_horizontal && no_vertical)
     {
-        
+        r2.x_begin = 0;
+        r2.x_end = 0;
+        r2.y_begin = 0;
+        r2.y_end = 0;
     }
     else if (no_horizontal)
     {
@@ -697,6 +708,7 @@ static void mandelbrot(DeviceMatrix const& dst, AppState& state)
             r2.x_begin = dst.width - 1 - n_cols;
         }
     }
+    */
 
     u32 n_elements = (r1.x_end - r1.x_begin) * (r1.y_end - r1.y_begin) +
         (r2.x_end - r2.x_begin) * (r2.y_end - r2.y_begin);
@@ -707,7 +719,8 @@ static void mandelbrot(DeviceMatrix const& dst, AppState& state)
 	props.min_im = MBT_MIN_Y + state.mbt_pos.y;
 	props.re_step = state.mbt_screen_width / width;
 	props.im_step = state.mbt_screen_height / height;
-    props.iterations_dst = dst;
+    props.width = width;
+    props.iterations_dst = dst.data_dst;
     props.r1 = r1;
     props.r2 = r2;
     props.n_threads = n_elements;
@@ -729,7 +742,7 @@ static void find_min_max_iter(AppState& state)
     u32 n_elements = width * height;
 
     MinMaxProps mm_props{};
-    mm_props.values = state.device.iterations.data;
+    mm_props.values = state.device.iterations.data_dst;
     mm_props.n_values = n_elements;
     mm_props.thread_list_max = state.device.max_iters.data;
     mm_props.thread_list_min = state.device.min_iters.data;
@@ -755,9 +768,9 @@ static void draw(image_t const& dst, AppState const& state)
     u32 n_threads = n_elements / n_chunks;
 
     DrawProps dr_props{};
-    dr_props.iterations = state.device.iterations;
+    dr_props.iterations = state.device.iterations.data_dst;
     dr_props.palette = state.device.palette;
-    dr_props.pixels_dst = state.device.pixels;
+    dr_props.pixels_dst = state.device.pixels.data;
     dr_props.n_threads = n_threads;
     dr_props.min_iter = state.device.min_iters.data;
     dr_props.max_iter = state.device.max_iters.data;
@@ -780,7 +793,11 @@ void render(AppState& state)
 {
     if(state.render_new)
     {
-        copy(state.device.iterations, state.pixel_shift);
+        auto temp = state.device.iterations.data_dst;
+        state.device.iterations.data_dst = state.device.iterations.data_src;
+        state.device.iterations.data_src = temp;
+
+        //copy(state.device.iterations, state.pixel_shift);
         mandelbrot(state.device.iterations, state);
         find_min_max_iter(state);
 

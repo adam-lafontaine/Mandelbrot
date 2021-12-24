@@ -377,8 +377,8 @@ int main(int argc, char *argv[])
 
     g_running = app::initialize_memory(app_memory, app_buffer);    
     
-    u8 in_current = 0;
-    u8 in_old = 1;
+    bool in_current = 0;
+    bool in_old = 1;
     Stopwatch sw;
     r64 frame_ms_elapsed = TARGET_MS_PER_FRAME;
 
@@ -434,9 +434,8 @@ int main(int argc, char *argv[])
         display_bitmap_in_window(back_buffer);
 
         // swap inputs
-        auto temp = in_current;
         in_current = in_old;
-        in_old = temp;
+        in_old = !in_old;
     }
     
     app::end_program(app_memory);
