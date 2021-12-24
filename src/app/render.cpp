@@ -408,6 +408,8 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 	auto const re_step = state.mbt_screen_width / dst.width;
 	auto const im_step = state.mbt_screen_height / dst.height;
 
+	// TODO: by index?
+
 	auto const do_mandelbrot = [&](Range2Du32 const& range)
 	{
 		auto x_ids = UnsignedRange(range.x_begin, range.x_end);
@@ -467,11 +469,11 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 	auto no_horizontal = n_cols == 0;
 	auto no_vertical = n_rows == 0;
 
-	auto r = get_range(dst);
+	auto r1 = get_range(dst);
 
 	if (no_horizontal && no_vertical)
 	{
-		do_mandelbrot(r);
+		do_mandelbrot(r1);
 		return;
 	}
 
@@ -479,14 +481,14 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 	{
 		if (do_top)
 		{
-			r.y_end = n_rows;
+			r1.y_end = n_rows;
 		}
 		else // if (do_bottom)
 		{
-			r.y_begin = dst.height - 1 - n_rows;
+			r1.y_begin = dst.height - 1 - n_rows;
 		}
 
-		do_mandelbrot(r);
+		do_mandelbrot(r1);
 		return;
 	}
 
@@ -494,27 +496,27 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 	{
 		if (do_left)
 		{
-			r.x_end = n_cols;
+			r1.x_end = n_cols;
 		}
 		else // if (do_right)
 		{
-			r.x_begin = dst.width - 1 - n_cols;
+			r1.x_begin = dst.width - 1 - n_cols;
 		}
 
-		do_mandelbrot(r);
+		do_mandelbrot(r1);
 		return;
 	}
 
-	auto r2 = r;
+	auto r2 = r1;
 
 	if (do_top)
 	{
-		r.y_end = n_rows;
+		r1.y_end = n_rows;
 		r2.y_begin = n_rows;
 	}
 	else // if (do_bottom)
 	{
-		r.y_begin = dst.height - 1 - n_rows;
+		r1.y_begin = dst.height - 1 - n_rows;
 		r2.y_end = dst.height - 1 - n_rows;
 	}
 
@@ -527,7 +529,7 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 		r2.x_begin = dst.width - 1 - n_cols;
 	}
 
-	do_mandelbrot(r);
+	do_mandelbrot(r1);
 	do_mandelbrot(r2);	
 }
 

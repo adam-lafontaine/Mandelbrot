@@ -1,6 +1,8 @@
 #include "render.hpp"
 #include "cuda_def.cuh"
 
+#include <cassert>
+
 
 static void set_rgb_channels(u32& cr, u32& cg, u32& cb, u32 rgb_option)
 {
@@ -211,41 +213,34 @@ static u32 find_max(u32* values, u32 n_elements)
 
 
 GPU_FUNCTION
-static Point2Du32 get_position(Range2Du32 const& r1, Range2Du32 const& r2, int t)
+static u32 get_index(Range2Du32 const& r, u32 width, int t)
+{
+    auto w1 = r.x_end - r.x_begin;
+    auto h1 = r.y_end - r.y_begin;
+
+    assert(t < w1 * h1);
+
+    auto h = t / w1;
+
+    auto x = r.x_begin + t - w1 * h;
+    auto y = r.y_begin + h;
+
+    return width * y + x;
+}
+
+
+GPU_FUNCTION
+static u32 get_index(Range2Du32 const& r1, Range2Du32 const& r2, u32 width, int t)
 {
     auto w1 = r1.x_end - r1.x_begin;
     auto h1 = r1.y_end - r1.y_begin;
 
-    Point2Du32 pos{};
-
     if(t < w1 * h1)
     {
-        auto h = t / w1;
-
-        pos.x = r1.x_begin + t - w1 * h;
-        pos.y = r1.y_begin + h;
-
-        return pos;
+        return get_index(r1, width, t);
     }
-
-    t -= w1 * h1;
-
-    auto w2 = r2.x_end - r2.x_begin;
-    auto h2 = r2.y_end - r2.y_begin;
-
-    if(t < w2 * h2)
-    {
-        auto h = t / w2;
-
-        pos.x = r2.x_begin + t - w2 * h;
-        pos.y = r2.y_begin + h;
-
-        return pos;
-    }
-
-    assert(false);
-
-    return pos;
+    
+    return get_index(r2, width, t - w1 * h1);
 }
 
 
@@ -262,9 +257,8 @@ static void gpu_mandelbrot(MandelbrotProps props)
     {
         return;
     }
-
-    auto pos = gpu::get_position(props.r1, props.r2, t);
-    auto i = props.width * pos.y + pos.x;
+    
+    auto i = gpu::get_index(props.r1, props.r2, props.width, t);
 
     gpu::mandelbrot(props, i);
 }
@@ -333,137 +327,24 @@ static void gpu_find_min_max(MinMaxProps props)
     }
 }
 
-/*
-GPU_KERNAL
-static void gpu_copy_left(CopyProps1D props)
-{
-    int t = blockDim.x * blockIdx.x + threadIdx.x;
-    if (t >= props.n_threads)
-    {
-        return;
-    }
 
-    auto n_cols = props.n_dim;
-    auto width = props.iterations.width;
-    auto y = t / n_cols;
-    auto offset = t - y * n_cols;
-
-    for(u32 c = 0; c < width - n_cols; c += n_cols)
-    {
-        auto dst_x = c + offset;
-        auto src_x = dst_x + n_cols;
-        if(src_x < width)
-        {
-            auto dst_i = y * width + dst_x;
-            auto src_i = dst_i + n_cols;
-            props.iterations.data[dst_i] = props.iterations.data[src_i];
-        }
-
-        cuda_barrier();
-    }
-}
-
-
-GPU_KERNAL
-static void gpu_copy_right(CopyProps1D props)
-{
-    int t = blockDim.x * blockIdx.x + threadIdx.x;
-    if (t >= props.n_threads)
-    {
-        return;
-    }
-
-    auto n_cols = props.n_dim;
-    auto width = props.iterations.width;
-    auto y = t / n_cols;
-    auto offset = t - y * n_cols;
-
-    for(u32 c = 0; c < width - n_cols; c += n_cols)
-    {
-        if(c + offset + n_cols < width)
-        {
-            auto src_x = width - 1 - c;
-            auto src_i = y * width + src_x;
-            auto dst_i = src_i - n_cols;
-            props.iterations.data[dst_i] = props.iterations.data[src_i];
-        }
-
-        cuda_barrier();
-    }
-}
-
-
-GPU_KERNAL
-static void gpu_copy_up(CopyProps1D props)
-{
-    int t = blockDim.x * blockIdx.x + threadIdx.x;
-    if (t >= props.n_threads)
-    {
-        return;
-    }
-
-    auto n_rows = props.n_dim;
-    auto width = props.iterations.width;
-    auto height = props.iterations.height;
-
-    for(u32 r = 0; r < height - n_rows; r += n_rows)
-    {
-        auto ti = (r + 1) * n_rows * width + t;
-        if(ti < width * height)
-        {
-            auto src_i = ti;
-            auto dst_i = src_i - n_rows * width;
-            props.iterations.data[dst_i] = props.iterations.data[src_i];
-        }
-
-        cuda_barrier();
-    }
-}
-
-
-GPU_KERNAL
-static void gpu_copy_down(CopyProps1D props)
-{
-    int t = blockDim.x * blockIdx.x + threadIdx.x;
-    if (t >= props.n_threads)
-    {
-        return;
-    }
-
-    auto n_rows = props.n_dim;
-    auto width = props.iterations.width;
-    auto height = props.iterations.height;
-
-    for(u32 r = 0; r < height - n_rows; r += n_rows)
-    {
-        auto ti = (r + 1) * n_rows * width + t;
-        if(ti < width * height)
-        {
-            auto dst_i = width * height - 1 - ti;
-            auto src_i = dst_i - n_rows * width;
-            props.iterations.data[dst_i] = props.iterations.data[src_i];
-        }
-
-        cuda_barrier();
-    }
-}
-
-
-class CopyProps2D
+class CopyProps
 {
 public:
-    DeviceMatrix iterations;
-    u32 n_rows;
-    u32 n_cols;
-    i32 dx;
-    i32 dy;
+    u32* src;
+    u32* dst;
+
+    Range2Du32 r_src;
+    Range2Du32 r_dst;
+
+    u32 width;
 
     u32 n_threads;
 };
 
 
 GPU_KERNAL
-static void gpu_copy_2d(CopyProps2D props)
+static void gpu_copy(CopyProps props)
 {
     int t = blockDim.x * blockIdx.x + threadIdx.x;
     if (t >= props.n_threads)
@@ -471,163 +352,76 @@ static void gpu_copy_2d(CopyProps2D props)
         return;
     }
 
-    auto width = props.iterations.width;
-    auto height = props.iterations.height;
+    auto src_i = gpu::get_index(props.r_src, props.width, t);
+    auto dst_i = gpu::get_index(props.r_dst, props.width, t);
 
-    auto y_len = height - props.n_rows;
-    auto src_y_begin = props.dy < 0 ? props.n_rows : y_len - 1;
-
-    u32 src_x_begin = props.dx ? 0 : props.n_cols;
-	u32 dst_x_begin = src_x_begin + props.dx * props.n_cols;
-
-    for (u32 iy = 0; iy < y_len; ++iy)
-    {
-        auto src_y = src_y_begin + props.dy * iy;
-        auto dst_y = src_y + props.dy * props.n_rows;
-
-        auto src_i = src_y * width + src_x_begin + t;
-        auto dst_i = dst_y * width + dst_x_begin + t;
-
-        props.iterations.data[dst_i] = props.iterations.data[src_i];
-
-        cuda_barrier();
-    }
-}
-
-
-static void copy_left(DeviceMatrix const& mat, u32 n_cols)
-{
-    CopyProps1D props{};
-    props.iterations = mat;
-    props.n_dim = n_cols;
-    props.n_threads = n_cols * mat.height;
-
-    bool proc = cuda_no_errors();
-    assert(proc);
-    
-    gpu_copy_left<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
-
-    proc &= cuda_launch_success();
-    assert(proc);
-}
-
-
-static void copy_right(DeviceMatrix const& mat, u32 n_cols)
-{
-    CopyProps1D props{};
-    props.iterations = mat;
-    props.n_dim = n_cols;
-    props.n_threads = n_cols * mat.height;
-
-    bool proc = cuda_no_errors();
-    assert(proc);
-    
-    gpu_copy_right<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
-
-    proc &= cuda_launch_success();
-    assert(proc);
-}
-
-
-static void copy_up(DeviceMatrix const& mat, u32 n_rows)
-{
-    CopyProps1D props{};
-    props.iterations = mat;
-    props.n_dim = n_rows;
-    props.n_threads = n_rows * mat.width;
-
-    bool proc = cuda_no_errors();
-    assert(proc);
-    
-    gpu_copy_up<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
-
-    proc &= cuda_launch_success();
-    assert(proc);
-}
-
-
-static void copy_down(DeviceMatrix const& mat, u32 n_rows)
-{
-    CopyProps1D props{};
-    props.iterations = mat;
-    props.n_dim = n_rows;
-    props.n_threads = n_rows * mat.width;
-
-    bool proc = cuda_no_errors();
-    assert(proc);
-    
-    gpu_copy_down<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
-
-    proc &= cuda_launch_success();
-    assert(proc);
-}
-
-
-static void copy_2D(DeviceMatrix const& mat, Vec2Di32 const& direction)
-{
-    CopyProps2D props{};
-    props.iterations = mat;
-    props.n_cols = static_cast<u32>(std::abs(direction.x));
-    props.n_rows = static_cast<u32>(std::abs(direction.y));
-    props.dx = direction.x < 0 ? -1 : 1;
-    props.dy = direction.y < 0 ? -1 : 1;
-    props.n_threads = mat.width - props.n_cols;
-
-    bool proc = cuda_no_errors();
-    assert(proc);
-    
-    gpu_copy_2d<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
-
-    proc &= cuda_launch_success();
-    assert(proc);
+    props.dst[dst_i] = props.src[src_i];
 }
 
 
 static void copy(DeviceMatrix const& mat, Vec2Di32 const& direction)
-{    
+{
+    Range2Du32 r_src{};
+    r_src.x_begin = 0;
+    r_src.x_end = mat.width;
+    r_src.y_begin = 0;
+    r_src.y_end = mat.height;
+    auto r_dst = r_src;
+
 	auto const n_cols = static_cast<u32>(std::abs(direction.x));
 	auto const n_rows = static_cast<u32>(std::abs(direction.y));
 
-	if (n_cols == 0 && n_rows == 0)
+    if (n_cols == 0 && n_rows == 0)
 	{
 		return;
-	}
+	}    
 
     auto right = direction.x > 0;
-
-	if (n_rows == 0)
-	{
-		if (right)
-		{
-			copy_right(mat, n_cols);
-		}
-		else
-		{
-			copy_left(mat, n_cols);
-		}
-
-		return;
-	}
-
+    auto left = direction.x < 0;
     auto up = direction.y < 0;
+    auto down = direction.y > 0; 
 
-    if(n_cols == 0)
+    if(right)
     {
-        if(up)
-        {
-            copy_up(mat, n_rows);
-        }
-        else
-        {
-            copy_down(mat, n_rows);
-        }
-
-        return;
+        r_src.x_end -= n_cols;
+        r_dst.x_begin += n_cols;
     }
     
-    copy_2D(mat, direction);
+    if(left)
+    {
+        r_src.x_begin += n_cols;
+        r_dst.x_end -= n_cols;
+    }
+
+    if(up)
+    {
+        r_src.y_begin += n_rows;
+        r_dst.y_end -= n_rows;
+    }
+
+    if(down)
+    {
+        r_src.y_end -= n_rows;
+        r_dst.y_begin += n_rows;
+    }
+
+    CopyProps props{};
+    props.src = mat.data_src;
+    props.dst = mat.data_dst;
+    props.r_src = r_src;
+    props.r_dst = r_dst;
+    props.width = mat.width;
+    props.n_threads = (r_src.x_end - r_src.x_begin) * (r_src.y_end - r_src.y_begin);
+
+    bool proc = cuda_no_errors();
+    assert(proc);
+
+    gpu_copy<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
+
+    proc &= cuda_launch_success();
+    assert(proc);
 }
-*/
+
 
 static void mandelbrot(DeviceMatrix const& dst, AppState& state)
 {
@@ -650,23 +444,20 @@ static void mandelbrot(DeviceMatrix const& dst, AppState& state)
     r1.x_end = width;
     r1.y_begin = 0;
     r1.y_end = height;
-    auto r2 = r1;
-
+    
+    Range2Du32 r2{};
     r2.x_begin = 0;
     r2.x_end = 0;
     r2.y_begin = 0;
     r2.y_end = 0;
-    /*
+
     if (no_horizontal && no_vertical)
-    {
-        r2.x_begin = 0;
-        r2.x_end = 0;
-        r2.y_begin = 0;
-        r2.y_end = 0;
-    }
-    else if (no_horizontal)
-    {
-        if (do_top)
+	{
+
+	}
+	else if (no_horizontal)
+	{
+		if (do_top)
 		{
 			r1.y_end = n_rows;
 		}
@@ -674,10 +465,10 @@ static void mandelbrot(DeviceMatrix const& dst, AppState& state)
 		{
 			r1.y_begin = height - 1 - n_rows;
 		}
-    }
-    else if (no_vertical)
-    {
-        if (do_left)
+	}
+	else if (no_vertical)
+	{
+		if (do_left)
 		{
 			r1.x_end = n_cols;
 		}
@@ -685,9 +476,11 @@ static void mandelbrot(DeviceMatrix const& dst, AppState& state)
 		{
 			r1.x_begin = width - 1 - n_cols;
 		}
-    }
+	}
     else
     {
+        r2 = r1;
+        
         if (do_top)
         {
             r1.y_end = n_rows;
@@ -695,8 +488,8 @@ static void mandelbrot(DeviceMatrix const& dst, AppState& state)
         }
         else // if (do_bottom)
         {
-            r1.y_begin = dst.height - 1 - n_rows;
-            r2.y_end = dst.height - 1 - n_rows;
+            r1.y_begin = height - 1 - n_rows;
+            r2.y_end = height - 1 - n_rows;
         }
 
         if (do_left)
@@ -705,10 +498,9 @@ static void mandelbrot(DeviceMatrix const& dst, AppState& state)
         }
         else // if (do_right)
         {
-            r2.x_begin = dst.width - 1 - n_cols;
+            r2.x_begin = width - 1 - n_cols;
         }
-    }
-    */
+    }    
 
     u32 n_elements = (r1.x_end - r1.x_begin) * (r1.y_end - r1.y_begin) +
         (r2.x_end - r2.x_begin) * (r2.y_end - r2.y_begin);
@@ -797,8 +589,9 @@ void render(AppState& state)
         state.device.iterations.data_dst = state.device.iterations.data_src;
         state.device.iterations.data_src = temp;
 
-        //copy(state.device.iterations, state.pixel_shift);
+        copy(state.device.iterations, state.pixel_shift);
         mandelbrot(state.device.iterations, state);
+        
         find_min_max_iter(state);
 
         state.draw_new = true;
