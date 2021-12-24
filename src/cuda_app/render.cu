@@ -57,6 +57,8 @@ public:
     r64 re_step;
     r64 im_step;
     DeviceMatrix iterations_dst;
+    Range2Du32 r1;
+    Range2Du32 r2;
 
     u32 n_threads;
 };
@@ -205,6 +207,45 @@ static u32 find_max(u32* values, u32 n_elements)
 }
 
 
+GPU_FUNCTION
+static Point2Du32 get_position(Range2Du32 const& r1, Range2Du32 const& r2, int t)
+{
+    auto w1 = r1.x_end - r1.x_begin;
+    auto h1 = r1.y_end - r1.y_begin;
+
+    Point2Du32 pos{};
+
+    if(t < w1 * h1)
+    {
+        auto h = t / w1;
+
+        pos.x = r1.x_begin + t - w1 * h;
+        pos.y = r1.y_begin + h;
+
+        return pos;
+    }
+
+    t -= w1 * h1;
+
+    auto w2 = r2.x_end - r2.x_begin;
+    auto h2 = r2.y_end - r2.y_begin;
+
+    if(t < w2 * h2)
+    {
+        auto h = t / w2;
+
+        pos.x = r2.x_begin + t - w2 * h;
+        pos.y = r2.y_begin + h;
+
+        return pos;
+    }
+
+    assert(false);
+
+    return pos;
+}
+
+
 /**********/
 }
 
@@ -219,13 +260,10 @@ static void gpu_mandelbrot(MandelbrotProps props)
         return;
     }
 
-    u32 chunk_size = props.n_threads;
-    u32 n_chunks = chunk_size / (props.iterations_dst.width * props.iterations_dst.height);
+    auto pos = gpu::get_position(props.r1, props.r2, t);
+    auto i = props.iterations_dst.width * pos.y + pos.x;
 
-    for(u32 i = 0; i < n_chunks; ++i)
-    {
-        gpu::mandelbrot(props, t + i * chunk_size);
-    }
+    gpu::mandelbrot(props, i);
 }
 
 
@@ -238,13 +276,7 @@ static void gpu_draw(DrawProps props)
         return;
     }
 
-    u32 chunk_size = props.n_threads;
-    u32 n_chunks = chunk_size / (props.iterations.width * props.iterations.height);
-
-    for(u32 i = 0; i < n_chunks; ++i)
-    {
-        gpu::draw(props, t + i * chunk_size);
-    }    
+    gpu::draw(props, t);
 }
 
 
@@ -521,7 +553,7 @@ static void copy_down(DeviceMatrix const& mat, u32 n_rows)
     bool proc = cuda_no_errors();
     assert(proc);
     
-    gpu_copy_up<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
+    gpu_copy_down<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
 
     proc &= cuda_launch_success();
     assert(proc);
@@ -536,6 +568,7 @@ static void copy_2D(DeviceMatrix const& mat, Vec2Di32 const& direction)
     props.n_rows = static_cast<u32>(std::abs(direction.y));
     props.dx = direction.x < 0 ? -1 : 1;
     props.dy = direction.y < 0 ? -1 : 1;
+    props.n_threads = mat.width - props.n_cols;
 
     bool proc = cuda_no_errors();
     assert(proc);
@@ -597,24 +630,92 @@ static void mandelbrot(DeviceMatrix const& dst, AppState& state)
 {
     u32 width = dst.width;
     u32 height = dst.height;
-    u32 n_elements = width * height;
 
-    u32 n_chunks = 1;
-    u32 n_threads = n_elements / n_chunks;
+    auto& shift = state.pixel_shift;
+
+	auto do_left = shift.x > 0;
+	auto do_top = shift.y > 0;
+
+    auto const n_cols = static_cast<u32>(std::abs(shift.x));
+	auto const n_rows = static_cast<u32>(std::abs(shift.y));
+
+	auto no_horizontal = n_cols == 0;
+	auto no_vertical = n_rows == 0;
+
+    Range2Du32 r1{};
+    r1.x_begin = 0;
+    r1.x_end = width;
+    r1.y_begin = 0;
+    r1.y_end = height;
+    auto r2 = r1;
+
+    if (no_horizontal && no_vertical)
+    {
+        
+    }
+    else if (no_horizontal)
+    {
+        if (do_top)
+		{
+			r1.y_end = n_rows;
+		}
+		else // if (do_bottom)
+		{
+			r1.y_begin = height - 1 - n_rows;
+		}
+    }
+    else if (no_vertical)
+    {
+        if (do_left)
+		{
+			r1.x_end = n_cols;
+		}
+		else // if (do_right)
+		{
+			r1.x_begin = width - 1 - n_cols;
+		}
+    }
+    else
+    {
+        if (do_top)
+        {
+            r1.y_end = n_rows;
+            r2.y_begin = n_rows;
+        }
+        else // if (do_bottom)
+        {
+            r1.y_begin = dst.height - 1 - n_rows;
+            r2.y_end = dst.height - 1 - n_rows;
+        }
+
+        if (do_left)
+        {
+            r2.x_end = n_cols;
+        }
+        else // if (do_right)
+        {
+            r2.x_begin = dst.width - 1 - n_cols;
+        }
+    }
+
+    u32 n_elements = (r1.x_end - r1.x_begin) * (r1.y_end - r1.y_begin) +
+        (r2.x_end - r2.x_begin) * (r2.y_end - r2.y_begin);
     
-    MandelbrotProps mb_props{};
-    mb_props.iter_limit = state.iter_limit;
-	mb_props.min_re = MBT_MIN_X + state.mbt_pos.x;
-	mb_props.min_im = MBT_MIN_Y + state.mbt_pos.y;
-	mb_props.re_step = state.mbt_screen_width / width;
-	mb_props.im_step = state.mbt_screen_height / height;
-    mb_props.iterations_dst = dst;
-    mb_props.n_threads = n_threads;
+    MandelbrotProps props{};
+    props.iter_limit = state.iter_limit;
+	props.min_re = MBT_MIN_X + state.mbt_pos.x;
+	props.min_im = MBT_MIN_Y + state.mbt_pos.y;
+	props.re_step = state.mbt_screen_width / width;
+	props.im_step = state.mbt_screen_height / height;
+    props.iterations_dst = dst;
+    props.r1 = r1;
+    props.r2 = r2;
+    props.n_threads = n_elements;
 
     bool proc = cuda_no_errors();
     assert(proc);
 
-    gpu_mandelbrot<<<calc_thread_blocks(mb_props.n_threads), THREADS_PER_BLOCK>>>(mb_props);
+    gpu_mandelbrot<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
 
     proc &= cuda_launch_success();
     assert(proc);
@@ -679,6 +780,7 @@ void render(AppState& state)
 {
     if(state.render_new)
     {
+        copy(state.device.iterations, state.pixel_shift);
         mandelbrot(state.device.iterations, state);
         find_min_max_iter(state);
 
