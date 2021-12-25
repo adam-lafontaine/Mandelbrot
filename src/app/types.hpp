@@ -2,24 +2,6 @@
 #include "../utils/image.hpp"
 
 
-class Point2Dr64
-{
-public:
-	r64 x;
-	r64 y;
-};
-
-
-class Range2Du32
-{
-public:
-	u32 x_begin;
-	u32 x_end;
-	u32 y_begin;
-	u32 y_end;
-};
-
-
 class AppState
 {
 public:

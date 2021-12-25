@@ -3,32 +3,6 @@
 #include "device.hpp"
 
 
-class Point2Dr64
-{
-public:
-	r64 x;
-	r64 y;
-};
-
-
-class Point2Du32
-{
-public:
-	u32 x;
-	u32 y;
-};
-
-
-class Range2Du32
-{
-public:
-	u32 x_begin;
-	u32 x_end;
-	u32 y_begin;
-	u32 y_end;
-};
-
-
 class DeviceMemory
 {
 public:

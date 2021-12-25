@@ -284,6 +284,48 @@ std::function<pixel_t(u32, u32, u32, u32)> get_rgb_function(u32 max_iter)
 }
 
 
+static Point2Du32 get_position(Range2Du32 const& r, u32 width, int t)
+{
+    auto w1 = r.x_end - r.x_begin;
+
+    assert(t < w1 * (r.y_end - r.y_begin));
+
+    auto h = t / w1;
+
+    Point2Du32 pt{};
+    pt.x = r.x_begin + t - w1 * h;
+    pt.y = r.y_begin + h;
+
+    return pt;
+}
+
+
+static Point2Du32 get_position(Range2Du32 const& r1, Range2Du32 const& r2, u32 width, int t)
+{
+    auto w1 = r1.x_end - r1.x_begin;
+    auto h1 = r1.y_end - r1.y_begin;
+
+    if(t < w1 * h1)
+    {
+        return get_position(r1, width, t);
+    }
+    
+    return get_position(r2, width, t - w1 * h1);
+}
+
+
+static u32 get_index(u32 x, u32 y, u32 width)
+{
+    return width * y + x;
+}
+
+
+static u32 get_index(Point2Du32 const& pos, u32 width)
+{
+    return get_index(pos.x, pos.y, width);
+}
+
+
 
 
 
@@ -409,6 +451,34 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 	auto const im_step = state.mbt_screen_height / dst.height;
 
 	// TODO: by index?
+	auto const width = dst.width;
+
+	auto const do_mandelbrot_by_index = [&](u32 i)
+	{
+		auto y = i / width;
+		auto x = i - y * width;
+
+		r64 const ci = min_im + y * im_step;
+		u32 iter = 0;
+		r64 const cr = min_re + x * re_step;
+
+		r64 re = 0.0;
+		r64 im = 0.0;
+		r64 re2 = 0.0;
+		r64 im2 = 0.0;
+
+		while (iter < state.iter_limit && re2 + im2 <= 4.0)
+		{
+			im = (re + re) * im + ci;
+			re = re2 - im2 + cr;
+			im2 = im * im;
+			re2 = re * re;
+
+			++iter;
+		}
+
+		dst.data[i] = iter - 1;
+	};
 
 	auto const do_mandelbrot = [&](Range2Du32 const& range)
 	{

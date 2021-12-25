@@ -101,11 +101,16 @@ public:
 };
 
 
-class CopyProps1D
+class CopyProps
 {
 public:
-    DeviceMatrix iterations;
-    u32 n_dim;
+    u32* src;
+    u32* dst;
+
+    Range2Du32 r_src;
+    Range2Du32 r_dst;
+
+    u32 width;
 
     u32 n_threads;
 };
@@ -117,16 +122,59 @@ namespace gpu
 
 
 GPU_FUNCTION
-static void mandelbrot(MandelbrotProps const& props, u32 i)
+static Point2Du32 get_position(Range2Du32 const& r, u32 width, int t)
+{
+    auto w1 = r.x_end - r.x_begin;
+
+    assert(t < w1 * (r.y_end - r.y_begin));
+
+    auto h = t / w1;
+
+    Point2Du32 pt{};
+    pt.x = r.x_begin + t - w1 * h;
+    pt.y = r.y_begin + h;
+
+    return pt;
+}
+
+
+GPU_FUNCTION
+static Point2Du32 get_position(Range2Du32 const& r1, Range2Du32 const& r2, u32 width, int t)
+{
+    auto w1 = r1.x_end - r1.x_begin;
+    auto h1 = r1.y_end - r1.y_begin;
+
+    if(t < w1 * h1)
+    {
+        return get_position(r1, width, t);
+    }
+    
+    return get_position(r2, width, t - w1 * h1);
+}
+
+
+GPU_FUNCTION
+static u32 get_index(u32 x, u32 y, u32 width)
+{
+    return width * y + x;
+}
+
+
+GPU_FUNCTION
+static u32 get_index(Point2Du32 const& pos, u32 width)
+{
+    return get_index(pos.x, pos.y, width);
+}
+
+
+GPU_FUNCTION
+static void mandelbrot(MandelbrotProps const& props, Point2Du32 pos)
 {
     auto const width = props.width;
 
-    auto y = i / width;
-    auto x = i - y * width;
-
-    r64 const ci = props.min_im + y * props.im_step;
+    r64 const ci = props.min_im + pos.y * props.im_step;
     u32 iter = 0;
-    r64 const cr = props.min_re + x * props.re_step;
+    r64 const cr = props.min_re + pos.x * props.re_step;
 
     r64 re = 0.0;
     r64 im = 0.0;
@@ -142,6 +190,8 @@ static void mandelbrot(MandelbrotProps const& props, u32 i)
 
         ++iter;
     }
+
+    auto i = gpu::get_index(pos, width);
 
     props.iterations_dst[i] = iter - 1;
 }
@@ -212,38 +262,6 @@ static u32 find_max(u32* values, u32 n_elements)
 }
 
 
-GPU_FUNCTION
-static u32 get_index(Range2Du32 const& r, u32 width, int t)
-{
-    auto w1 = r.x_end - r.x_begin;
-    auto h1 = r.y_end - r.y_begin;
-
-    assert(t < w1 * h1);
-
-    auto h = t / w1;
-
-    auto x = r.x_begin + t - w1 * h;
-    auto y = r.y_begin + h;
-
-    return width * y + x;
-}
-
-
-GPU_FUNCTION
-static u32 get_index(Range2Du32 const& r1, Range2Du32 const& r2, u32 width, int t)
-{
-    auto w1 = r1.x_end - r1.x_begin;
-    auto h1 = r1.y_end - r1.y_begin;
-
-    if(t < w1 * h1)
-    {
-        return get_index(r1, width, t);
-    }
-    
-    return get_index(r2, width, t - w1 * h1);
-}
-
-
 /**********/
 }
 
@@ -258,9 +276,9 @@ static void gpu_mandelbrot(MandelbrotProps props)
         return;
     }
     
-    auto i = gpu::get_index(props.r1, props.r2, props.width, t);
+    auto pos = gpu::get_position(props.r1, props.r2, props.width, t);
 
-    gpu::mandelbrot(props, i);
+    gpu::mandelbrot(props, pos);
 }
 
 
@@ -328,21 +346,6 @@ static void gpu_find_min_max(MinMaxProps props)
 }
 
 
-class CopyProps
-{
-public:
-    u32* src;
-    u32* dst;
-
-    Range2Du32 r_src;
-    Range2Du32 r_dst;
-
-    u32 width;
-
-    u32 n_threads;
-};
-
-
 GPU_KERNAL
 static void gpu_copy(CopyProps props)
 {
@@ -352,8 +355,11 @@ static void gpu_copy(CopyProps props)
         return;
     }
 
-    auto src_i = gpu::get_index(props.r_src, props.width, t);
-    auto dst_i = gpu::get_index(props.r_dst, props.width, t);
+    auto src_pos = gpu::get_position(props.r_src, props.width, t);
+    auto dst_pos = gpu::get_position(props.r_dst, props.width, t);
+
+    auto src_i = gpu::get_index(src_pos, props.width);
+    auto dst_i = gpu::get_index(dst_pos, props.width);
 
     props.dst[dst_i] = props.src[src_i];
 }
@@ -533,17 +539,17 @@ static void find_min_max_iter(AppState& state)
     u32 height = state.device.iterations.height;
     u32 n_elements = width * height;
 
-    MinMaxProps mm_props{};
-    mm_props.values = state.device.iterations.data_dst;
-    mm_props.n_values = n_elements;
-    mm_props.thread_list_max = state.device.max_iters.data;
-    mm_props.thread_list_min = state.device.min_iters.data;
-    mm_props.n_threads = state.device.min_iters.n_elements;
+    MinMaxProps props{};
+    props.values = state.device.iterations.data_dst;
+    props.n_values = n_elements;
+    props.thread_list_max = state.device.max_iters.data;
+    props.thread_list_min = state.device.min_iters.data;
+    props.n_threads = state.device.min_iters.n_elements;
 
     bool proc = cuda_no_errors();
     assert(proc);
 
-    gpu_find_min_max<<<calc_thread_blocks(mm_props.n_threads), THREADS_PER_BLOCK>>>(mm_props);
+    gpu_find_min_max<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
 
     proc &= cuda_launch_success();
     assert(proc);
@@ -559,19 +565,19 @@ static void draw(image_t const& dst, AppState const& state)
     u32 n_chunks = 1;
     u32 n_threads = n_elements / n_chunks;
 
-    DrawProps dr_props{};
-    dr_props.iterations = state.device.iterations.data_dst;
-    dr_props.palette = state.device.palette;
-    dr_props.pixels_dst = state.device.pixels.data;
-    dr_props.n_threads = n_threads;
-    dr_props.min_iter = state.device.min_iters.data;
-    dr_props.max_iter = state.device.max_iters.data;
-    set_rgb_channels(dr_props.cr, dr_props.cg, dr_props.cb, state.rgb_option);
+    DrawProps props{};
+    props.iterations = state.device.iterations.data_dst;
+    props.palette = state.device.palette;
+    props.pixels_dst = state.device.pixels.data;
+    props.n_threads = n_threads;
+    props.min_iter = state.device.min_iters.data;
+    props.max_iter = state.device.max_iters.data;
+    set_rgb_channels(props.cr, props.cg, props.cb, state.rgb_option);
 
     bool proc = cuda_no_errors();
     assert(proc);
 
-    gpu_draw<<<calc_thread_blocks(dr_props.n_threads), THREADS_PER_BLOCK>>>(dr_props);
+    gpu_draw<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
 
     proc &= cuda_launch_success();
     assert(proc);

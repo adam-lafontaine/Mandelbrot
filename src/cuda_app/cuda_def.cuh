@@ -9,6 +9,6 @@
 #define GPU_GLOBAL_CONSTANT __constant__
 #define GPU_BLOCK_VARIABLE __shared__
 
-#define cuda_barrier __syncthreads
-
 #define CUDA_PRINT_ERROR
+
+#define cuda_barrier __syncthreads
