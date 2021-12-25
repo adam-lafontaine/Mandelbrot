@@ -284,33 +284,33 @@ std::function<pixel_t(u32, u32, u32, u32)> get_rgb_function(u32 max_iter)
 }
 
 
-static Point2Du32 get_position(Range2Du32 const& r, u32 width, int t)
+static Point2Du32 get_position(Range2Du32 const& r, u32 width, u32 r_id)
 {
     auto w1 = r.x_end - r.x_begin;
 
-    assert(t < w1 * (r.y_end - r.y_begin));
+    assert(r_id < w1 * (r.y_end - r.y_begin));
 
-    auto h = t / w1;
+    auto h = r_id / w1;
 
     Point2Du32 pt{};
-    pt.x = r.x_begin + t - w1 * h;
+    pt.x = r.x_begin + r_id - w1 * h;
     pt.y = r.y_begin + h;
 
     return pt;
 }
 
 
-static Point2Du32 get_position(Range2Du32 const& r1, Range2Du32 const& r2, u32 width, int t)
+static Point2Du32 get_position(Range2Du32 const& r1, Range2Du32 const& r2, u32 width, u32 r_id)
 {
     auto w1 = r1.x_end - r1.x_begin;
     auto h1 = r1.y_end - r1.y_begin;
 
-    if(t < w1 * h1)
+    if(r_id < w1 * h1)
     {
-        return get_position(r1, width, t);
+        return get_position(r1, width, r_id);
     }
     
-    return get_position(r2, width, t - w1 * h1);
+    return get_position(r2, width, r_id - w1 * h1);
 }
 
 
@@ -324,9 +324,6 @@ static u32 get_index(Point2Du32 const& pos, u32 width)
 {
     return get_index(pos.x, pos.y, width);
 }
-
-
-
 
 
 static void for_each_row(mat_u32_t const& mat, std::function<void(u32 y)> const& func)
@@ -439,115 +436,86 @@ static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
 }
 
 
+class MandelbrotProps
+{
+public:
+    u32 iter_limit;
+    r64 min_re;
+    r64 min_im;
+    r64 re_step;
+    r64 im_step;
+
+    u32* iterations_dst;
+    u32 width;
+
+    Range2Du32 r1;
+    Range2Du32 r2;
+};
+
+
+static void mandelbrot_by_range_id(MandelbrotProps const& props, u32 r_id)
+{
+	auto const width = props.width;
+	auto pos = get_position(props.r1, props.r2, width, r_id);    
+
+    r64 const ci = props.min_im + pos.y * props.im_step;
+    u32 iter = 0;
+    r64 const cr = props.min_re + pos.x * props.re_step;
+
+    r64 re = 0.0;
+    r64 im = 0.0;
+    r64 re2 = 0.0;
+    r64 im2 = 0.0;
+
+    while (iter < props.iter_limit && re2 + im2 <= 4.0)
+    {
+        im = (re + re) * im + ci;
+        re = re2 - im2 + cr;
+        im2 = im * im;
+        re2 = re * re;
+
+        ++iter;
+    }
+
+    auto i = get_index(pos, width);
+
+    props.iterations_dst[i] = iter - 1;
+}
+
+
 static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 {
-	auto const x_pos = state.mbt_pos.x;
-	auto const y_pos = state.mbt_pos.y;
-
-	auto const min_re = MBT_MIN_X + x_pos;
-	auto const min_im = MBT_MIN_Y + y_pos;
-
-	auto const re_step = state.mbt_screen_width / dst.width;
-	auto const im_step = state.mbt_screen_height / dst.height;
-
-	// TODO: by index?
 	auto const width = dst.width;
-
-	auto const do_mandelbrot_by_index = [&](u32 i)
-	{
-		auto y = i / width;
-		auto x = i - y * width;
-
-		r64 const ci = min_im + y * im_step;
-		u32 iter = 0;
-		r64 const cr = min_re + x * re_step;
-
-		r64 re = 0.0;
-		r64 im = 0.0;
-		r64 re2 = 0.0;
-		r64 im2 = 0.0;
-
-		while (iter < state.iter_limit && re2 + im2 <= 4.0)
-		{
-			im = (re + re) * im + ci;
-			re = re2 - im2 + cr;
-			im2 = im * im;
-			re2 = re * re;
-
-			++iter;
-		}
-
-		dst.data[i] = iter - 1;
-	};
-
-	auto const do_mandelbrot = [&](Range2Du32 const& range)
-	{
-		auto x_ids = UnsignedRange(range.x_begin, range.x_end);
-		auto y_ids = UnsignedRange(range.y_begin, range.y_end);
-
-		auto y_id_begin = y_ids.begin();
-		auto y_id_end = y_ids.end();
-		auto x_id_begin = x_ids.begin();
-		auto x_id_end = x_ids.end();
-
-		auto const do_row = [&](u32 y)
-		{
-			r64 const ci = min_im + y * im_step;
-			auto row = dst.row_begin(y);
-
-			auto const do_x = [&](u32 x)
-			{
-				u32 iter = 0;
-				r64 const cr = min_re + x * re_step;
-
-				r64 re = 0.0;
-				r64 im = 0.0;
-				r64 re2 = 0.0;
-				r64 im2 = 0.0;
-
-				while (iter < state.iter_limit && re2 + im2 <= 4.0)
-				{
-					im = (re + re) * im + ci;
-					re = re2 - im2 + cr;
-					im2 = im * im;
-					re2 = re * re;
-
-					++iter;
-				}
-
-				--iter;
-
-				row[x] = iter;
-			};
-
-			for_each(x_id_begin, x_id_end, do_x);
-		};
-
-		for_each(y_id_begin, y_id_end, do_row);
-	};
+	auto const height = dst.height;
 
 	auto& shift = state.pixel_shift;
 
 	auto do_left = shift.x > 0;
 	auto do_top = shift.y > 0;
-	//auto do_right = shift.x < 0;	
-	//auto do_bottom = shift.y < 0;
 
-	auto const n_cols = static_cast<u32>(std::abs(shift.x));
+    auto const n_cols = static_cast<u32>(std::abs(shift.x));
 	auto const n_rows = static_cast<u32>(std::abs(shift.y));
 
 	auto no_horizontal = n_cols == 0;
 	auto no_vertical = n_rows == 0;
 
-	auto r1 = get_range(dst);
+    Range2Du32 r1{};
+    r1.x_begin = 0;
+    r1.x_end = width;
+    r1.y_begin = 0;
+    r1.y_end = height;
+    
+    Range2Du32 r2{};
+    r2.x_begin = 0;
+    r2.x_end = 0;
+    r2.y_begin = 0;
+    r2.y_end = 0;
 
-	if (no_horizontal && no_vertical)
+    if (no_horizontal && no_vertical)
 	{
-		do_mandelbrot(r1);
-		return;
-	}
 
-	if (no_horizontal)
+	}
+	else if (no_horizontal)
 	{
 		if (do_top)
 		{
@@ -555,14 +523,10 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 		}
 		else // if (do_bottom)
 		{
-			r1.y_begin = dst.height - 1 - n_rows;
+			r1.y_begin = height - 1 - n_rows;
 		}
-
-		do_mandelbrot(r1);
-		return;
 	}
-
-	if (no_vertical)
+	else if (no_vertical)
 	{
 		if (do_left)
 		{
@@ -570,37 +534,56 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 		}
 		else // if (do_right)
 		{
-			r1.x_begin = dst.width - 1 - n_cols;
+			r1.x_begin = width - 1 - n_cols;
 		}
-
-		do_mandelbrot(r1);
-		return;
 	}
+    else
+    {
+        r2 = r1;
+        
+        if (do_top)
+        {
+            r1.y_end = n_rows;
+            r2.y_begin = n_rows;
+        }
+        else // if (do_bottom)
+        {
+            r1.y_begin = height - 1 - n_rows;
+            r2.y_end = height - 1 - n_rows;
+        }
 
-	auto r2 = r1;
+        if (do_left)
+        {
+            r2.x_end = n_cols;
+        }
+        else // if (do_right)
+        {
+            r2.x_begin = width - 1 - n_cols;
+        }
+    }    
 
-	if (do_top)
+    u32 n_elements = (r1.x_end - r1.x_begin) * (r1.y_end - r1.y_begin) +
+        (r2.x_end - r2.x_begin) * (r2.y_end - r2.y_begin);
+
+	MandelbrotProps props{};
+	props.iter_limit = state.iter_limit;
+	props.min_re = MBT_MIN_X + state.mbt_pos.x;
+	props.min_im = MBT_MIN_Y + state.mbt_pos.y;
+	props.re_step = state.mbt_screen_width / width;
+	props.im_step = state.mbt_screen_height / height;
+    props.width = width;
+    props.iterations_dst = dst.data; // TODO: src/dst?
+    props.r1 = r1;
+    props.r2 = r2;
+
+	auto r_ids = UnsignedRange(0u, n_elements);
+
+	auto const do_mandelbrot = [&](u32 r_id)
 	{
-		r1.y_end = n_rows;
-		r2.y_begin = n_rows;
-	}
-	else // if (do_bottom)
-	{
-		r1.y_begin = dst.height - 1 - n_rows;
-		r2.y_end = dst.height - 1 - n_rows;
-	}
+		mandelbrot_by_range_id(props, r_id);
+	};
 
-	if (do_left)
-	{
-		r2.x_end = n_cols;
-	}
-	else // if (do_right)
-	{
-		r2.x_begin = dst.width - 1 - n_cols;
-	}
-
-	do_mandelbrot(r1);
-	do_mandelbrot(r2);	
+	for_each(r_ids.begin(), r_ids.end(), do_mandelbrot);
 }
 
 
