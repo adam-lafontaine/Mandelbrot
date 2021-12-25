@@ -64,8 +64,6 @@ public:
 
     Range2Du32 r1;
     Range2Du32 r2;
-
-    u32 n_threads;
 };
 
 
@@ -96,8 +94,6 @@ public:
     u32* max_iter;
 
     pixel_t* pixels_dst;
-
-    u32 n_threads;
 };
 
 
@@ -111,8 +107,6 @@ public:
     Range2Du32 r_dst;
 
     u32 width;
-
-    u32 n_threads;
 };
 
 
@@ -122,16 +116,16 @@ namespace gpu
 
 
 GPU_FUNCTION
-static Point2Du32 get_position(Range2Du32 const& r, u32 width, int t)
+static Point2Du32 get_position(Range2Du32 const& r, u32 width, u32 r_id)
 {
     auto w1 = r.x_end - r.x_begin;
 
-    assert(t < w1 * (r.y_end - r.y_begin));
+    assert(r_id < w1 * (r.y_end - r.y_begin));
 
-    auto h = t / w1;
+    auto h = r_id / w1;
 
     Point2Du32 pt{};
-    pt.x = r.x_begin + t - w1 * h;
+    pt.x = r.x_begin + r_id - w1 * h;
     pt.y = r.y_begin + h;
 
     return pt;
@@ -139,17 +133,17 @@ static Point2Du32 get_position(Range2Du32 const& r, u32 width, int t)
 
 
 GPU_FUNCTION
-static Point2Du32 get_position(Range2Du32 const& r1, Range2Du32 const& r2, u32 width, int t)
+static Point2Du32 get_position(Range2Du32 const& r1, Range2Du32 const& r2, u32 width, u32 r_id)
 {
     auto w1 = r1.x_end - r1.x_begin;
     auto h1 = r1.y_end - r1.y_begin;
 
-    if(t < w1 * h1)
+    if(r_id < w1 * h1)
     {
-        return get_position(r1, width, t);
+        return get_position(r1, width, r_id);
     }
     
-    return get_position(r2, width, t - w1 * h1);
+    return get_position(r2, width, r_id - w1 * h1);
 }
 
 
@@ -168,9 +162,10 @@ static u32 get_index(Point2Du32 const& pos, u32 width)
 
 
 GPU_FUNCTION
-static void mandelbrot(MandelbrotProps const& props, Point2Du32 pos)
+static void mandelbrot_by_range_id(MandelbrotProps const& props, u32 r_id)
 {
     auto const width = props.width;
+    auto pos = get_position(props.r1, props.r2, width, r_id);
 
     r64 const ci = props.min_im + pos.y * props.im_step;
     u32 iter = 0;
@@ -268,25 +263,23 @@ static u32 find_max(u32* values, u32 n_elements)
 
 
 GPU_KERNAL
-static void gpu_mandelbrot(MandelbrotProps props)
+static void gpu_mandelbrot(MandelbrotProps props, u32 n_threads)
 {
     int t = blockDim.x * blockIdx.x + threadIdx.x;
-    if (t >= props.n_threads)
+    if (t >= n_threads)
     {
         return;
     }
-    
-    auto pos = gpu::get_position(props.r1, props.r2, props.width, t);
 
-    gpu::mandelbrot(props, pos);
+    gpu::mandelbrot_by_range_id(props, t);
 }
 
 
 GPU_KERNAL
-static void gpu_draw(DrawProps props)
+static void gpu_draw(DrawProps props, u32 n_threads)
 {    
     int t = blockDim.x * blockIdx.x + threadIdx.x;
-    if (t >= props.n_threads)
+    if (t >= n_threads)
     {
         return;
     }
@@ -347,10 +340,10 @@ static void gpu_find_min_max(MinMaxProps props)
 
 
 GPU_KERNAL
-static void gpu_copy(CopyProps props)
+static void gpu_copy(CopyProps props, u32 n_threads)
 {
     int t = blockDim.x * blockIdx.x + threadIdx.x;
-    if (t >= props.n_threads)
+    if (t >= n_threads)
     {
         return;
     }
@@ -417,12 +410,13 @@ static void copy(DeviceMatrix const& mat, Vec2Di32 const& direction)
     props.r_src = r_src;
     props.r_dst = r_dst;
     props.width = mat.width;
-    props.n_threads = (r_src.x_end - r_src.x_begin) * (r_src.y_end - r_src.y_begin);
+
+    auto n_threads = (r_src.x_end - r_src.x_begin) * (r_src.y_end - r_src.y_begin);
 
     bool proc = cuda_no_errors();
     assert(proc);
 
-    gpu_copy<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
+    gpu_copy<<<calc_thread_blocks(n_threads), THREADS_PER_BLOCK>>>(props, n_threads);
 
     proc &= cuda_launch_success();
     assert(proc);
@@ -521,12 +515,13 @@ static void mandelbrot(DeviceMatrix const& dst, AppState& state)
     props.iterations_dst = dst.data_dst;
     props.r1 = r1;
     props.r2 = r2;
-    props.n_threads = n_elements;
+
+    auto n_threads = n_elements;
 
     bool proc = cuda_no_errors();
     assert(proc);
 
-    gpu_mandelbrot<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
+    gpu_mandelbrot<<<calc_thread_blocks(n_threads), THREADS_PER_BLOCK>>>(props, n_threads);
 
     proc &= cuda_launch_success();
     assert(proc);
@@ -562,22 +557,20 @@ static void draw(image_t const& dst, AppState const& state)
     u32 height = dst.height;
     u32 n_elements = width * height;
 
-    u32 n_chunks = 1;
-    u32 n_threads = n_elements / n_chunks;
-
     DrawProps props{};
     props.iterations = state.device.iterations.data_dst;
     props.palette = state.device.palette;
     props.pixels_dst = state.device.pixels.data;
-    props.n_threads = n_threads;
     props.min_iter = state.device.min_iters.data;
     props.max_iter = state.device.max_iters.data;
     set_rgb_channels(props.cr, props.cg, props.cb, state.rgb_option);
 
+    auto n_threads = n_elements;
+
     bool proc = cuda_no_errors();
     assert(proc);
 
-    gpu_draw<<<calc_thread_blocks(props.n_threads), THREADS_PER_BLOCK>>>(props);
+    gpu_draw<<<calc_thread_blocks(n_threads), THREADS_PER_BLOCK>>>(props, n_threads);
 
     proc &= cuda_launch_success();
     assert(proc);
