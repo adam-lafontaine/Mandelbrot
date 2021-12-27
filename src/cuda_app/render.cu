@@ -54,10 +54,10 @@ class MandelbrotProps
 {
 public:
     u32 iter_limit;
-    r64 min_re;
-    r64 min_im;
-    r64 re_step;
-    r64 im_step;
+    r64 min_mx;
+    r64 min_my;
+    r64 mx_step;
+    r64 my_step;
 
     u32* iterations_dst;
     u32 width;
@@ -164,22 +164,23 @@ static void mandelbrot_by_range_id(MandelbrotProps const& props, u32 r_id)
 {
     auto const width = props.width;
     auto pos = get_position(props.range1, props.range2, width, r_id);
+    
+    r64 const cx = props.min_mx + pos.x * props.mx_step;
+    r64 const cy = props.min_my + pos.y * props.my_step;
 
-    r64 const ci = props.min_im + pos.y * props.im_step;
     u32 iter = 0;
-    r64 const cr = props.min_re + pos.x * props.re_step;
 
-    r64 re = 0.0;
-    r64 im = 0.0;
-    r64 re2 = 0.0;
-    r64 im2 = 0.0;
+    r64 mx = 0.0;
+    r64 my = 0.0;
+    r64 mx2 = 0.0;
+    r64 my2 = 0.0;
 
-    while (iter < props.iter_limit && re2 + im2 <= 4.0)
+    while (iter < props.iter_limit && mx2 + my2 <= 4.0)
     {
-        im = (re + re) * im + ci;
-        re = re2 - im2 + cr;
-        im2 = im * im;
-        re2 = re * re;
+        my = (mx + mx) * my + cy;
+        mx = mx2 - my2 + cx;
+        my2 = my * my;
+        mx2 = mx * mx;
 
         ++iter;
     }
@@ -505,10 +506,10 @@ static void mandelbrot(DeviceMatrix const& dst, AppState& state)
     
     MandelbrotProps props{};
     props.iter_limit = state.iter_limit;
-	props.min_re = MBT_MIN_X + state.mbt_pos.x;
-	props.min_im = MBT_MIN_Y + state.mbt_pos.y;
-	props.re_step = state.mbt_screen_width / width;
-	props.im_step = state.mbt_screen_height / height;
+	props.min_mx = MBT_MIN_X + state.mbt_pos.x;
+	props.min_my = MBT_MIN_Y + state.mbt_pos.y;
+	props.mx_step = state.mbt_screen_width / width;
+	props.my_step = state.mbt_screen_height / height;
     props.width = width;
     props.iterations_dst = dst.data_dst;
     props.range1 = range1;
