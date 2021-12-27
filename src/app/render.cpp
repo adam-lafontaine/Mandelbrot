@@ -300,17 +300,17 @@ static Point2Du32 get_position(Range2Du32 const& r, u32 width, u32 r_id)
 }
 
 
-static Point2Du32 get_position(Range2Du32 const& r1, Range2Du32 const& r2, u32 width, u32 r_id)
+static Point2Du32 get_position(Range2Du32 const& range1, Range2Du32 const& range2, u32 width, u32 r_id)
 {
-    auto w1 = r1.x_end - r1.x_begin;
-    auto h1 = r1.y_end - r1.y_begin;
+    auto w1 = range1.x_end - range1.x_begin;
+    auto h1 = range1.y_end - range1.y_begin;
 
     if(r_id < w1 * h1)
     {
-        return get_position(r1, width, r_id);
+        return get_position(range1, width, r_id);
     }
     
-    return get_position(r2, width, r_id - w1 * h1);
+    return get_position(range2, width, r_id - w1 * h1);
 }
 
 
@@ -448,15 +448,15 @@ public:
     u32* iterations_dst;
     u32 width;
 
-    Range2Du32 r1;
-    Range2Du32 r2;
+    Range2Du32 range1;
+    Range2Du32 range2;
 };
 
 
 static void mandelbrot_by_range_id(MandelbrotProps const& props, u32 r_id)
 {
 	auto const width = props.width;
-	auto pos = get_position(props.r1, props.r2, width, r_id);    
+	auto pos = get_position(props.range1, props.range2, width, r_id);    
 
     r64 const ci = props.min_im + pos.y * props.im_step;
     u32 iter = 0;
@@ -499,17 +499,17 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 	auto no_horizontal = n_cols == 0;
 	auto no_vertical = n_rows == 0;
 
-    Range2Du32 r1{};
-    r1.x_begin = 0;
-    r1.x_end = width;
-    r1.y_begin = 0;
-    r1.y_end = height;
+    Range2Du32 range1{};
+    range1.x_begin = 0;
+    range1.x_end = width;
+    range1.y_begin = 0;
+    range1.y_end = height;
     
-    Range2Du32 r2{};
-    r2.x_begin = 0;
-    r2.x_end = 0;
-    r2.y_begin = 0;
-    r2.y_end = 0;
+    Range2Du32 range2{};
+    range2.x_begin = 0;
+    range2.x_end = 0;
+    range2.y_begin = 0;
+    range2.y_end = 0;
 
     if (no_horizontal && no_vertical)
 	{
@@ -519,51 +519,51 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 	{
 		if (do_top)
 		{
-			r1.y_end = n_rows;
+			range1.y_end = n_rows;
 		}
 		else // if (do_bottom)
 		{
-			r1.y_begin = height - 1 - n_rows;
+			range1.y_begin = height - 1 - n_rows;
 		}
 	}
 	else if (no_vertical)
 	{
 		if (do_left)
 		{
-			r1.x_end = n_cols;
+			range1.x_end = n_cols;
 		}
 		else // if (do_right)
 		{
-			r1.x_begin = width - 1 - n_cols;
+			range1.x_begin = width - 1 - n_cols;
 		}
 	}
     else
     {
-        r2 = r1;
+        range2 = range1;
         
         if (do_top)
         {
-            r1.y_end = n_rows;
-            r2.y_begin = n_rows;
+            range1.y_end = n_rows;
+            range2.y_begin = n_rows;
         }
         else // if (do_bottom)
         {
-            r1.y_begin = height - 1 - n_rows;
-            r2.y_end = height - 1 - n_rows;
+            range1.y_begin = height - 1 - n_rows;
+            range2.y_end = height - 1 - n_rows;
         }
 
         if (do_left)
         {
-            r2.x_end = n_cols;
+            range2.x_end = n_cols;
         }
         else // if (do_right)
         {
-            r2.x_begin = width - 1 - n_cols;
+            range2.x_begin = width - 1 - n_cols;
         }
     }    
 
-    u32 n_elements = (r1.x_end - r1.x_begin) * (r1.y_end - r1.y_begin) +
-        (r2.x_end - r2.x_begin) * (r2.y_end - r2.y_begin);
+    u32 n_elements = (range1.x_end - range1.x_begin) * (range1.y_end - range1.y_begin) +
+        (range2.x_end - range2.x_begin) * (range2.y_end - range2.y_begin);
 
 	MandelbrotProps props{};
 	props.iter_limit = state.iter_limit;
@@ -573,8 +573,8 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 	props.im_step = state.mbt_screen_height / height;
     props.width = width;
     props.iterations_dst = dst.data; // TODO: src/dst?
-    props.r1 = r1;
-    props.r2 = r2;
+    props.range1 = range1;
+    props.range2 = range2;
 
 	auto r_ids = UnsignedRange(0u, n_elements);
 
