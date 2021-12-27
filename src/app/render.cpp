@@ -9,9 +9,99 @@
 
 using ur_it = UnsignedRange::iterator;
 
+
+class MandelbrotProps
+{
+public:
+    u32 iter_limit;
+    r64 min_mx;
+    r64 min_my;
+    r64 mx_step;
+    r64 my_step;
+
+    u32* iterations_dst;
+    u32 width;
+
+    Range2Du32 range1;
+    Range2Du32 range2;
+};
+
+
+static Point2Du32 get_position(Range2Du32 const& r, u32 width, u32 r_id)
+{
+    auto w1 = r.x_end - r.x_begin;
+
+    assert(r_id < w1 * (r.y_end - r.y_begin));
+
+    auto h = r_id / w1;
+
+    Point2Du32 pt{};
+    pt.x = r.x_begin + r_id - w1 * h;
+    pt.y = r.y_begin + h;
+
+    return pt;
+}
+
+
+static Point2Du32 get_position(Range2Du32 const& range1, Range2Du32 const& range2, u32 width, u32 r_id)
+{
+    auto w1 = range1.x_end - range1.x_begin;
+    auto h1 = range1.y_end - range1.y_begin;
+
+    if(r_id < w1 * h1)
+    {
+        return get_position(range1, width, r_id);
+    }
+    
+    return get_position(range2, width, r_id - w1 * h1);
+}
+
+
+static u32 get_index(u32 x, u32 y, u32 width)
+{
+    return width * y + x;
+}
+
+
+static u32 get_index(Point2Du32 const& pos, u32 width)
+{
+    return get_index(pos.x, pos.y, width);
+}
+
+
+static void mandelbrot_by_xy(MandelbrotProps const& props, Point2Du32 pos)
+{
+	auto const width = props.width;
+    
+    r64 const cx = props.min_mx + pos.x * props.mx_step;
+    r64 const cy = props.min_my + pos.y * props.my_step;
+
+    u32 iter = 0;
+
+    r64 mx = 0.0;
+    r64 my = 0.0;
+    r64 mx2 = 0.0;
+    r64 my2 = 0.0;
+
+    while (iter < props.iter_limit && mx2 + my2 <= 4.0)
+    {
+        my = (mx + mx) * my + cy;
+        mx = mx2 - my2 + cx;
+        my2 = my * my;
+        mx2 = mx * mx;
+
+        ++iter;
+    }
+
+    auto i = get_index(pos, width);
+
+    props.iterations_dst[i] = iter - 1;
+}
+
+
 #ifdef NO_CPP_17
 
-static void for_each(ur_it const& begin, ur_it const& end, std::function<void(u32)> const& func)
+static void for_each_id(ur_it const& begin, ur_it const& end, std::function<void(u32)> const& func)
 {
 	std::for_each(begin, end, func);
 }
@@ -28,11 +118,30 @@ static void copy(u32* src_begin, u32* src_end, u32* dst_begin)
 	std::copy(src_begin, src_end, dst_begin);
 }
 
+
+static void mandelbrot(MandelbrotProps const& props, Range2Du32 const& range)
+{
+	for(u32 y = range.y_begin; y < range.y_end; ++y)
+	{
+		for(u32 x = range.x_begin; x < range.x_end; ++x)
+		{
+			mandelbrot_by_xy(props, { x, y });
+		}
+	}
+}
+
+
+static void mandelbrot(MandelbrotProps const& props)
+{
+	mandelbrot(props, props.range1);
+	mandelbrot(props, props.range2);	
+}
+
 #else
 
 #include <execution>
 
-static void for_each(ur_it const& begin, ur_it const& end, std::function<void(u32)> const& func)
+static void for_each_id(ur_it const& begin, ur_it const& end, std::function<void(u32)> const& func)
 {
 	std::for_each(std::execution::par, begin, end, func);
 }
@@ -47,6 +156,25 @@ static void transform(u32* src_begin, u32* src_end, pixel_t* dst_begin, std::fun
 static void copy(u32* src_begin, u32* src_end, u32* dst_begin)
 {
 	std::copy(std::execution::par, src_begin, src_end, dst_begin);
+}
+
+
+static void mandelbrot(MandelbrotProps const& props)
+{
+	u32 n_elements = (props.range1.x_end - props.range1.x_begin) * (props.range1.y_end - props.range1.y_begin) +
+        (props.range2.x_end - props.range2.x_begin) * (props.range2.y_end - props.range2.y_begin);
+
+	auto r_ids = UnsignedRange(0u, n_elements);
+
+	auto const do_mandelbrot = [&](u32 r_id)
+	{
+		auto const width = props.width;
+		auto pos = get_position(props.range1, props.range2, width, r_id);
+		
+		mandelbrot_by_xy(props, pos);
+	};
+
+	for_each_id(r_ids.begin(), r_ids.end(), do_mandelbrot);
 }
 
 #endif
@@ -284,48 +412,6 @@ std::function<pixel_t(u32, u32, u32, u32)> get_rgb_function(u32 max_iter)
 }
 
 
-static Point2Du32 get_position(Range2Du32 const& r, u32 width, u32 r_id)
-{
-    auto w1 = r.x_end - r.x_begin;
-
-    assert(r_id < w1 * (r.y_end - r.y_begin));
-
-    auto h = r_id / w1;
-
-    Point2Du32 pt{};
-    pt.x = r.x_begin + r_id - w1 * h;
-    pt.y = r.y_begin + h;
-
-    return pt;
-}
-
-
-static Point2Du32 get_position(Range2Du32 const& range1, Range2Du32 const& range2, u32 width, u32 r_id)
-{
-    auto w1 = range1.x_end - range1.x_begin;
-    auto h1 = range1.y_end - range1.y_begin;
-
-    if(r_id < w1 * h1)
-    {
-        return get_position(range1, width, r_id);
-    }
-    
-    return get_position(range2, width, r_id - w1 * h1);
-}
-
-
-static u32 get_index(u32 x, u32 y, u32 width)
-{
-    return width * y + x;
-}
-
-
-static u32 get_index(Point2Du32 const& pos, u32 width)
-{
-    return get_index(pos.x, pos.y, width);
-}
-
-
 static void for_each_row(mat_u32_t const& mat, std::function<void(u32 y)> const& func)
 {
 	UnsignedRange y_ids(0u, mat.height);
@@ -436,54 +522,6 @@ static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
 }
 
 
-class MandelbrotProps
-{
-public:
-    u32 iter_limit;
-    r64 min_mx;
-    r64 min_my;
-    r64 mx_step;
-    r64 my_step;
-
-    u32* iterations_dst;
-    u32 width;
-
-    Range2Du32 range1;
-    Range2Du32 range2;
-};
-
-
-static void mandelbrot_by_range_id(MandelbrotProps const& props, u32 r_id)
-{
-	auto const width = props.width;
-    auto pos = get_position(props.range1, props.range2, width, r_id);
-    
-    r64 const cx = props.min_mx + pos.x * props.mx_step;
-    r64 const cy = props.min_my + pos.y * props.my_step;
-
-    u32 iter = 0;
-
-    r64 mx = 0.0;
-    r64 my = 0.0;
-    r64 mx2 = 0.0;
-    r64 my2 = 0.0;
-
-    while (iter < props.iter_limit && mx2 + my2 <= 4.0)
-    {
-        my = (mx + mx) * my + cy;
-        mx = mx2 - my2 + cx;
-        my2 = my * my;
-        mx2 = mx * mx;
-
-        ++iter;
-    }
-
-    auto i = get_index(pos, width);
-
-    props.iterations_dst[i] = iter - 1;
-}
-
-
 static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 {
 	auto const width = dst.width;
@@ -563,9 +601,6 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
         }
     }    
 
-    u32 n_elements = (range1.x_end - range1.x_begin) * (range1.y_end - range1.y_begin) +
-        (range2.x_end - range2.x_begin) * (range2.y_end - range2.y_begin);
-
 	MandelbrotProps props{};
 	props.iter_limit = state.iter_limit;
 	props.min_mx = MBT_MIN_X + state.mbt_pos.x;
@@ -573,31 +608,20 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 	props.mx_step = state.mbt_screen_width / width;
 	props.my_step = state.mbt_screen_height / height;
     props.width = width;
-    props.iterations_dst = dst.data; // TODO: src/dst?
+    props.iterations_dst = dst.data;
     props.range1 = range1;
     props.range2 = range2;
 
-	auto r_ids = UnsignedRange(0u, n_elements);
-
-	auto const do_mandelbrot = [&](u32 r_id)
-	{
-		mandelbrot_by_range_id(props, r_id);
-	};
-
-	for_each(r_ids.begin(), r_ids.end(), do_mandelbrot);
+	mandelbrot(props);
 }
 
 
 static void find_min_max_iter(AppState& state)
 {
 	auto& mat = state.iterations;
-	//auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
-	//auto min = *mat_min;
-	//auto max = *mat_max;
-
-	auto mat_min_max = std::minmax_element(mat.begin(), mat.end());
-	state.iter_min = *mat_min_max.first;
-	state.iter_max = *mat_min_max.second;
+	auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
+	state.iter_min = *mat_min;
+	state.iter_max = *mat_max;
 }
 
 
