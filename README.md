@@ -1,22 +1,30 @@
-Mandelbrot Renderer
-* Visual Studio solution to run on Windows
-* Ubuntu Linux with SDL2
- * Makefile in /src/sdl/
+# Mandelbrot Renderer
+
+## Visual Studio solution to run on Windows
+
+## Ubuntu Linux with SDL2
  * install sdl - apt-get install libsdl2-dev libsdl2-dbg
-* Jetson Nano with SDL2
- * Makefile in /src/cuda_sdl/
+ * Makefile in /src/sdl/
+ * Create build directory - make setup
+ * Run program - make run
+
+
+## Jetson Nano with SDL2
  * install sdl - apt-get install libsdl2-dev libsdl2-dbg
  * SDL bug with ARM processors - sudo killall ibus-daemon
+ * Makefile in /src/cuda_sdl/
+ * Create build directory - make setup
+ * Run program - make run
 
 
-Features
+### Features
 * Explore the mandelbrot set using keyboard controls
-* Controller input available for linux
+* Controller input available for Linux
 * Select color scheme
 * Color contrast maximized for the current visible section
 
 
-Keyboard Controls
+### Keyboard Controls
 * Zoom in with '+' (numpad)
 * Zoom out with '-' (numpad)
 * Pan left, right, up, down with arrow keys
@@ -28,7 +36,7 @@ Keyboard Controls
 * End program with ESC key
 
 
-Controller Controls (Linux only)
+### Controller Controls (Xinput, Linux only)
 * Zoom in and out with left thumbstick
 * Pan left, right, up, down with right thumbstick
 * Increase zoom rate with right trigger
