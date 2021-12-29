@@ -78,3 +78,6 @@ run: build
 
 clean:
 	rm -rfv $(build)/*
+
+setup:
+	mkdir -p $(build)

@@ -319,6 +319,7 @@ static void close_sdl()
 
 int main(int argc, char *argv[])
 {
+    printf("\n");
     if(!init_sdl())
     {
         display_error("Init SDL failed");
