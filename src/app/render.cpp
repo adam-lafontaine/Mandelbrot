@@ -4,18 +4,102 @@
 
 #include <cassert>
 #include <algorithm>
-#include <cmath>
 #include <functional>
 
 
 using ur_it = UnsignedRange::iterator;
 
-#ifdef NO_CPP_17
 
-static void for_each(ur_it const& begin, ur_it const& end, std::function<void(u32)> const& func)
+class MandelbrotProps
 {
-	std::for_each(begin, end, func);
+public:
+    u32 iter_limit;
+    r64 min_mx;
+    r64 min_my;
+    r64 mx_step;
+    r64 my_step;
+
+    u32* iterations_dst;
+    u32 width;
+
+    Range2Du32 range1;
+    Range2Du32 range2;
+};
+
+
+static Point2Du32 get_position(Range2Du32 const& r, u32 width, u32 r_id)
+{
+    auto w1 = r.x_end - r.x_begin;
+
+    assert(r_id < w1 * (r.y_end - r.y_begin));
+
+    auto h = r_id / w1;
+
+    Point2Du32 pt{};
+    pt.x = r.x_begin + r_id - w1 * h;
+    pt.y = r.y_begin + h;
+
+    return pt;
 }
+
+
+static Point2Du32 get_position(Range2Du32 const& range1, Range2Du32 const& range2, u32 width, u32 r_id)
+{
+    auto w1 = range1.x_end - range1.x_begin;
+    auto h1 = range1.y_end - range1.y_begin;
+
+    if(r_id < w1 * h1)
+    {
+        return get_position(range1, width, r_id);
+    }
+    
+    return get_position(range2, width, r_id - w1 * h1);
+}
+
+
+static u32 get_index(u32 x, u32 y, u32 width)
+{
+    return width * y + x;
+}
+
+
+static u32 get_index(Point2Du32 const& pos, u32 width)
+{
+    return get_index(pos.x, pos.y, width);
+}
+
+
+static void mandelbrot_by_xy(MandelbrotProps const& props, Point2Du32 pos)
+{
+	auto const width = props.width;
+    
+    r64 const cx = props.min_mx + pos.x * props.mx_step;
+    r64 const cy = props.min_my + pos.y * props.my_step;
+
+    u32 iter = 0;
+
+    r64 mx = 0.0;
+    r64 my = 0.0;
+    r64 mx2 = 0.0;
+    r64 my2 = 0.0;
+
+    while (iter < props.iter_limit && mx2 + my2 <= 4.0)
+    {
+        my = (mx + mx) * my + cy;
+        mx = mx2 - my2 + cx;
+        my2 = my * my;
+        mx2 = mx * mx;
+
+        ++iter;
+    }
+
+    auto i = get_index(pos, width);
+
+    props.iterations_dst[i] = iter - 1;
+}
+
+
+#ifdef NO_CPP_17
 
 
 static void transform(u32* src_begin, u32* src_end, pixel_t* dst_begin, std::function<pixel_t(u32)> const& f)
@@ -29,14 +113,28 @@ static void copy(u32* src_begin, u32* src_end, u32* dst_begin)
 	std::copy(src_begin, src_end, dst_begin);
 }
 
+
+static void mandelbrot(MandelbrotProps const& props, Range2Du32 const& range)
+{
+	for(u32 y = range.y_begin; y < range.y_end; ++y)
+	{
+		for(u32 x = range.x_begin; x < range.x_end; ++x)
+		{
+			mandelbrot_by_xy(props, { x, y });
+		}
+	}
+}
+
+
+static void mandelbrot(MandelbrotProps const& props)
+{
+	mandelbrot(props, props.range1);
+	mandelbrot(props, props.range2);	
+}
+
 #else
 
 #include <execution>
-
-static void for_each(ur_it const& begin, ur_it const& end, std::function<void(u32)> const& func)
-{
-	std::for_each(std::execution::par, begin, end, func);
-}
 
 
 static void transform(u32* src_begin, u32* src_end, pixel_t* dst_begin, std::function<pixel_t(u32)> const& f)
@@ -48,6 +146,25 @@ static void transform(u32* src_begin, u32* src_end, pixel_t* dst_begin, std::fun
 static void copy(u32* src_begin, u32* src_end, u32* dst_begin)
 {
 	std::copy(std::execution::par, src_begin, src_end, dst_begin);
+}
+
+
+static void mandelbrot(MandelbrotProps const& props)
+{
+	u32 n_elements = (props.range1.x_end - props.range1.x_begin) * (props.range1.y_end - props.range1.y_begin) +
+        (props.range2.x_end - props.range2.x_begin) * (props.range2.y_end - props.range2.y_begin);
+
+	auto r_ids = UnsignedRange(0u, n_elements);
+
+	auto const do_mandelbrot = [&](u32 r_id)
+	{
+		auto const width = props.width;
+		auto pos = get_position(props.range1, props.range2, width, r_id);
+		
+		mandelbrot_by_xy(props, pos);
+	};
+	
+	std::for_each(std::execution::par, r_ids.begin(), r_ids.end(), do_mandelbrot);
 }
 
 #endif
@@ -76,12 +193,6 @@ static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
 	p.value = platform_to_color_32(red, green, blue);
 
 	return p;
-}
-
-
-static pixel_t to_platform_pixel(pixel_t const& p)
-{
-	return to_platform_pixel(p.red, p.green, p.blue);
 }
 
 
@@ -291,41 +402,6 @@ std::function<pixel_t(u32, u32, u32, u32)> get_rgb_function(u32 max_iter)
 }
 
 
-static void draw(image_t const& dst, AppState const& state)
-{
-	auto& mat = state.iterations;
-
-	//auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
-	//auto min = *mat_min;
-	//auto max = *mat_max;
-
-	auto mat_min_max = std::minmax_element(mat.begin(), mat.end());
-	auto min = *mat_min_max.first;
-	auto max = *mat_min_max.second;
-
-	auto diff = max - min;
-
-	u32 c1 = 0;
-	u32 c2 = 0;
-	u32 c3 = 0;
-	set_rgb_channels(c1, c2, c3, state.rgb_option);
-
-	auto const to_rgb = get_rgb_function(diff);
-
-	auto const to_platform_color = [&](u32 i)
-	{
-		if (i >= max)
-		{
-			return to_platform_pixel(0, 0, 0);
-		}
-
-		return to_rgb(i - min, c1, c2, c3);
-	};
-
-	transform(mat.begin(), mat.end(), dst.begin(), to_platform_color);
-}
-
-
 static void for_each_row(mat_u32_t const& mat, std::function<void(u32 y)> const& func)
 {
 	UnsignedRange y_ids(0u, mat.height);
@@ -375,8 +451,7 @@ static void copy_right(mat_u32_t const& mat, u32 n_cols)
 
 
 static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
-{
-	auto up = direction.y < 0;
+{	
 	auto right = direction.x > 0;
 
 	auto const n_cols = static_cast<u32>(std::abs(direction.x));
@@ -400,6 +475,8 @@ static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
 
 		return;
 	}
+
+	auto up = direction.y < 0;
 
 	u32 const x_len = mat.width - n_cols;
 	u32 const y_len = mat.height - n_rows;
@@ -435,154 +512,153 @@ static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
 }
 
 
-static void mandelbrot(AppState& state)
+static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 {
-	auto& dst = state.iterations;
-
-	auto const max_iter = state.max_iter;
-	constexpr r64 limit = 4.0;
-
-	auto const x_pos = state.screen_pos.x;
-	auto const y_pos = state.screen_pos.y;
-
-	auto const min_re = MBT_MIN_X + x_pos;
-	auto const min_im = MBT_MIN_Y + y_pos;
-
-	auto const re_step = screen_width(state) / dst.width;
-	auto const im_step = screen_height(state) / dst.height;
-
-	auto const do_mandelbrot = [&](Range2Du32 const& range)
-	{
-		auto x_ids = UnsignedRange(range.x_begin, range.x_end);
-		auto y_ids = UnsignedRange(range.y_begin, range.y_end);
-
-		auto y_id_begin = y_ids.begin();
-		auto y_id_end = y_ids.end();
-		auto x_id_begin = x_ids.begin();
-		auto x_id_end = x_ids.end();
-
-		auto const do_row = [&](u32 y)
-		{
-			r64 const ci = min_im + y * im_step;
-			auto row = dst.row_begin(y);
-
-			auto const do_x = [&](u32 x)
-			{
-				u32 iter = 0;
-				r64 const cr = min_re + x * re_step;
-
-				r64 re = 0.0;
-				r64 im = 0.0;
-				r64 re2 = 0.0;
-				r64 im2 = 0.0;
-				r64 re2_old = 0.0;
-				r64 im2_old = 0.0;
-
-				while (iter < max_iter && re2 + im2 <= limit)
-				{
-					re2_old = re2;
-					im2_old = im2;
-					im = (re + re) * im + ci;
-					re = re2 - im2 + cr;
-					im2 = im * im;
-					re2 = re * re;
-
-					++iter;
-				}
-
-				--iter;
-
-				row[x] = iter;
-			};
-
-			for_each(x_id_begin, x_id_end, do_x);
-		};
-
-		for_each(y_id_begin, y_id_end, do_row);
-	};
+	auto const width = dst.width;
+	auto const height = dst.height;
 
 	auto& shift = state.pixel_shift;
 
 	auto do_left = shift.x > 0;
 	auto do_top = shift.y > 0;
-	//auto do_right = shift.x < 0;	
-	//auto do_bottom = shift.y < 0;
 
-	auto const n_cols = static_cast<u32>(std::abs(shift.x));
+    auto const n_cols = static_cast<u32>(std::abs(shift.x));
 	auto const n_rows = static_cast<u32>(std::abs(shift.y));
 
 	auto no_horizontal = n_cols == 0;
 	auto no_vertical = n_rows == 0;
 
-	auto r = get_range(dst);
+    Range2Du32 range1{};
+    range1.x_begin = 0;
+    range1.x_end = width;
+    range1.y_begin = 0;
+    range1.y_end = height;
+    
+    Range2Du32 range2{};
+    range2.x_begin = 0;
+    range2.x_end = 0;
+    range2.y_begin = 0;
+    range2.y_end = 0;
 
-	if (no_horizontal && no_vertical)
+    if (no_horizontal && no_vertical)
 	{
-		do_mandelbrot(r);
-		return;
-	}
 
-	if (no_horizontal)
+	}
+	else if (no_horizontal)
 	{
 		if (do_top)
 		{
-			r.y_end = n_rows;
+			range1.y_end = n_rows;
 		}
 		else // if (do_bottom)
 		{
-			r.y_begin = dst.height - 1 - n_rows;
+			range1.y_begin = height - 1 - n_rows;
 		}
-
-		do_mandelbrot(r);
-		return;
 	}
-
-	if (no_vertical)
+	else if (no_vertical)
 	{
 		if (do_left)
 		{
-			r.x_end = n_cols;
+			range1.x_end = n_cols;
 		}
 		else // if (do_right)
 		{
-			r.x_begin = dst.width - 1 - n_cols;
+			range1.x_begin = width - 1 - n_cols;
 		}
-
-		do_mandelbrot(r);
-		return;
 	}
+    else
+    {
+        range2 = range1;
+        
+        if (do_top)
+        {
+            range1.y_end = n_rows;
+            range2.y_begin = n_rows;
+        }
+        else // if (do_bottom)
+        {
+            range1.y_begin = height - 1 - n_rows;
+            range2.y_end = height - 1 - n_rows;
+        }
 
-	auto r2 = r;
+        if (do_left)
+        {
+            range2.x_end = n_cols;
+        }
+        else // if (do_right)
+        {
+            range2.x_begin = width - 1 - n_cols;
+        }
+    }    
 
-	if (do_top)
-	{
-		r.y_end = n_rows;
-		r2.y_begin = n_rows;
-	}
-	else // if (do_bottom)
-	{
-		r.y_begin = dst.height - 1 - n_rows;
-		r2.y_end = dst.height - 1 - n_rows;
-	}
+	MandelbrotProps props{};
+	props.iter_limit = state.iter_limit;
+	props.min_mx = MBT_MIN_X + state.mbt_pos.x;
+	props.min_my = MBT_MIN_Y + state.mbt_pos.y;
+	props.mx_step = state.mbt_screen_width / width;
+	props.my_step = state.mbt_screen_height / height;
+    props.width = width;
+    props.iterations_dst = dst.data;
+    props.range1 = range1;
+    props.range2 = range2;
 
-	if (do_left)
-	{
-		r2.x_end = n_cols;
-	}
-	else // if (do_right)
-	{
-		r2.x_begin = dst.width - 1 - n_cols;
-	}
-
-	do_mandelbrot(r);
-	do_mandelbrot(r2);
+	mandelbrot(props);
 }
 
 
-void render(image_t const& dst, AppState& state)
+static void find_min_max_iter(AppState& state)
 {
-	copy(state.iterations, state.pixel_shift);
-	mandelbrot(state);
+	auto& mat = state.iterations;
+	auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
+	state.iter_min = *mat_min;
+	state.iter_max = *mat_max;
+}
 
-	draw(dst, state);
+
+static void draw(image_t const& dst, AppState const& state)
+{
+	auto const min = state.iter_min;
+	auto const max = state.iter_max;	
+
+	auto diff = max - min;
+
+	u32 c1 = 0;
+	u32 c2 = 0;
+	u32 c3 = 0;
+	set_rgb_channels(c1, c2, c3, state.rgb_option);
+
+	auto const to_rgb = get_rgb_function(diff);
+
+	auto const to_color = [&](u32 i)
+	{
+		if (i >= max)
+		{
+			return to_platform_pixel(0, 0, 0);
+		}
+
+		return to_rgb(i - min, c1, c2, c3);
+	};
+
+	auto& mat = state.iterations;
+
+	transform(mat.begin(), mat.end(), dst.begin(), to_color);
+}
+
+
+void render(AppState& state)
+{
+	if(state.render_new)
+	{
+		copy(state.iterations, state.pixel_shift);
+
+		mandelbrot(state.iterations, state);
+		find_min_max_iter(state);
+
+		state.draw_new = true;
+	}
+    
+    if(state.draw_new)
+    {
+        draw(state.screen_buffer, state);
+    }
 }

@@ -1,8 +1,8 @@
-#include "app.hpp"
+#include "../app/app.hpp"
+#include "../app/colors.hpp"
 #include "render.hpp"
-#include "input_controls.hpp"
+#include "../app/input_controls.hpp"
 
-#include <algorithm>
 #include <cmath>
 
 
@@ -214,6 +214,68 @@ namespace app
 	}
 
 
+    static AppState& get_state(AppMemory& memory)
+    {
+        return *(AppState*)memory.permanent_storage;
+    }
+
+
+    static bool init_device_memory(DeviceMemory& device, ScreenBuffer const& buffer)
+    {
+        auto const width = buffer.width;
+		auto const height = buffer.height;
+
+        auto const n_pixels = width * height;
+        auto const iter_sz = 2 * sizeof(u32) * n_pixels;
+        auto const screen_sz = sizeof(pixel_t) * n_pixels;
+
+        auto& color_palette = palettes256;
+        auto const n_colors = color_palette[0].size();
+        auto const color_sz = sizeof(u8) * RGB_CHANNELS * n_colors;
+
+        auto const min_val_sz = sizeof(u32) * MAX_GPU_THREADS;
+        auto const max_val_sz = sizeof(u32) * MAX_GPU_THREADS;
+
+        auto device_sz = iter_sz + screen_sz + color_sz + min_val_sz + max_val_sz;
+        if(!device_malloc(device.buffer, device_sz))
+        {
+            return false;
+        }
+
+        if(!make_device_matrix(device.iterations, width, height, device.buffer))
+        {
+            return false;
+        }
+
+        if(!make_device_image(device.pixels, width, height, device.buffer))
+        {
+            return false;
+        }
+
+        if(!make_device_palette(device.palette, n_colors, device.buffer))
+        {
+            return false;
+        }
+
+        if(!copy_to_device(color_palette, device.palette))
+        {
+            return false;
+        }
+
+        if(!make_device_array(device.min_iters, MAX_GPU_THREADS, device.buffer))
+        {
+            return false;
+        }
+
+        if(!make_device_array(device.max_iters, MAX_GPU_THREADS, device.buffer))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+
 	bool initialize_memory(AppMemory& memory, ScreenBuffer const& buffer)
 	{
 		auto& state = get_state(memory, buffer);
@@ -228,23 +290,20 @@ namespace app
 		state.zoom_level = 1.0;
 		state.zoom_speed = ZOOM_SPEED_LOWER_LIMIT;
 
-		state.iter_limit = MAX_ITERATIONS_START;
-
         state.mbt_screen_width = mbt_screen_width(state.zoom_level);
 		state.mbt_screen_height = mbt_screen_height(state.zoom_level);
 
+		state.iter_limit = MAX_ITERATIONS_START;
+
 		state.rgb_option = 1;
 
-		auto const width = buffer.width;
-		auto const height = buffer.height;
-
-		state.iterations.width = width;
-		state.iterations.height = height;
-		state.iterations.data = (u32*)((u8*)(&state) + sizeof(u32) * width * height);
+		if(!init_device_memory(state.device, buffer))
+        {
+            return false;
+        }
 
 		memory.is_app_initialized = true;
-
-		return true;
+        return true;
 	}
 
 
@@ -268,6 +327,8 @@ namespace app
 
 	void end_program(AppMemory& memory)
 	{
-		
+		auto& state = get_state(memory);
+
+        device_free(state.device.buffer);
 	}
 }

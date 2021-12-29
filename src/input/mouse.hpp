@@ -27,7 +27,7 @@ typedef struct mouse_input_t
 {
 #if MOUSE_POSITION
 
-	Pt2Di32 win_pos;
+	Point2Di32 win_pos;
 
 #endif	
 

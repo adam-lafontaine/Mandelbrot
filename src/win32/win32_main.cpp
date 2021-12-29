@@ -7,7 +7,8 @@
 #include "../utils/win32_leak_check.h"
 #endif
 
-#include <iostream>
+constexpr auto MAIN_WINDOW_NAME = L"MainWindowMandelbrot";
+constexpr auto WINDOW_TITLE = L"Mandelbrot";
 
 // size of window
 // bitmap buffer will be scaled to these dimensions Windows (StretchDIBits)
@@ -26,17 +27,24 @@ GlobalVariable win32::BitmapBuffer g_back_buffer = {};
 GlobalVariable WINDOWPLACEMENT g_window_placement = { sizeof(g_window_placement) };
 
 
-void end_program()
-{
-    g_running = false;
-    app::end_program();
-}
-
-
 u32 platform_to_color_32(u8 red, u8 green, u8 blue)
 {
     return red << 16 | green << 8 | blue;
 }
+
+
+void platform_signal_stop()
+{
+    g_running = false;
+}
+
+
+static void end_program(app::AppMemory& memory)
+{
+    g_running = false;
+    app::end_program(memory);
+}
+
 
 
 namespace win32
@@ -137,7 +145,7 @@ namespace win32
             return true;
 
         case VK_F4:
-            end_program();
+            g_running = false;
             return true;
         }
 
@@ -151,14 +159,12 @@ namespace win32
 static void allocate_app_memory(app::AppMemory& memory, win32::MemoryState& win32_memory)
 {
     memory.permanent_storage_size = Megabytes(256);
-    memory.transient_storage_size = 0; // Gigabytes(1);
 
-    size_t total_size = memory.permanent_storage_size + memory.transient_storage_size;
+    size_t total_size = memory.permanent_storage_size;
 
     LPVOID base_address = 0;
 
     memory.permanent_storage = VirtualAlloc(base_address, (SIZE_T)total_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-    memory.transient_storage = (u8*)memory.permanent_storage + memory.permanent_storage_size;
 
     win32_memory.total_size = total_size;
     win32_memory.memory_block = memory.permanent_storage;
@@ -174,8 +180,6 @@ static app::ScreenBuffer make_app_pixel_buffer()
     buffer.height = g_back_buffer.height;
     buffer.bytes_per_pixel = g_back_buffer.bytes_per_pixel;
 
-    //buffer.to_color32 = [](u8 red, u8 green, u8 blue) { return red << 16 | green << 8 | blue; };
-
     return buffer;
 }
 
@@ -184,8 +188,6 @@ static app::ScreenBuffer make_app_pixel_buffer()
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
-WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
-WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
 
 // Forward declarations of functions included in this code module:
@@ -208,7 +210,7 @@ static WNDCLASSEXW make_window_class(HINSTANCE hInstance)
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_APPLICATIONWIN32);
-    wcex.lpszClassName = szWindowClass;
+    wcex.lpszClassName = MAIN_WINDOW_NAME;
     wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_ICON_SMALL));
 
     return wcex;
@@ -221,8 +223,8 @@ static HWND make_window(HINSTANCE hInstance)
     int extra_height = 59;
 
     return CreateWindowW( // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-createwindowexa
-        szWindowClass,
-        szTitle,
+        MAIN_WINDOW_NAME,
+        WINDOW_TITLE,
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
@@ -258,11 +260,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-
-    // Initialize global strings
-    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_APPLICATIONWIN32, szWindowClass, MAX_LOADSTRING);
-
     WNDCLASSEXW window_class = make_window_class(hInstance);
     if (!RegisterClassExW(&window_class))
     {
@@ -291,7 +288,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     
     allocate_app_memory(app_memory, win32_memory);
-    if (!app_memory.permanent_storage || !app_memory.transient_storage)
+    if (!app_memory.permanent_storage)
     {
         return 0;
     }    
@@ -313,8 +310,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         if (frame_ms_elapsed < TARGET_MS_PER_FRAME && sleep_ms > 0)
         {
+            SetWindowTextW(window, WINDOW_TITLE);
             Sleep(sleep_ms);
-
             while (frame_ms_elapsed < TARGET_MS_PER_FRAME)
             {
                 frame_ms_elapsed = sw.get_time_milli();
@@ -322,7 +319,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
         else
         {
-            // missed frame rate
+            wchar_t buffer[30];
+            swprintf_s(buffer, L"%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
+            SetWindowTextW(window, buffer);
         }
 
         sw.start();
@@ -335,11 +334,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     auto new_input = &input[0];
     auto old_input = &input[1];
 
+    // TODO:
+    //bool in_current = 0;
+    //bool in_old = 1;
+
     g_running = true;
     sw.start();
     while (g_running)
     {
+        // does not miss frames but slows animation
         new_input->dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
+
+        // animation speed maintained but frames missed
+        //new_input->dt_frame = frame_ms_elapsed / 1000.0f;
+
         win32::process_keyboard_input(old_input->keyboard, new_input->keyboard);        
         win32::process_mouse_input(window, old_input->mouse, new_input->mouse);
         app::update_and_render(app_memory, *new_input, app_pixel_buffer);
@@ -359,6 +367,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     return 0;
 }
+
 
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
@@ -386,7 +395,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             case IDM_EXIT: // File > Exit
                 DestroyWindow(hWnd);
-                end_program();
+                g_running = false;
                 break;
 
             default:
@@ -404,13 +413,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_DESTROY: // X button
         PostQuitMessage(0);
-        end_program();
+        g_running = false;
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
 }
+
 
 // Message handler for about box.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
