@@ -101,11 +101,6 @@ static void mandelbrot_by_xy(MandelbrotProps const& props, Point2Du32 pos)
 
 #ifdef NO_CPP_17
 
-static void for_each_id(ur_it const& begin, ur_it const& end, std::function<void(u32)> const& func)
-{
-	std::for_each(begin, end, func);
-}
-
 
 static void transform(u32* src_begin, u32* src_end, pixel_t* dst_begin, std::function<pixel_t(u32)> const& f)
 {
@@ -141,11 +136,6 @@ static void mandelbrot(MandelbrotProps const& props)
 
 #include <execution>
 
-static void for_each_id(ur_it const& begin, ur_it const& end, std::function<void(u32)> const& func)
-{
-	std::for_each(std::execution::par, begin, end, func);
-}
-
 
 static void transform(u32* src_begin, u32* src_end, pixel_t* dst_begin, std::function<pixel_t(u32)> const& f)
 {
@@ -173,8 +163,8 @@ static void mandelbrot(MandelbrotProps const& props)
 		
 		mandelbrot_by_xy(props, pos);
 	};
-
-	for_each_id(r_ids.begin(), r_ids.end(), do_mandelbrot);
+	
+	std::for_each(std::execution::par, r_ids.begin(), r_ids.end(), do_mandelbrot);
 }
 
 #endif
