@@ -187,7 +187,7 @@ static void destroy_bitmap_buffer(BitmapBuffer& buffer)
 }
 
 
-constexpr auto WINDOW_TITLE = "Mandelbrot";
+constexpr auto WINDOW_TITLE = app::APP_TITLE;
 constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
 constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
 
@@ -386,7 +386,7 @@ int main(int argc, char *argv[])
     auto const wait_for_framerate = [&]()
     {
         frame_ms_elapsed = sw.get_time_milli();
-        auto sleep_ms = static_cast<u32>(TARGET_MS_PER_FRAME - frame_ms_elapsed);
+        auto sleep_ms = (u32)(TARGET_MS_PER_FRAME - frame_ms_elapsed);
         if (frame_ms_elapsed < TARGET_MS_PER_FRAME && sleep_ms > 0)
         {    
             SDL_SetWindowTitle(window, WINDOW_TITLE);

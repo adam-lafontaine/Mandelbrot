@@ -167,27 +167,27 @@ static void mandelbrot_by_range_id(MandelbrotProps const& props, u32 r_id)
     
     r64 const cx = props.min_mx + pos.x * props.mx_step;
     r64 const cy = props.min_my + pos.y * props.my_step;
-
+    
     u32 iter = 0;
 
     r64 mx = 0.0;
     r64 my = 0.0;
     r64 mx2 = 0.0;
     r64 my2 = 0.0;
-
+    
     while (iter < props.iter_limit && mx2 + my2 <= 4.0)
     {
+        ++iter;
+
         my = (mx + mx) * my + cy;
         mx = mx2 - my2 + cx;
         my2 = my * my;
         mx2 = mx * mx;
-
-        ++iter;
     }
 
     auto i = gpu::get_index(pos, width);
 
-    props.iterations_dst[i] = iter - 1;
+    props.iterations_dst[i] = iter;
 }
 
 
@@ -196,7 +196,7 @@ static void draw(DrawProps const& props, u32 i)
 {
     auto iter_min = *props.min_iter;
     auto iter_max = *props.max_iter;
-    //auto diff = max - min;
+    
     pixel_t p{};
     p.alpha = 255;
     
@@ -359,20 +359,20 @@ static void gpu_copy(CopyProps props, u32 n_threads)
 
 static void copy(DeviceMatrix const& mat, Vec2Di32 const& direction)
 {
+    auto const n_cols = (u32)(std::abs(direction.x));
+	auto const n_rows = (u32)(std::abs(direction.y));
+
+    if (n_cols == 0 && n_rows == 0)
+	{
+		return;
+	}
+
     Range2Du32 r_src{};
     r_src.x_begin = 0;
     r_src.x_end = mat.width;
     r_src.y_begin = 0;
     r_src.y_end = mat.height;
-    auto r_dst = r_src;
-
-	auto const n_cols = static_cast<u32>(std::abs(direction.x));
-	auto const n_rows = static_cast<u32>(std::abs(direction.y));
-
-    if (n_cols == 0 && n_rows == 0)
-	{
-		return;
-	}    
+    auto r_dst = r_src;	
 
     auto right = direction.x > 0;
     auto left = direction.x < 0;
@@ -432,8 +432,8 @@ static void mandelbrot(DeviceMatrix const& dst, AppState& state)
 	auto do_left = shift.x > 0;
 	auto do_top = shift.y > 0;
 
-    auto const n_cols = static_cast<u32>(std::abs(shift.x));
-	auto const n_rows = static_cast<u32>(std::abs(shift.y));
+    auto const n_cols = (u32)(std::abs(shift.x));
+	auto const n_rows = (u32)(std::abs(shift.y));
 
 	auto no_horizontal = n_cols == 0;
 	auto no_vertical = n_rows == 0;

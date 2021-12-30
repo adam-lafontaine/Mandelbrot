@@ -7,8 +7,9 @@
 #include "../utils/win32_leak_check.h"
 #endif
 
+constexpr auto WINDOW_TITLE = (const wchar_t*)app::APP_TITLE;
 constexpr auto MAIN_WINDOW_NAME = L"MainWindowMandelbrot";
-constexpr auto WINDOW_TITLE = L"Mandelbrot";
+
 
 // size of window
 // bitmap buffer will be scaled to these dimensions Windows (StretchDIBits)
@@ -56,8 +57,8 @@ namespace win32
             VirtualFree(buffer.memory, 0, MEM_RELEASE);
         }
 
-        int iwidth = static_cast<int>(width);
-        int iheight = static_cast<int>(height);
+        int iwidth = (int)(width);
+        int iheight = (int)(height);
 
         buffer.width = iwidth;
         buffer.height = iheight;

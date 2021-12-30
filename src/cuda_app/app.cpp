@@ -1,7 +1,7 @@
 #include "../app/app.hpp"
 #include "../app/colors.hpp"
-#include "render.hpp"
 #include "../app/input_controls.hpp"
+#include "render.hpp"
 
 #include <cmath>
 
@@ -15,7 +15,7 @@ static void process_input(Input const& input, AppState& state)
 
 	state.pixel_shift = { 0, 0 };
 
-	i32 const pixel_shift = static_cast<i32>(std::round(app::PIXELS_PER_SECOND * input.dt_frame));
+	i32 const pixel_shift = (i32)(std::round(app::PIXELS_PER_SECOND * input.dt_frame));
 
 	r64 const zoom_per_second = 0.5;
 	auto const zoom = [&]() { return state.zoom_speed * (1.0 + zoom_per_second * input.dt_frame); };
@@ -108,7 +108,7 @@ static void process_input(Input const& input, AppState& state)
     
 	if (state.iter_limit < MAX_ITERATIONS_UPPER_LIMIT && increase_resolution(input))
 	{
-		u32 adj = static_cast<u32>(iteration_adjustment_factor * state.iter_limit);
+		u32 adj = (u32)(iteration_adjustment_factor * state.iter_limit);
 		adj = std::max(adj, 5u);
 
 		state.iter_limit = std::min(state.iter_limit + adj, MAX_ITERATIONS_UPPER_LIMIT);
@@ -116,7 +116,7 @@ static void process_input(Input const& input, AppState& state)
 	}
 	if (state.iter_limit > MAX_ITERTAIONS_LOWER_LIMIT && decrease_resolution(input))
 	{
-		u32 adj = static_cast<u32>(iteration_adjustment_factor * state.iter_limit);
+		u32 adj = (u32)(iteration_adjustment_factor * state.iter_limit);
 		adj = std::max(adj, 5u);
 
 		state.iter_limit = std::max(state.iter_limit - adj, MAX_ITERTAIONS_LOWER_LIMIT);
