@@ -1,23 +1,6 @@
 # Mandelbrot Renderer
 
-## Visual Studio solution to run on Windows
-
-## Ubuntu Linux with SDL2
- * install sdl - apt-get install libsdl2-dev libsdl2-dbg
- * Makefile in /src/sdl/
- * Create build directory - make setup
- * Run program - make run
-
-
-## Jetson Nano with SDL2
- * install sdl - apt-get install libsdl2-dev libsdl2-dbg
- * SDL bug with ARM processors - sudo killall ibus-daemon
- * Makefile in /src/cuda_sdl/
- * Create build directory - make setup
- * Run program - make run
-
-
-### Features
+## Features
 * Explore the mandelbrot set using keyboard controls
 * Controller input available for Linux
 * Select color scheme
@@ -45,3 +28,25 @@
 * Decrease resolution with left bumber
 * Cycle color scheme with D pad
 * End program with B button
+
+
+### Visual Studio solution to run on Windows
+* Compile and run
+* No third party libraries to install
+* No controller support
+
+
+### Ubuntu Linux with SDL2
+ * install sdl - apt-get install libsdl2-dev libsdl2-dbg
+ * If processor does not support std::execution - uncomment #define NO_CPP_17 in /utils/types.hpp
+ * Makefile in /src/sdl/
+ * Create build directory - make setup
+ * Run program - make run
+
+
+### Jetson Nano with SDL2
+ * install sdl - apt-get install libsdl2-dev libsdl2-dbg
+ * SDL bug with ARM processors - sudo killall ibus-daemon
+ * Makefile in /src/cuda_sdl/
+ * Create build directory - make setup
+ * Run program - make run

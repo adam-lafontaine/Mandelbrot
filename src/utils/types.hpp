@@ -72,5 +72,5 @@ using Point2Dr32 = Vec2Di32;
 using Point2Dr64 = Vec2Dr64;
 using Point2Du32 = Vec2Du32;
 
-#define NO_CPP_17
-#define NDEBUG
+//#define NO_CPP_17
+//#define NDEBUG

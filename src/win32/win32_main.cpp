@@ -2,13 +2,33 @@
 #include "../app/app.hpp"
 #include "../utils/stopwatch.hpp"
 
+#include <string>
+
 #define CHECK_LEAKS
 #if defined(_WIN32) && defined(_DEBUG) && defined(CHECK_LEAKS)
 #include "../utils/win32_leak_check.h"
 #endif
 
-constexpr auto MAIN_WINDOW_NAME = L"MainWindowMandelbrot";
-constexpr auto WINDOW_TITLE = L"Mandelbrot";
+constexpr auto MAIN_WINDOW = "MainWindow";
+
+constexpr auto WINDOW_TITLE_LEN = std::char_traits<char>::length(app::APP_TITLE) + 1;
+constexpr auto MAIN_WINDOW_NAME_LEN = std::char_traits<char>::length(MAIN_WINDOW) + WINDOW_TITLE_LEN;
+
+GlobalVariable wchar_t WINDOW_TITLE[WINDOW_TITLE_LEN];
+GlobalVariable wchar_t MAIN_WINDOW_NAME[MAIN_WINDOW_NAME_LEN];
+
+
+void load_window_title()
+{
+    swprintf_s(WINDOW_TITLE, L"%hs", app::APP_TITLE);
+}
+
+
+void load_main_window_name()
+{
+    swprintf_s(MAIN_WINDOW_NAME, L"%hs%hs", app::APP_TITLE, MAIN_WINDOW);
+}
+
 
 // size of window
 // bitmap buffer will be scaled to these dimensions Windows (StretchDIBits)
@@ -56,8 +76,8 @@ namespace win32
             VirtualFree(buffer.memory, 0, MEM_RELEASE);
         }
 
-        int iwidth = static_cast<int>(width);
-        int iheight = static_cast<int>(height);
+        int iwidth = (int)(width);
+        int iheight = (int)(height);
 
         buffer.width = iwidth;
         buffer.height = iheight;
@@ -256,9 +276,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _CrtSetDbgFlag(dbgFlags);
 #endif
 
-
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
+
+    load_main_window_name();
+    load_window_title();
 
     WNDCLASSEXW window_class = make_window_class(hInstance);
     if (!RegisterClassExW(&window_class))

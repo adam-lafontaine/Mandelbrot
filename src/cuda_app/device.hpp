@@ -121,7 +121,6 @@ using pixel_t = Pixel;
 class Image
 {
 public:
-	
 
 	u32 width;
 	u32 height;
@@ -158,11 +157,10 @@ public:
 
 	u32* data_src;
     u32* data_dst;
-    //u32* data;    
 };
 
 
-bool make_device_matrix(DeviceMatrix& image, u32 width, u32 height, DeviceBuffer& buffer);
+bool make_device_matrix(DeviceMatrix& matrix, u32 width, u32 height, DeviceBuffer& buffer);
 
 
 class DeviceColorPalette
@@ -178,7 +176,7 @@ bool make_device_palette(DeviceColorPalette& palette, u32 n_colors, DeviceBuffer
 
 
 template <size_t N>
-bool copy_to_device(std::array< std::array<u8, N>, 3> const& src, DeviceColorPalette& dst)
+bool copy_to_device(std::array< std::array<u8, N>, RGB_CHANNELS> const& src, DeviceColorPalette& dst)
 {
     assert(dst.channels[0]);
     assert(dst.n_colors);

@@ -7,9 +7,6 @@
 #include <functional>
 
 
-using ur_it = UnsignedRange::iterator;
-
-
 class MandelbrotProps
 {
 public:
@@ -85,17 +82,17 @@ static void mandelbrot_by_xy(MandelbrotProps const& props, Point2Du32 pos)
 
     while (iter < props.iter_limit && mx2 + my2 <= 4.0)
     {
+		++iter;
+
         my = (mx + mx) * my + cy;
         mx = mx2 - my2 + cx;
         my2 = my * my;
         mx2 = mx * mx;
-
-        ++iter;
     }
 
     auto i = get_index(pos, width);
 
-    props.iterations_dst[i] = iter - 1;
+    props.iterations_dst[i] = iter;
 }
 
 
@@ -451,16 +448,16 @@ static void copy_right(mat_u32_t const& mat, u32 n_cols)
 
 
 static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
-{	
-	auto right = direction.x > 0;
-
-	auto const n_cols = static_cast<u32>(std::abs(direction.x));
-	auto const n_rows = static_cast<u32>(std::abs(direction.y));
+{
+	auto const n_cols = (u32)(std::abs(direction.x));
+	auto const n_rows = (u32)(std::abs(direction.y));
 
 	if (n_cols == 0 && n_rows == 0)
 	{
 		return;
 	}
+
+	auto right = direction.x > 0;
 
 	if (n_rows == 0)
 	{
@@ -522,8 +519,8 @@ static void mandelbrot(mat_u32_t const& dst, AppState const& state)
 	auto do_left = shift.x > 0;
 	auto do_top = shift.y > 0;
 
-    auto const n_cols = static_cast<u32>(std::abs(shift.x));
-	auto const n_rows = static_cast<u32>(std::abs(shift.y));
+    auto const n_cols = (u32)(std::abs(shift.x));
+	auto const n_rows = (u32)(std::abs(shift.y));
 
 	auto no_horizontal = n_cols == 0;
 	auto no_vertical = n_rows == 0;

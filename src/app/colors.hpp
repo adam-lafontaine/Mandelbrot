@@ -14,7 +14,7 @@ constexpr std::array< std::array<u8, 16>, 3> palettes16 =
 
 constexpr u8 lerp(u8 a, u8 b, r64 t)
 {
-	return static_cast<u8>(a + t * (b - a));
+	return (u8)(a + t * (b - a));
 }
 
 
