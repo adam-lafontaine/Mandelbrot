@@ -28,6 +28,8 @@ public:
 
 bool device_malloc(DeviceBuffer& buffer, size_t n_bytes);
 
+bool unified_malloc(DeviceBuffer& buffer, size_t n_bytes);
+
 bool device_free(DeviceBuffer& buffer);
 
 
