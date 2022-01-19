@@ -551,7 +551,7 @@ static void find_min_max_iter(AppState& state)
 }
 
 
-static void draw(image_t const& dst, AppState const& state)
+static void draw(DeviceImage const& dst, AppState const& state)
 {
     u32 width = dst.width;
     u32 height = dst.height;
@@ -560,7 +560,7 @@ static void draw(image_t const& dst, AppState const& state)
     DrawProps props{};
     props.iterations = state.device.iterations.data_dst;
     props.palette = state.device.palette;
-    props.pixels_dst = state.device.pixels.data;
+    props.pixels_dst = dst.data;
     props.min_iter = state.device.min_iters.data;
     props.max_iter = state.device.max_iters.data;
     set_rgb_channels(props.cr, props.cg, props.cb, state.rgb_option);
@@ -573,9 +573,6 @@ static void draw(image_t const& dst, AppState const& state)
     gpu_draw<<<calc_thread_blocks(n_threads), THREADS_PER_BLOCK>>>(props, n_threads);
 
     proc &= cuda_launch_success();
-    assert(proc);
-    
-    proc &= copy_to_host(state.device.pixels, dst);
     assert(proc);
 }
 
@@ -598,6 +595,6 @@ void render(AppState& state)
     
     if(state.draw_new)
     {
-        draw(state.screen_buffer, state);
+        draw(state.unified.screen_pixels, state);
     }
 }

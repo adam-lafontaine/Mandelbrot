@@ -144,11 +144,13 @@ public:
 };
 
 
+
 bool make_device_image(DeviceImage& image, u32 width, u32 height, DeviceBuffer& buffer);
 
 bool copy_to_device(image_t const& src, DeviceImage const& dst);
 
 bool copy_to_host(DeviceImage const& src, image_t const& dst);
+
 
 
 class DeviceMatrix
