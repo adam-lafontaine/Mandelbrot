@@ -9,13 +9,26 @@
 #include <thread>
 
 
-constexpr u32 BYTES_PER_PIXEL = 4;
+constexpr auto WINDOW_TITLE = app::APP_TITLE;
+constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
+constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
+
+constexpr u32 SCREEN_BYTES_PER_PIXEL = 4;
+
+constexpr size_t APP_MEMORY_SIZE = Megabytes(16);
+
+// control the framerate of the application
+constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
+constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
+
+GlobalVariable b32 g_running = false;
+
 
 
 class BitmapBuffer
 {
 public:
-    u32 bytes_per_pixel = BYTES_PER_PIXEL;
+    u32 bytes_per_pixel;
 
     void* memory;    
     int width;
@@ -28,7 +41,7 @@ public:
 
 static void allocate_app_memory(app::AppMemory& memory)
 {
-    memory.permanent_storage_size = Megabytes(16);
+    memory.permanent_storage_size = APP_MEMORY_SIZE;
 
     size_t total_size = memory.permanent_storage_size;
 
@@ -106,10 +119,19 @@ static void close_game_controllers(SDLInput& sdl, Input const& input)
 }
 
 
+static void init_app_buffer(app::ScreenBuffer& app_buffer)
+{
+    app_buffer.width = WINDOW_WIDTH;
+    app_buffer.height = WINDOW_HEIGHT;
+    app_buffer.bytes_per_pixel = SCREEN_BYTES_PER_PIXEL;
+}
+
+
 static bool init_bitmap_buffer(BitmapBuffer& buffer, app::ScreenBuffer const& screen_buffer, SDL_Window* window)
 {
     buffer.width = (int)screen_buffer.width;
     buffer.height = (int)screen_buffer.height;
+    buffer.bytes_per_pixel = screen_buffer.bytes_per_pixel;
 
     buffer.memory = screen_buffer.memory;
 
@@ -151,16 +173,6 @@ static void destroy_bitmap_buffer(BitmapBuffer& buffer)
     }
 }
 
-
-constexpr auto WINDOW_TITLE = app::APP_TITLE;
-constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
-constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
-
-// control the framerate of the application
-constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
-constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
-
-GlobalVariable b32 g_running = false;
 
 u32 platform_to_color_32(u8 red, u8 green, u8 blue)
 {
@@ -326,9 +338,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    app_buffer.width = WINDOW_WIDTH;
-    app_buffer.height = WINDOW_HEIGHT;
-    app_buffer.bytes_per_pixel = BYTES_PER_PIXEL;
+    init_app_buffer(app_buffer);
 
     if(!app::initialize_memory(app_memory, app_buffer))
     {
@@ -336,7 +346,6 @@ int main(int argc, char *argv[])
         cleanup();
         return EXIT_FAILURE;
     }
-
     
     if(!init_bitmap_buffer(back_buffer, app_buffer, window))
     {
@@ -344,8 +353,7 @@ int main(int argc, char *argv[])
         cleanup();
 
         return EXIT_FAILURE;
-    }
-    
+    }    
 
     g_running = true;   
     
