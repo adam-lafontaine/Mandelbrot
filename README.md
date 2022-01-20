@@ -37,7 +37,7 @@
 
 
 ### Ubuntu Linux with SDL2
- * install sdl - apt-get install libsdl2-dev libsdl2-dbg
+ * install sdl - sudo apt-get install libsdl2-dev
  * If processor does not support std::execution - uncomment #define NO_CPP_17 in /utils/types.hpp
  * Makefile in /src/sdl/
  * Create build directory - make setup
@@ -45,7 +45,7 @@
 
 
 ### Jetson Nano with SDL2
- * install sdl - apt-get install libsdl2-dev libsdl2-dbg
+ * install sdl - sudo apt-get install libsdl2-dev
  * SDL bug with ARM processors - sudo killall ibus-daemon
  * Makefile in /src/cuda_sdl/
  * Create build directory - make setup

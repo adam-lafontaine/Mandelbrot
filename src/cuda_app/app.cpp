@@ -241,8 +241,7 @@ namespace app
 		auto const height = buffer.height;
 
         auto const n_pixels = width * height;
-        auto const iter_sz = 2 * sizeof(u32) * n_pixels;
-        
+        auto const iter_sz = 2 * sizeof(u32) * n_pixels;        
 
         auto& color_palette = palettes256;
         auto const n_colors = color_palette[0].size();
@@ -281,10 +280,6 @@ namespace app
         {
             return false;
         }
-
-		
-
-
 
         return true;
     }
