@@ -25,7 +25,7 @@
 * Increase zoom rate with right trigger
 * Decrease zoom rate with left trigger
 * Increase resolution with right bumper
-* Decrease resolution with left bumber
+* Decrease resolution with left bumper
 * Cycle color scheme with D pad
 * End program with B button
 
@@ -37,16 +37,16 @@
 
 
 ### Ubuntu Linux with SDL2
- * install sdl - sudo apt-get install libsdl2-dev
- * If processor does not support std::execution - uncomment #define NO_CPP_17 in /utils/types.hpp
- * Makefile in /src/sdl/
- * Create build directory - make setup
- * Run program - make run
+* install sdl - sudo apt-get install libsdl2-dev
+* If processor does not support std::execution - uncomment #define NO_CPP_17 in /src/utils/types.hpp
+* Makefile in /src/sdl/
+* Create build directory - make setup
+* Run program - make run
 
 
 ### Jetson Nano with SDL2
- * install sdl - sudo apt-get install libsdl2-dev
- * SDL bug with ARM processors - sudo killall ibus-daemon
- * Makefile in /src/cuda_sdl/
- * Create build directory - make setup
- * Run program - make run
+* install sdl - sudo apt-get install libsdl2-dev
+* SDL bug with ARM processors - sudo killall ibus-daemon
+* Makefile in /src/cuda_sdl/
+* Create build directory - make setup
+* Run program - make run
