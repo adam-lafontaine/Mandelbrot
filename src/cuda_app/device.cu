@@ -1,8 +1,6 @@
 #include "device.hpp"
 #include "cuda_def.cuh"
 
-#include <cassert>
-
 #ifdef CUDA_PRINT_ERROR
 
 #include <cstdio>
@@ -30,6 +28,15 @@ static void check_error(cudaError_t err)
 static bool cuda_device_malloc(void** ptr, u32 n_bytes)
 {
     cudaError_t err = cudaMalloc(ptr, n_bytes);
+    check_error(err);
+    
+    return err == cudaSuccess;
+}
+
+
+static bool cuda_unified_malloc(void** ptr, u32 n_bytes)
+{
+    cudaError_t err = cudaMallocManaged(ptr, n_bytes);
     check_error(err);
     
     return err == cudaSuccess;
@@ -84,6 +91,18 @@ bool cuda_launch_success()
 bool device_malloc(DeviceBuffer& buffer, size_t n_bytes)
 {
     bool result = cuda_device_malloc((void**)&(buffer.data), n_bytes);
+    if(result)
+    {
+        buffer.total_bytes = n_bytes;
+    }
+
+    return result;
+}
+
+
+bool unified_malloc(DeviceBuffer& buffer, size_t n_bytes)
+{
+    bool result = cuda_unified_malloc((void**)&(buffer.data), n_bytes);
     if(result)
     {
         buffer.total_bytes = n_bytes;

@@ -9,11 +9,19 @@ public:
     DeviceBuffer buffer;
 
     DeviceMatrix iterations;
-    DeviceImage pixels;
     DeviceColorPalette palette;
 
     DeviceArray<u32> min_iters;
     DeviceArray<u32> max_iters;
+};
+
+
+class UnifiedMemory
+{
+public:
+    DeviceBuffer buffer;
+
+    DeviceImage screen_pixels;
 };
 
 
@@ -36,6 +44,5 @@ public:
 	u32 iter_limit;
     
     DeviceMemory device;
-
-    image_t screen_buffer;
+    UnifiedMemory unified;
 };

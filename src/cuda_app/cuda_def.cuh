@@ -8,6 +8,8 @@
 #define GPU_GLOBAL_VARIABLE __device__
 #define GPU_GLOBAL_CONSTANT __constant__
 #define GPU_BLOCK_VARIABLE __shared__
+#define GPU_UNIFIED __device__ __managed__
+#define GPU_CONSTEXPR_FUNCTION __device__ constexpr
 
 #define CUDA_PRINT_ERROR
 

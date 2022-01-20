@@ -280,10 +280,11 @@ cuda_app := $(code)/cuda_app
 input    := $(code)/input
 utils    := $(code)/utils
 sdl      := $(code)/sdl
+cuda_sdl := $(code)/cuda_sdl
 
 exe_name := mandelbrot_cuda
 
-main_c         := $(sdl)/sdl_main.cpp
+main_c         := $(cuda_sdl)/cuda_sdl_main.cpp
 main_o         := $(build)/main.o
 object_files   := $(main_o)
 
@@ -298,7 +299,7 @@ device_c := $(cuda_app)/device.cu
 device_o := $(build)/device.o
 object_files += $(device_o)
 
-app_h := $(app)/app.hpp
+app_h := $(cuda_app)/app.hpp
 
 app_c := $(cuda_app)/app.cpp
 app_o := $(build)/app.o
