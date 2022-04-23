@@ -30,7 +30,7 @@ class BitmapBuffer
 public:
     u32 bytes_per_pixel;
 
-    void* memory;    
+    void* memory;
     int width;
     int height;
 
@@ -119,11 +119,11 @@ static void close_game_controllers(SDLInput& sdl, Input const& input)
 }
 
 
-static void init_app_buffer(app::ScreenBuffer& app_buffer)
+static void init_app_screen_buffer(app::ScreenBuffer& app_screen_buffer)
 {
-    app_buffer.width = WINDOW_WIDTH;
-    app_buffer.height = WINDOW_HEIGHT;
-    app_buffer.bytes_per_pixel = SCREEN_BYTES_PER_PIXEL;
+    app_screen_buffer.width = WINDOW_WIDTH;
+    app_screen_buffer.height = WINDOW_HEIGHT;
+    app_screen_buffer.bytes_per_pixel = SCREEN_BYTES_PER_PIXEL;
 }
 
 
@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
     }
 
     app::AppMemory app_memory = {};
-    app::ScreenBuffer app_buffer = {};
+    app::ScreenBuffer app_screen_buffer = {};
     BitmapBuffer back_buffer = {};
     Input input[2] = {};
     SDLInput sdl_input = {};
@@ -338,16 +338,16 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    init_app_buffer(app_buffer);
+    init_app_screen_buffer(app_screen_buffer);
 
-    if(!app::initialize_memory(app_memory, app_buffer))
+    if(!app::initialize_memory(app_memory, app_screen_buffer))
     {
         display_error("Initializing application memory failed");
         cleanup();
         return EXIT_FAILURE;
     }
     
-    if(!init_bitmap_buffer(back_buffer, app_buffer, window))
+    if(!init_bitmap_buffer(back_buffer, app_screen_buffer, window))
     {
         display_error("Creating back buffer failed");
         cleanup();

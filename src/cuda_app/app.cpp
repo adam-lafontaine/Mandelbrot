@@ -219,15 +219,15 @@ namespace app
 		auto const screen_sz = sizeof(pixel_t) * n_pixels;
 
 		auto unified_sz = screen_sz;
-		if(!unified_malloc(unified.buffer, unified_sz))
+		if(!device::unified_malloc(unified.buffer, unified_sz))
 		{
 			return false;
 		}
 
-        if(!make_device_image(unified.screen_pixels, width, height, unified.buffer))
-        {
-            return false;
-        }
+		if(!device::push_device_image(unified.buffer, unified.screen_pixels, width, height))
+		{
+			return false;
+		}
 
 		buffer.memory = unified.screen_pixels.data;
 
@@ -251,35 +251,35 @@ namespace app
         auto const max_val_sz = sizeof(u32) * MAX_GPU_THREADS;
 
         auto device_sz = iter_sz + color_sz + min_val_sz + max_val_sz;
-        if(!device_malloc(device.buffer, device_sz))
+        if(!device::malloc(device.buffer, device_sz))
         {
             return false;
         }
 
-        if(!make_device_matrix(device.iterations, width, height, device.buffer))
-        {
-            return false;
-        }
+		if(!device::push_device_matrix(device.buffer, device.iterations, width, height))
+		{
+			return false;
+		}
 
-        if(!make_device_palette(device.palette, n_colors, device.buffer))
-        {
-            return false;
-        }
+		if(!device::push_device_palette(device.buffer, device.palette, n_colors))
+		{
+			return false;
+		}
 
         if(!copy_to_device(color_palette, device.palette))
         {
             return false;
         }
 
-        if(!make_device_array(device.min_iters, MAX_GPU_THREADS, device.buffer))
-        {
-            return false;
-        }
+		if(!device::push_device_array(device.buffer, device.min_iters, MAX_GPU_THREADS))
+		{
+			return false;
+		}
 
-        if(!make_device_array(device.max_iters, MAX_GPU_THREADS, device.buffer))
-        {
-            return false;
-        }
+		if(!device::push_device_array(device.buffer, device.max_iters, MAX_GPU_THREADS))
+		{
+			return false;
+		}
 
         return true;
     }
@@ -341,7 +341,7 @@ namespace app
 	{
 		auto& state = get_state(memory);
 
-        device_free(state.device.buffer);
-		device_free(state.unified.buffer);
+        device::free(state.device.buffer);
+		device::free(state.unified.buffer);
 	}
 }

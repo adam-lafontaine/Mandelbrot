@@ -17,7 +17,7 @@ bool cuda_no_errors();
 
 bool cuda_launch_success();
 
-
+/*
 class DeviceBuffer
 {
 public:
@@ -25,12 +25,13 @@ public:
     u32 total_bytes = 0;
     u32 offset = 0;
 };
+*/
 
-bool device_malloc(DeviceBuffer& buffer, size_t n_bytes);
+//bool device_malloc(DeviceBuffer& buffer, size_t n_bytes);
 
-bool unified_malloc(DeviceBuffer& buffer, size_t n_bytes);
+//bool unified_malloc(DeviceBuffer& buffer, size_t n_bytes);
 
-bool device_free(DeviceBuffer& buffer);
+//bool device_free(DeviceBuffer& buffer);
 
 
 template <typename T>
@@ -41,7 +42,7 @@ public:
     u32 n_elements = 0;
 };
 
-
+/*
 template <typename T>
 bool make_device_array(DeviceArray<T>& arr, u32 n_elements, DeviceBuffer& buffer)
 {
@@ -59,8 +60,9 @@ bool make_device_array(DeviceArray<T>& arr, u32 n_elements, DeviceBuffer& buffer
 
     return result;
 }
+*/
 
-
+/*
 template <typename T>
 void pop_array(DeviceArray<T>& arr, DeviceBuffer& buffer)
 {
@@ -69,7 +71,7 @@ void pop_array(DeviceArray<T>& arr, DeviceBuffer& buffer)
 
     arr.data = NULL;
 }
-
+*/
 
 template <class T, size_t N>
 bool copy_to_device(std::array<T, N> const& src, DeviceArray<T>& dst)
@@ -145,7 +147,7 @@ public:
 
 
 
-bool make_device_image(DeviceImage& image, u32 width, u32 height, DeviceBuffer& buffer);
+//bool make_device_image(DeviceImage& image, u32 width, u32 height, DeviceBuffer& buffer);
 
 bool copy_to_device(image_t const& src, DeviceImage const& dst);
 
@@ -164,7 +166,7 @@ public:
 };
 
 
-bool make_device_matrix(DeviceMatrix& matrix, u32 width, u32 height, DeviceBuffer& buffer);
+//bool make_device_matrix(DeviceMatrix& matrix, u32 width, u32 height, DeviceBuffer& buffer);
 
 
 class DeviceColorPalette
@@ -176,7 +178,7 @@ public:
 };
 
 
-bool make_device_palette(DeviceColorPalette& palette, u32 n_colors, DeviceBuffer& buffer);
+//bool make_device_palette(DeviceColorPalette& palette, u32 n_colors, DeviceBuffer& buffer);
 
 
 template <size_t N>
@@ -196,4 +198,54 @@ bool copy_to_device(std::array< std::array<u8, N>, RGB_CHANNELS> const& src, Dev
     }
 
     return true;
+}
+
+
+namespace device
+{
+    using u8 = uint8_t;
+
+    class MemoryBuffer
+    {
+    public:
+        u8* data = nullptr;
+        size_t capacity = 0;
+        size_t size = 0;
+    };
+
+
+    bool malloc(MemoryBuffer& buffer, size_t n_bytes);
+
+    bool unified_malloc(MemoryBuffer& buffer, size_t n_bytes);
+
+    bool free(MemoryBuffer& buffer);
+
+    u8* push_bytes(MemoryBuffer& buffer, size_t n_bytes);
+
+    bool pop_bytes(MemoryBuffer& buffer, size_t n_bytes);
+
+
+    template <typename T>
+    inline bool push_device_array(MemoryBuffer& buffer, DeviceArray<T>& arr, u32 n_elements)
+    {
+        auto data = push_bytes(buffer, n_elements * sizeof(T));
+
+        if(data)
+        {
+            arr.n_elements = n_elements;
+            arr.data = (T*)data;
+
+            return true;
+        }
+
+        return false;
+    }
+
+
+    bool push_device_image(MemoryBuffer& buffer, DeviceImage& image, u32 width, u32 height);
+
+    bool push_device_matrix(MemoryBuffer& buffer, DeviceMatrix& matrix, u32 width, u32 height);
+
+    bool push_device_palette(MemoryBuffer& buffer, DeviceColorPalette& palette, u32 n_colors);
+
 }
