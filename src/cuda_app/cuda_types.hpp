@@ -6,7 +6,7 @@
 class DeviceMemory
 {
 public:
-    DeviceBuffer buffer;
+    device::MemoryBuffer buffer;
 
     DeviceMatrix iterations;
     DeviceColorPalette palette;
@@ -19,7 +19,7 @@ public:
 class UnifiedMemory
 {
 public:
-    DeviceBuffer buffer;
+    device::MemoryBuffer buffer;
 
     DeviceImage screen_pixels;
 };
