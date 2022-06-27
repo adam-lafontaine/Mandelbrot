@@ -192,7 +192,7 @@ constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
 constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
 
 // control the framerate of the application
-constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
+constexpr u32 TARGET_FRAMERATE_HZ = 60;
 constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
 
 GlobalVariable b32 g_running = false;
@@ -339,6 +339,8 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    SDL_SetWindowTitle(window, WINDOW_TITLE);
+
     app::AppMemory app_memory = {};
     app::ScreenBuffer app_buffer = {};
     BitmapBuffer back_buffer = {};
@@ -382,26 +384,29 @@ int main(int argc, char *argv[])
     bool in_old = 1;
     Stopwatch sw;
     r64 frame_ms_elapsed = TARGET_MS_PER_FRAME;
+    char title_buffer[30];
+    r64 ms_elapsed = 0.0;
+    r64 title_refresh_ms = 500.0;
 
     auto const wait_for_framerate = [&]()
     {
         frame_ms_elapsed = sw.get_time_milli();
         auto sleep_ms = (u32)(TARGET_MS_PER_FRAME - frame_ms_elapsed);
         if (frame_ms_elapsed < TARGET_MS_PER_FRAME && sleep_ms > 0)
-        {    
-            SDL_SetWindowTitle(window, WINDOW_TITLE);
-
+        { 
             std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
             while (frame_ms_elapsed < TARGET_MS_PER_FRAME)
             {
                 frame_ms_elapsed = sw.get_time_milli();
             }        
         }
-        else
+
+        ms_elapsed += frame_ms_elapsed;
+        if(ms_elapsed >= title_refresh_ms)
         {
-            char buffer[30];
-            snprintf(buffer, 30, "%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
-            SDL_SetWindowTitle(window, buffer);
+            ms_elapsed = 0.0;
+            snprintf(title_buffer, 30, "%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
+            SDL_SetWindowTitle(window, title_buffer);
         }
 
         sw.start();

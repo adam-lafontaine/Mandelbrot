@@ -405,7 +405,7 @@ static void for_each_row(mat_u32_t const& mat, std::function<void(u32 y)> const&
 	auto const y_id_begin = y_ids.begin();
 	auto const y_id_end = y_ids.end();
 
-	for_each(y_id_begin, y_id_end, func);
+	std::for_each(y_id_begin, y_id_end, func);
 }
 
 
