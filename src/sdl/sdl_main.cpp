@@ -391,6 +391,14 @@ int main(int argc, char *argv[])
     auto const wait_for_framerate = [&]()
     {
         frame_ms_elapsed = sw.get_time_milli();
+
+        if(ms_elapsed >= title_refresh_ms)
+        {
+            ms_elapsed = 0.0;
+            snprintf(title_buffer, 30, "%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
+            SDL_SetWindowTitle(window, title_buffer);
+        }
+
         auto sleep_ms = (u32)(TARGET_MS_PER_FRAME - frame_ms_elapsed);
         if (frame_ms_elapsed < TARGET_MS_PER_FRAME && sleep_ms > 0)
         { 
@@ -401,13 +409,7 @@ int main(int argc, char *argv[])
             }        
         }
 
-        ms_elapsed += frame_ms_elapsed;
-        if(ms_elapsed >= title_refresh_ms)
-        {
-            ms_elapsed = 0.0;
-            snprintf(title_buffer, 30, "%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
-            SDL_SetWindowTitle(window, title_buffer);
-        }
+        ms_elapsed += frame_ms_elapsed;        
 
         sw.start();
     };
