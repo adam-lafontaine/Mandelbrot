@@ -199,7 +199,13 @@ namespace app
 	}
 
 
-	static AppState& get_state(AppMemory& memory, ScreenBuffer const& buffer)
+	static AppState& get_state(AppMemory& memory)
+	{
+		return *(AppState*)memory.permanent_storage;
+	}
+
+
+	bool initialize_memory(AppMemory& memory, ScreenBuffer const& buffer)
 	{
 		auto const state_sz = sizeof(AppState);
 		auto const iter_sz = sizeof(u32) * buffer.width * buffer.height;
@@ -208,15 +214,9 @@ namespace app
 
 		assert(required_sz <= memory.permanent_storage_size);
 
-		auto& state = *(AppState*)memory.permanent_storage;
-
-		return state;
-	}
 
 
-	bool initialize_memory(AppMemory& memory, ScreenBuffer const& buffer)
-	{
-		auto& state = get_state(memory, buffer);
+		auto& state = get_state(memory);
 
 		state.render_new = true;
 
@@ -240,7 +240,9 @@ namespace app
 
 		state.iterations.width = width;
 		state.iterations.height = height;
-		state.iterations.data = (u32*)((u8*)(&state) + sizeof(u32) * width * height);
+		state.iterations.data = (u32*)((u8*)(&state) + state_sz);
+
+
 
 		memory.is_app_initialized = true;
 
@@ -255,7 +257,7 @@ namespace app
 			return;
 		}
 
-		auto& state = get_state(memory, buffer);
+		auto& state = get_state(memory);
 
 		process_input(input, state);
 
