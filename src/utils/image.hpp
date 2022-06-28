@@ -8,7 +8,7 @@ constexpr auto RGB_CHANNELS = 3u;
 constexpr auto RGBA_CHANNELS = 4u;
 
 
-typedef union Pixel
+typedef union pixel_t
 {
 	struct
 	{
@@ -22,37 +22,7 @@ typedef union Pixel
 
 	u32 value;
 
-} pixel_t;
-
-
-class Image
-{
-public:
-	using pixel_t = Pixel;
-
-	u32 width;
-	u32 height;
-
-	pixel_t* data;
-
-	pixel_t* row_begin(u64 y) const
-	{
-		auto x = y;
-		assert(y < height);
-
-		auto offset = y * width;
-
-		auto ptr = data + static_cast<u64>(offset);
-		assert(ptr);
-
-		return ptr;
-	}
-
-	pixel_t* begin() { return data; }
-	pixel_t* end() { return data + static_cast<u64>(width) * static_cast<u64>(height); }
-	pixel_t* begin() const { return data; }
-	pixel_t* end() const { return data + static_cast<u64>(width) * static_cast<u64>(height); }
-};
+} Pixel;
 
 
 template <typename T>
@@ -70,21 +40,18 @@ public:
 
 		auto offset = y * width;
 
-		auto ptr = data + static_cast<u64>(offset);
+		auto ptr = data + (u64)(offset);
 		assert(ptr);
 
 		return ptr;
 	}
 
 	T* begin() { return data; }
-	T* end() { return data + static_cast<u64>(width) * static_cast<u64>(height); }
+	T* end() { return data + (u64)(width) * (u64)(height); }
 	T* begin() const { return data; }
-	T* end() const { return data + static_cast<u64>(width) * static_cast<u64>(height); }
+	T* end() const { return data + (u64)(width) * (u64)(height); }
 };
 
 
-using image_t = Image;
-using pixel_t = image_t::pixel_t;
-
-using mat_u32_t = Matrix<u32>;
-using mat_r64_t = Matrix<r64>;
+using Mat2Du32 = Matrix<u32>;
+using Image = Matrix<Pixel>;

@@ -185,11 +185,11 @@ static void process_input(Input const& input, AppState& state)
 
 namespace app
 {
-	static image_t make_buffer_image(ScreenBuffer const& buffer)
+	static Image make_buffer_image(ScreenBuffer const& buffer)
 	{
 		assert(buffer.bytes_per_pixel == RGBA_CHANNELS);
 
-		image_t image{};
+		Image image{};
 
 		image.width = buffer.width;
 		image.height = buffer.height;

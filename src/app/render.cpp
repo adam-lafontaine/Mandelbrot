@@ -188,7 +188,7 @@ static void mandelbrot(MandelbrotProps const& props)
 u32 platform_to_color_32(u8 red, u8 green, u8 blue);
 
 
-static Range2Du32 get_range(mat_u32_t const& mat)
+static Range2Du32 get_range(Mat2Du32 const& mat)
 {
 	Range2Du32 r{};
 	r.x_begin = 0;
@@ -415,7 +415,7 @@ std::function<pixel_t(u32, u32, u32, u32)> get_rgb_function(u32 max_iter)
 }
 
 
-static void for_each_row(mat_u32_t const& mat, std::function<void(u32 y)> const& func)
+static void for_each_row(Mat2Du32 const& mat, std::function<void(u32 y)> const& func)
 {
 	UnsignedRange y_ids(0u, mat.height);
 	auto const y_id_begin = y_ids.begin();
@@ -425,7 +425,7 @@ static void for_each_row(mat_u32_t const& mat, std::function<void(u32 y)> const&
 }
 
 
-static void copy_left(mat_u32_t const& mat, u32 n_cols)
+static void copy_left(Mat2Du32 const& mat, u32 n_cols)
 {
 	u32 const x_len = mat.width - n_cols;
 
@@ -444,7 +444,7 @@ static void copy_left(mat_u32_t const& mat, u32 n_cols)
 }
 
 
-static void copy_right(mat_u32_t const& mat, u32 n_cols)
+static void copy_right(Mat2Du32 const& mat, u32 n_cols)
 {
 	u32 const x_len = mat.width - n_cols;
 
@@ -463,7 +463,7 @@ static void copy_right(mat_u32_t const& mat, u32 n_cols)
 }
 
 
-static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
+static void copy(Mat2Du32 const& mat, Vec2Di32 const& direction)
 {
 	auto const n_cols = (u32)(std::abs(direction.x));
 	auto const n_rows = (u32)(std::abs(direction.y));
@@ -525,7 +525,7 @@ static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
 }
 
 
-static void mandelbrot(mat_u32_t const& dst, AppState const& state)
+static void mandelbrot(Mat2Du32 const& dst, AppState const& state)
 {
 	auto const width = dst.width;
 	auto const height = dst.height;
@@ -628,7 +628,7 @@ static void find_min_max_iter(AppState& state)
 }
 
 
-static void draw(image_t const& dst, AppState const& state)
+static void draw(Image const& dst, AppState const& state)
 {
 	auto const min = state.iter_min;
 	auto const max = state.iter_max;	

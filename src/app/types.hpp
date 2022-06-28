@@ -20,9 +20,9 @@ public:
 	u32 rgb_option;
 	u32 iter_limit;
 
-	mat_u32_t iterations;
+	Mat2Du32 iterations;
 	u32 iter_min;
 	u32 iter_max;
 
-	image_t screen_buffer;
+	Image screen_buffer;
 };
