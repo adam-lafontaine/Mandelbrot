@@ -207,14 +207,16 @@ namespace app
 
 	bool initialize_memory(AppMemory& memory, ScreenBuffer const& buffer)
 	{
-		auto const state_sz = sizeof(AppState);
-		auto const iter_sz = sizeof(u32) * buffer.width * buffer.height;
+		auto const width = buffer.width;
+		auto const height = buffer.height;
 
-		auto const required_sz = state_sz + iter_sz;
+		auto const state_sz = sizeof(AppState);
+		auto const iter_sz = sizeof(u32) * width * height;
+		auto const color_sz = sizeof(i16) * width * height;
+
+		auto const required_sz = state_sz + iter_sz + color_sz;
 
 		assert(required_sz <= memory.permanent_storage_size);
-
-
 
 		auto& state = get_state(memory);
 
@@ -235,14 +237,18 @@ namespace app
 
 		state.rgb_option = 1;
 
-		auto const width = buffer.width;
-		auto const height = buffer.height;
+		auto begin = (u8*)(&state);
+		size_t offset = state_sz;
 
 		state.iterations.width = width;
 		state.iterations.height = height;
-		state.iterations.data = (u32*)((u8*)(&state) + state_sz);
+		state.iterations.data = (u32*)(begin + offset);
 
+		offset += color_sz;
 
+		state.color_indeces.width = width;
+		state.color_indeces.height = height;
+		state.color_indeces.data = (i16*)(begin + offset);
 
 		memory.is_app_initialized = true;
 
