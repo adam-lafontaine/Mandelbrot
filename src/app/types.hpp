@@ -24,5 +24,7 @@ public:
 	u32 iter_min;
 	u32 iter_max;
 
+	
+
 	Image screen_buffer;
 };

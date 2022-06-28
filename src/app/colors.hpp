@@ -57,121 +57,57 @@ constexpr std::array<u8, N> make_palette(u32 c)
 }
 
 
-constexpr std::array< std::array<u8, 32>, 3> palettes32 =
-{ {
-	make_palette<32>(0),
-	make_palette<32>(1),
-	make_palette<32>(2)
-} };
+template<size_t N>
+constexpr std::array< std::array<u8, N>, 3> make_palettes()
+{
+	return 
+	{ {
+		make_palette<N>(0),
+		make_palette<N>(1),
+		make_palette<N>(2)
+	} };
+}
 
 
-constexpr std::array< std::array<u8, 48>, 3> palettes48 =
-{ {
-	make_palette<48>(0),
-	make_palette<48>(1),
-	make_palette<48>(2)
-} };
+constexpr auto palettes32 = make_palettes<32>();
 
 
-constexpr std::array< std::array<u8, 64>, 3> palettes64 =
-{ {
-	make_palette<64>(0),
-	make_palette<64>(1),
-	make_palette<64>(2)
-} };
+constexpr auto palettes48 = make_palettes<48>();
+
+constexpr auto palettes64 = make_palettes<64>();
 
 
-constexpr std::array< std::array<u8, 80>, 3> palettes80 =
-{ {
-	make_palette<80>(0),
-	make_palette<80>(1),
-	make_palette<80>(2)
-} };
+constexpr auto palettes80 = make_palettes<80>();
 
 
-constexpr std::array< std::array<u8, 96>, 3> palettes96 =
-{ {
-	make_palette<96>(0),
-	make_palette<96>(1),
-	make_palette<96>(2)
-} };
+constexpr auto palettes96 = make_palettes<96>();
 
 
-constexpr std::array< std::array<u8, 112>, 3> palettes112 =
-{ {
-	make_palette<112>(0),
-	make_palette<112>(1),
-	make_palette<112>(2)
-} };
+constexpr auto palettes112 = make_palettes<112>();
 
 
-constexpr std::array< std::array<u8, 128>, 3> palettes128 =
-{ {
-	make_palette<128>(0),
-	make_palette<128>(1),
-	make_palette<128>(2)
-} };
+constexpr auto palettes128 = make_palettes<128>();
 
 
-constexpr std::array< std::array<u8, 144>, 3> palettes144 =
-{ {
-	make_palette<144>(0),
-	make_palette<144>(1),
-	make_palette<144>(2)
-} };
+constexpr auto palettes144 = make_palettes<144>();
 
 
-constexpr std::array< std::array<u8, 160>, 3> palettes160 =
-{ {
-	make_palette<160>(0),
-	make_palette<160>(1),
-	make_palette<160>(2)
-} };
+constexpr auto palettes160 = make_palettes<160>();
 
 
-constexpr std::array< std::array<u8, 176>, 3> palettes176 =
-{ {
-	make_palette<176>(0),
-	make_palette<176>(1),
-	make_palette<176>(2)
-} };
+constexpr auto palettes176 = make_palettes<176>();
 
 
-constexpr std::array< std::array<u8, 192>, 3> palettes192 =
-{ {
-	make_palette<192>(0),
-	make_palette<192>(1),
-	make_palette<192>(2)
-} };
+constexpr auto palettes192 = make_palettes<192>();
 
 
-constexpr std::array< std::array<u8, 208>, 3> palettes208 =
-{ {
-	make_palette<208>(0),
-	make_palette<208>(1),
-	make_palette<208>(2)
-} };
+constexpr auto palettes208 = make_palettes<208>();
 
 
-constexpr std::array< std::array<u8, 224>, 3> palettes224 =
-{ {
-	make_palette<224>(0),
-	make_palette<224>(1),
-	make_palette<224>(2)
-} };
+constexpr auto palettes224 = make_palettes<224>();
 
 
-constexpr std::array< std::array<u8, 240>, 3> palettes240 =
-{ {
-	make_palette<240>(0),
-	make_palette<240>(1),
-	make_palette<240>(2)
-} };
+constexpr auto palettes240 = make_palettes<240>();
 
 
-constexpr std::array< std::array<u8, 256>, 3> palettes256 =
-{ {
-	make_palette<256>(0),
-	make_palette<256>(1),
-	make_palette<256>(2)
-} };
+constexpr auto palettes256 = make_palettes<256>();
