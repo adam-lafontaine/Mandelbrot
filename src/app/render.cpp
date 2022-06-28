@@ -66,21 +66,16 @@ static u32 get_index(Point2Du32 const& pos, u32 width)
 }
 
 
-static void mandelbrot_by_xy(MandelbrotProps const& props, Point2Du32 pos)
+static u32 mandelbrot_iterations(r64 cx, r64 cy, u32 iter_limit)
 {
-	auto const width = props.width;
-    
-    r64 const cx = props.min_mx + pos.x * props.mx_step;
-    r64 const cy = props.min_my + pos.y * props.my_step;
-
-    u32 iter = 0;
+	u32 iter = 0;
 
     r64 mx = 0.0;
     r64 my = 0.0;
     r64 mx2 = 0.0;
     r64 my2 = 0.0;
 
-    while (iter < props.iter_limit && mx2 + my2 <= 4.0)
+    while (iter < iter_limit && mx2 + my2 <= 4.0)
     {
 		++iter;
 
@@ -90,9 +85,7 @@ static void mandelbrot_by_xy(MandelbrotProps const& props, Point2Du32 pos)
         mx2 = mx * mx;
     }
 
-    auto i = get_index(pos, width);
-
-    props.iterations_dst[i] = iter;
+    return iter;
 }
 
 
@@ -113,11 +106,19 @@ static void copy(u32* src_begin, u32* src_end, u32* dst_begin)
 
 static void mandelbrot(MandelbrotProps const& props, Range2Du32 const& range)
 {
+	auto const width = props.width;
+
 	for(u32 y = range.y_begin; y < range.y_end; ++y)
-	{
+	{		
+		auto row_offset = width * y;
+		r64 cy = props.min_my + y * props.my_step;
+
 		for(u32 x = range.x_begin; x < range.x_end; ++x)
 		{
-			mandelbrot_by_xy(props, { x, y });
+			r64 cx = props.min_mx + x * props.mx_step;
+			auto iter = mandelbrot_iterations(cx, cy, props.iter_limit);
+
+			props.iterations_dst[row_offset + x] = iter;
 		}
 	}
 }
@@ -143,6 +144,21 @@ static void transform(u32* src_begin, u32* src_end, pixel_t* dst_begin, std::fun
 static void copy(u32* src_begin, u32* src_end, u32* dst_begin)
 {
 	std::copy(std::execution::par, src_begin, src_end, dst_begin);
+}
+
+
+static void mandelbrot_by_xy(MandelbrotProps const& props, Point2Du32 pos)
+{
+	auto const width = props.width;
+    
+    r64 const cx = props.min_mx + pos.x * props.mx_step;
+    r64 const cy = props.min_my + pos.y * props.my_step;
+
+    auto iter = mandelbrot_iterations(cx, cy, props.iter_limit);
+
+	auto i = get_index(pos, width);
+
+    props.iterations_dst[i] = iter;
 }
 
 
