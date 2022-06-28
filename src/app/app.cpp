@@ -244,7 +244,7 @@ namespace app
 		state.iterations.height = height;
 		state.iterations.data = (u32*)(begin + offset);
 
-		offset += color_sz;
+		offset += iter_sz;
 
 		state.color_indeces.width = width;
 		state.color_indeces.height = height;
