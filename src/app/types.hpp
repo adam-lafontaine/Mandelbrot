@@ -79,7 +79,10 @@ public:
 	u32 iter_min;
 	u32 iter_max;
 
-	Mat2Di16 color_indeces;
+	b32 ids_old = 0;
+	b32 ids_current = 1;
+
+	Mat2Di16 color_indeces[2];
 
 	Image screen_buffer;
 };

@@ -571,7 +571,7 @@ RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const& direction)
 		}
 		else // if (write_bottom)
 		{
-			list.write_h.y_begin = list.write_h.y_end = n_rows - 1;
+			list.write_h.y_begin = list.write_h.y_end - n_rows - 1;
 		}
 	}
 	else if (no_vertical)
@@ -764,7 +764,7 @@ static void mandelbrot(Mat2Du32 const& dst, AppState const& state)
 	props.my_step = state.mbt_screen_height / height;
     props.width = width;
     props.iterations_dst = dst.data;
-	props.color_indeces_dst = state.color_indeces.data;
+	//props.color_indeces_dst = state.color_indeces.data;
     props.range1 = range1;
     props.range2 = range2;
 
@@ -901,24 +901,28 @@ static Range2Du32 get_full_range(Mat2Di16 const& mat)
 
 void render(AppState& state)
 {
-	
-
 	if(state.render_new)
 	{
-		auto& ids = state.color_indeces;
-		auto ranges = get_ranges(get_full_range(ids), state.pixel_shift);
+		state.ids_current = state.ids_old;
+		state.ids_old = !state.ids_old;
 
-		copy(ids, ids, ranges.copy_src, ranges.copy_dst);
+		auto& current_ids = state.color_indeces[state.ids_current];
+		auto& old_ids = state.color_indeces[state.ids_old];
+
+		auto& ids = state.color_indeces;
+		auto ranges = get_ranges(get_full_range(current_ids), state.pixel_shift);
+
+		copy(old_ids, current_ids, ranges.copy_src, ranges.copy_dst);
 
 		MbtProps props{};
 		props.iter_limit = state.iter_limit;
 		props.min_mx = MBT_MIN_X + state.mbt_pos.x;
 		props.min_my = MBT_MIN_Y + state.mbt_pos.y;
-		props.mx_step = state.mbt_screen_width / ids.width;
-		props.my_step = state.mbt_screen_height / ids.height;
+		props.mx_step = state.mbt_screen_width / old_ids.width;
+		props.my_step = state.mbt_screen_height / old_ids.height;
 
-		mandelbrot(ids, ranges.write_h, props);
-		mandelbrot(ids, ranges.write_v, props);
+		mandelbrot(current_ids, ranges.write_h, props);
+		mandelbrot(current_ids, ranges.write_v, props);
 
 
 		//copy(state.iterations, state.pixel_shift);
@@ -932,6 +936,6 @@ void render(AppState& state)
     if(state.draw_new)
     {
         //draw(state.screen_buffer, state);
-		draw(state.color_indeces, state.screen_buffer, state.rgb_option);
+		draw(state.color_indeces[state.ids_current], state.screen_buffer, state.rgb_option);
     }
 }

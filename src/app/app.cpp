@@ -214,7 +214,7 @@ namespace app
 		auto const iter_sz = sizeof(u32) * width * height;
 		auto const color_sz = sizeof(i16) * width * height;
 
-		auto const required_sz = state_sz + iter_sz + color_sz;
+		auto const required_sz = state_sz + iter_sz + 2 *color_sz;
 
 		assert(required_sz <= memory.permanent_storage_size);
 
@@ -246,9 +246,15 @@ namespace app
 
 		offset += iter_sz;
 
-		state.color_indeces.width = width;
-		state.color_indeces.height = height;
-		state.color_indeces.data = (i16*)(begin + offset);
+		state.color_indeces[0].width = width;
+		state.color_indeces[0].height = height;
+		state.color_indeces[0].data = (i16*)(begin + offset);
+
+		offset += color_sz;
+
+		state.color_indeces[1].width = width;
+		state.color_indeces[1].height = height;
+		state.color_indeces[1].data = (i16*)(begin + offset);
 
 		memory.is_app_initialized = true;
 
