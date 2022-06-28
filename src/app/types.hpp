@@ -75,10 +75,6 @@ public:
 	u32 rgb_option;
 	u32 iter_limit;
 
-	Mat2Du32 iterations;
-	u32 iter_min;
-	u32 iter_max;
-
 	b32 ids_old = 0;
 	b32 ids_current = 1;
 

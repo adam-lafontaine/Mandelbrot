@@ -211,10 +211,9 @@ namespace app
 		auto const height = buffer.height;
 
 		auto const state_sz = sizeof(AppState);
-		auto const iter_sz = sizeof(u32) * width * height;
 		auto const color_sz = sizeof(i16) * width * height;
 
-		auto const required_sz = state_sz + iter_sz + 2 *color_sz;
+		auto const required_sz = state_sz + 2 *color_sz;
 
 		assert(required_sz <= memory.permanent_storage_size);
 
@@ -239,12 +238,6 @@ namespace app
 
 		auto begin = (u8*)(&state);
 		size_t offset = state_sz;
-
-		state.iterations.width = width;
-		state.iterations.height = height;
-		state.iterations.data = (u32*)(begin + offset);
-
-		offset += iter_sz;
 
 		state.color_indeces[0].width = width;
 		state.color_indeces[0].height = height;
