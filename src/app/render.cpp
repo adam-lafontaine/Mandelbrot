@@ -389,7 +389,7 @@ static void draw(Mat2Di16 const& src, Image const& dst, u32 rgb_option)
 	u32 c3 = 0;
 	set_rgb_channels(c1, c2, c3, rgb_option);
 
-	auto& palettes = palettes32;
+	auto& palettes = palettes256;
 
 	auto const to_color = [&](i16 i)
 	{

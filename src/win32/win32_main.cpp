@@ -3,6 +3,7 @@
 #include "../utils/stopwatch.hpp"
 
 #include <string>
+#include <thread>
 
 #define CHECK_LEAKS
 #if defined(_WIN32) && defined(_DEBUG) && defined(CHECK_LEAKS)
@@ -321,35 +322,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return 0;
     }
 
-    auto app_pixel_buffer = make_app_pixel_buffer();
+    SetWindowTextW(window, WINDOW_TITLE);
 
-    // manage framerate   
-    Stopwatch sw;
-    auto const wait_for_framerate = [&]() 
-    {
-        auto frame_ms_elapsed = sw.get_time_milli();
-        DWORD sleep_ms = (DWORD)(TARGET_MS_PER_FRAME - frame_ms_elapsed);
+    auto app_pixel_buffer = make_app_pixel_buffer();    
 
-        if (frame_ms_elapsed < TARGET_MS_PER_FRAME && sleep_ms > 0)
-        {
-            SetWindowTextW(window, WINDOW_TITLE);
-            Sleep(sleep_ms);
-            while (frame_ms_elapsed < TARGET_MS_PER_FRAME)
-            {
-                frame_ms_elapsed = sw.get_time_milli();
-            }
-        }
-        else
-        {
-            wchar_t buffer[30];
-            swprintf_s(buffer, L"%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
-            SetWindowTextW(window, buffer);
-        }
-
-        sw.start();
-    };
-
-    app::initialize_memory(app_memory, app_pixel_buffer);
+    g_running = app::initialize_memory(app_memory, app_pixel_buffer);
     
 
     Input input[2] = {};
@@ -360,7 +337,41 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     //bool in_current = 0;
     //bool in_old = 1;
 
-    g_running = true;
+    bool in_current = 0;
+    bool in_old = 1;
+    Stopwatch sw;
+    r64 frame_ms_elapsed = TARGET_MS_PER_FRAME;
+    wchar_t title_buffer[30];
+    r64 ms_elapsed = 0.0;
+    r64 title_refresh_ms = 500.0;
+
+    auto const wait_for_framerate = [&]()
+    {
+        frame_ms_elapsed = sw.get_time_milli();
+
+        if (ms_elapsed >= title_refresh_ms)
+        {
+            ms_elapsed = 0.0;
+            swprintf_s(title_buffer, L"%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
+            SetWindowTextW(window, title_buffer);
+        }
+
+        auto sleep_ms = (u32)(TARGET_MS_PER_FRAME - frame_ms_elapsed);
+        if (frame_ms_elapsed < TARGET_MS_PER_FRAME && sleep_ms > 0)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
+            while (frame_ms_elapsed < TARGET_MS_PER_FRAME)
+            {
+                frame_ms_elapsed = sw.get_time_milli();
+            }
+        }
+
+        ms_elapsed += frame_ms_elapsed;
+
+        sw.start();
+    };
+
+
     sw.start();
     while (g_running)
     {
