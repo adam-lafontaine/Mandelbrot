@@ -5,25 +5,25 @@
 
 inline bool pan_right(Input const& input)
 {
-    return input.keyboard.right_key.is_down || input.controllers[0].stick_right_x.end >= 0.5f;
+    return input.keyboard.np_six_key.is_down || input.controllers[0].stick_right_x.end >= 0.5f;
 }
 
 
 inline bool pan_left(Input const& input)
 {
-    return input.keyboard.left_key.is_down || input.controllers[0].stick_right_x.end <= -0.5f;
+    return input.keyboard.np_four_key.is_down || input.controllers[0].stick_right_x.end <= -0.5f;
 }
 
 
 inline bool pan_up(Input const& input)
 {
-    return input.keyboard.up_key.is_down || input.controllers[0].stick_right_y.end >= 0.5f;
+    return input.keyboard.np_eight_key.is_down || input.controllers[0].stick_right_y.end >= 0.5f;
 }
 
 
 inline bool pan_down(Input const& input)
 {
-    return input.keyboard.down_key.is_down || input.controllers[0].stick_right_y.end <= -0.5f;
+    return input.keyboard.np_two_key.is_down || input.controllers[0].stick_right_y.end <= -0.5f;
 }
 
 
