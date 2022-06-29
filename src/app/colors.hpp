@@ -69,23 +69,6 @@ constexpr std::array< std::array<u8, N>, 3> make_palettes()
 	} };
 }
 
-constexpr u32 N_COLORS = 1024;
+constexpr u32 N_COLORS = 512;
 
 constexpr auto palettes = make_palettes<N_COLORS>();
-
-
-static inline u32 get_num_colors(u32 n_values)
-{
-	
-
-	return 16;
-}
-
-
-std::function<std::array<u8, 3>(i32)> get_color_map_func(u32 n_values)
-{
-	auto n_colors = get_num_colors(n_values);
-	auto f = N_COLORS / n_colors;
-
-	return [&f](i32 i) { return std::array<u8, 3>{ { palettes[0][f*i], palettes[1][f*i], palettes[2][f*i] } }; };
-}

@@ -129,10 +129,11 @@ static void process_input(Input const& input, AppState& state)
 		state.render_new = true;
 	}
 
+	u32 qty = 6;
     if(cycle_color_scheme_right(input))
     {
         ++state.rgb_option;
-        if(state.rgb_option > 6)
+        if(state.rgb_option > qty)
         {
             state.rgb_option = 1;
         }
@@ -144,7 +145,7 @@ static void process_input(Input const& input, AppState& state)
         --state.rgb_option;
         if(state.rgb_option < 1)
         {
-            state.rgb_option = 6;
+            state.rgb_option = qty;
         }
 
         state.draw_new = true;
@@ -179,6 +180,29 @@ static void process_input(Input const& input, AppState& state)
 	if (input.keyboard.six_key.is_down && state.rgb_option != 6)
 	{
 		state.rgb_option = 6;
+		state.draw_new = true;
+	}
+
+
+	qty = get_color_count_qty();
+	if (cycle_color_count_up(input))
+	{
+		++state.color_count_option;
+		if (state.color_count_option > qty)
+		{
+			state.color_count_option = 1;
+		}
+
+		state.draw_new = true;
+	}
+	if (cycle_color_count_down(input))
+	{
+		--state.color_count_option;
+		if (state.color_count_option < 1)
+		{
+			state.color_count_option = qty;
+		}
+
 		state.draw_new = true;
 	}
 
@@ -241,6 +265,7 @@ namespace app
 		state.mbt_screen_height = mbt_screen_height(state.zoom_level);
 
 		state.rgb_option = 1;
+		state.color_count_option = 1;
 
 		auto begin = (u8*)(&state);
 		size_t offset = state_sz;

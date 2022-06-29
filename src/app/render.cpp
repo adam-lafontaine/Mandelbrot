@@ -20,6 +20,7 @@ class MbtProps
 {
 public:
 	u32 iter_limit;
+	u32 n_colors;
 	r64 min_mx;
 	r64 min_my;
 	r64 mx_step;
@@ -40,11 +41,41 @@ static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
 }
 
 
-static i16 mandelbrot_color_index(r64 cx, r64 cy, u32 iter_limit)
+static constexpr u32 get_num_colors(u32 color_factor)
+{
+	auto n_colors = 16u << (u32)(color_factor - 1);
+
+	return n_colors < N_COLORS ? n_colors : N_COLORS;
+}
+
+
+static constexpr u32 max_color_factor()
+{
+	u32 f = 0;
+	u32 n = 0;
+
+	while(n < N_COLORS)
+	{
+		++f;
+		n = get_num_colors(f);
+	}
+
+	return f;
+}
+
+
+std::function<std::array<u8, 3>(i32)> get_color_map_func(u32 color_factor)
+{
+	auto n_colors = get_num_colors(color_factor);
+	auto f = N_COLORS / n_colors;
+
+	return [&f](i32 i) { return std::array<u8, 3>{ { palettes[0][f * i], palettes[1][f * i], palettes[2][f * i] } }; };
+}
+
+
+static i16 mandelbrot_color_index(r64 cx, r64 cy, u32 iter_limit, u32 n_colors)
 {
 	u32 iter = 0;	
-
-	auto n_colors = get_num_colors(iter_limit);
 	u32 index = 0;
 
     r64 mx = 0.0;
@@ -217,14 +248,17 @@ RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const& direction)
 }
 
 
-static void draw(Mat2Di32 const& src, Image const& dst, u32 rgb_option, u32 iter_limit)
+static void draw(AppState const& state)
 {
+	auto& src = state.color_indeces[state.ids_current];
+	auto& dst = state.screen_buffer;
+
 	u32 c1 = 0;
 	u32 c2 = 0;
 	u32 c3 = 0;
-	set_rgb_channels(c1, c2, c3, rgb_option);
+	set_rgb_channels(c1, c2, c3, state.rgb_option);
 
-	auto color_map_func = get_color_map_func(iter_limit);
+	auto color_map_func = get_color_map_func(state.color_count_option);
 
 	auto const to_color = [&](i16 i)
 	{
@@ -272,7 +306,7 @@ static void mandelbrot(Mat2Di32 const& dst, Range2Du32 const& range, MbtProps co
 		for(u32 x = range.x_begin; x < range.x_end; ++x)
 		{
 			r64 cx = props.min_mx + x * props.mx_step;
-			auto index = mandelbrot_color_index(cx, cy, props.iter_limit);
+			auto index = mandelbrot_color_index(cx, cy, props.iter_limit, props.n_colors);
 			dst_row[x] = index;
 		}
 	}
@@ -308,6 +342,7 @@ void render(AppState& state)
 
 		MbtProps props{};
 		props.iter_limit = state.iter_limit;
+		props.n_colors = get_num_colors(state.color_count_option);
 		props.min_mx = MBT_MIN_X + state.mbt_pos.x;
 		props.min_my = MBT_MIN_Y + state.mbt_pos.y;
 		props.mx_step = state.mbt_screen_width / old_ids.width;
@@ -321,6 +356,14 @@ void render(AppState& state)
     
     if(state.draw_new)
     {       
-		draw(state.color_indeces[state.ids_current], state.screen_buffer, state.rgb_option, state.iter_limit);
+		draw(state);
     }
+}
+
+
+u32 get_color_count_qty()
+{
+	constexpr auto n = max_color_factor();
+
+	return n;
 }
