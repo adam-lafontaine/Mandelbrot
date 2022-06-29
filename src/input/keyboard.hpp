@@ -50,6 +50,16 @@
 #define KEYBOARD_MINUS 1
 #define KEYBOARD_MULTIPLY 1
 #define KEYBOARD_DIVIDE 1
+#define KEYBOARD_NUMPAD_0 1
+#define KEYBOARD_NUMPAD_1 1
+#define KEYBOARD_NUMPAD_2 1
+#define KEYBOARD_NUMPAD_3 1
+#define KEYBOARD_NUMPAD_4 1
+#define KEYBOARD_NUMPAD_5 1
+#define KEYBOARD_NUMPAD_6 1
+#define KEYBOARD_NUMPAD_7 1
+#define KEYBOARD_NUMPAD_8 1
+#define KEYBOARD_NUMPAD_9 1
 
 
 constexpr size_t KEYBOARD_KEYS = 
@@ -100,6 +110,16 @@ KEYBOARD_A
 + KEYBOARD_MINUS
 + KEYBOARD_MULTIPLY
 + KEYBOARD_DIVIDE
++ KEYBOARD_NUMPAD_0
++ KEYBOARD_NUMPAD_1
++ KEYBOARD_NUMPAD_2
++ KEYBOARD_NUMPAD_3
++ KEYBOARD_NUMPAD_4
++ KEYBOARD_NUMPAD_5
++ KEYBOARD_NUMPAD_6
++ KEYBOARD_NUMPAD_7
++ KEYBOARD_NUMPAD_8
++ KEYBOARD_NUMPAD_9
 ;
 
 
@@ -249,6 +269,36 @@ typedef union keyboard_input_t
 #endif
 #if KEYBOARD_DIVIDE
 		ButtonState div_key;
+#endif
+#if KEYBOARD_NUMPAD_0
+		ButtonState np_zero_key;
+#endif
+#if KEYBOARD_NUMPAD_1
+		ButtonState np_one_key;
+#endif
+#if KEYBOARD_NUMPAD_2
+		ButtonState np_two_key;
+#endif
+#if KEYBOARD_NUMPAD_3
+		ButtonState np_three_key;
+#endif
+#if KEYBOARD_NUMPAD_4
+		ButtonState np_four_key;
+#endif
+#if KEYBOARD_NUMPAD_5
+		ButtonState np_five_key;
+#endif
+#if KEYBOARD_NUMPAD_6
+		ButtonState np_six_key;
+#endif
+#if KEYBOARD_NUMPAD_7
+		ButtonState np_seven_key;
+#endif
+#if KEYBOARD_NUMPAD_8
+		ButtonState np_eight_key;
+#endif
+#if KEYBOARD_NUMPAD_9
+		ButtonState np_nine_key;
 #endif
 
 	};

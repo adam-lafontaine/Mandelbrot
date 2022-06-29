@@ -186,7 +186,7 @@ namespace win32
 #endif
 #if KEYBOARD_0
 		case '0':
-			record_input(old_input.z_key, new_input.z_key, is_down);
+			record_input(old_input.zero_key, new_input.zero_key, is_down);
 			break;
 #endif
 #if KEYBOARD_1
@@ -290,7 +290,56 @@ namespace win32
 			record_input(old_input.div_key, new_input.div_key, is_down);
 			break;
 #endif
-
+#if KEYBOARD_NUMPAD_0
+		case VK_NUMPAD0:
+			record_input(old_input.np_zero_key, new_input.np_zero_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_1
+		case VK_NUMPAD1:
+			record_input(old_input.np_one_key, new_input.np_one_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_2
+		case VK_NUMPAD2:
+			record_input(old_input.np_two_key, new_input.np_two_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_3
+		case VK_NUMPAD3:
+			record_input(old_input.np_three_key, new_input.np_three_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_4
+		case VK_NUMPAD4:
+			record_input(old_input.np_four_key, new_input.np_four_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_5
+		case VK_NUMPAD5:
+			record_input(old_input.np_five_key, new_input.np_five_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_6
+		case VK_NUMPAD6:
+			record_input(old_input.np_six_key, new_input.np_six_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_7
+		case VK_NUMPAD7:
+			record_input(old_input.np_seven_key, new_input.np_seven_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_8
+		case VK_NUMPAD8:
+			record_input(old_input.np_eight_key, new_input.np_eight_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_9
+		case VK_NUMPAD9:
+			record_input(old_input.np_nine_key, new_input.np_nine_key, is_down);
+			break;
+#endif
 		}
 	}
 
