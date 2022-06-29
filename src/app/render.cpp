@@ -6,6 +6,20 @@
 #include <algorithm>
 
 
+
+
+static void for_each(UnsignedRange const& ids, std::function<void(u32)> const& func)
+{
+	std::for_each(ids.begin(), ids.end(), func);
+}
+
+
+static void transform(Mat2Di32 const& src, Image const& dst, auto const& func)
+{
+	std::transform(src.begin(), src.end(), dst.begin(), func);
+}
+
+
 class RangeList
 {
 public:
@@ -237,7 +251,7 @@ static void draw(AppState const& state)
 
 	auto color_map_func = get_color_map_func(state.color_count_option);
 
-	auto const to_color = [&](i16 i)
+	auto const to_color = [&](i32 i)
 	{
 		if(i < 0)
 		{
@@ -248,7 +262,9 @@ static void draw(AppState const& state)
 		return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
 	};
 
-	std::transform(src.begin(), src.end(), dst.begin(), to_color);
+	transform(src, dst, to_color);
+
+	//std::transform(src.begin(), src.end(), dst.begin(), to_color);
 }
 
 
@@ -260,33 +276,39 @@ static void copy(Mat2Di32 const& src, Mat2Di32 const& dst, Range2Du32 const& src
 	assert(dst_r.x_end - dst_r.x_begin == copy_width);
 	assert(dst_r.y_end - dst_r.y_begin == copy_height);
 
-	for(u32 h = 0; h < copy_height; ++h)
+	auto const copy_row = [&](u32 row) 
 	{
-		auto src_row = src.row_begin(src_r.y_begin + h);
-		auto dst_row = dst.row_begin(dst_r.y_begin + h);
+		auto src_row = src.row_begin(src_r.y_begin + row);
+		auto dst_row = dst.row_begin(dst_r.y_begin + row);
 
-		for(u32 w = 0; w < copy_width; ++w)
+		for (u32 w = 0; w < copy_width; ++w)
 		{
 			dst_row[dst_r.x_begin + w] = src_row[src_r.x_begin + w];
 		}
-	}
+	};
+
+	UnsignedRange rows(0u, copy_height);
+	for_each(rows, copy_row);
 }
 
 
 static void mandelbrot(Mat2Di32 const& dst, Range2Du32 const& range, MbtProps const& props)
 {
-	for(u32 y = range.y_begin; y < range.y_end; ++y)
-	{		
+	auto const mbt_row = [&](u32 y) 
+	{
 		auto dst_row = dst.row_begin(y);
 		r64 cy = props.min_my + y * props.my_step;
 
-		for(u32 x = range.x_begin; x < range.x_end; ++x)
+		for (u32 x = range.x_begin; x < range.x_end; ++x)
 		{
 			r64 cx = props.min_mx + x * props.mx_step;
 			auto index = mandelbrot_color_index(cx, cy, props.iter_limit, props.n_colors);
 			dst_row[x] = index;
 		}
-	}
+	};
+
+	UnsignedRange rows(range.y_begin, range.y_end);
+	for_each(rows, mbt_row);
 }
 
 
