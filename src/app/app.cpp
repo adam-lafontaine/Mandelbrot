@@ -129,7 +129,7 @@ static void process_input(Input const& input, AppState& state)
 		state.render_new = true;
 	}
 
-    if(cycle_color_scheme_up(input))
+    if(cycle_color_scheme_right(input))
     {
         ++state.rgb_option;
         if(state.rgb_option > 6)
@@ -139,7 +139,7 @@ static void process_input(Input const& input, AppState& state)
 
         state.draw_new = true;
     }
-    if(cycle_color_scheme_down(input))
+    if(cycle_color_scheme_left(input))
     {
         --state.rgb_option;
         if(state.rgb_option < 1)

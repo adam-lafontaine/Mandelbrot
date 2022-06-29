@@ -3,12 +3,12 @@
 #include "button_state.hpp"
 
 // activate keys to accept input from
-#define KEYBOARD_A 0
+#define KEYBOARD_A 1
 #define KEYBOARD_B 0
 #define KEYBOARD_C 0
 #define KEYBOARD_D 1
 #define KEYBOARD_E 0
-#define KEYBOARD_F 1
+#define KEYBOARD_F 0
 #define KEYBOARD_G 0
 #define KEYBOARD_H 0
 #define KEYBOARD_I 0
@@ -21,11 +21,11 @@
 #define KEYBOARD_P 0
 #define KEYBOARD_Q 0
 #define KEYBOARD_R 0
-#define KEYBOARD_S 0
+#define KEYBOARD_S 1
 #define KEYBOARD_T 0
 #define KEYBOARD_U 0
 #define KEYBOARD_V 0
-#define KEYBOARD_W 0
+#define KEYBOARD_W 1
 #define KEYBOARD_X 0
 #define KEYBOARD_Y 0
 #define KEYBOARD_Z 0
@@ -44,7 +44,7 @@
 #define KEYBOARD_LEFT 1
 #define KEYBOARD_RIGHT 1
 #define KEYBOARD_RETURN 0
-#define KEYBOARD_ESCAPE 0
+#define KEYBOARD_ESCAPE 1
 #define KEYBOARD_SPACE 0
 #define KEYBOARD_PLUS 1
 #define KEYBOARD_MINUS 1
