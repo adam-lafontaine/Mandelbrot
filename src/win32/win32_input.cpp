@@ -269,6 +269,11 @@ namespace win32
 			record_input(old_input.space_key, new_input.space_key, is_down);
 			break;
 #endif
+#if KEYBOARD_SHIFT
+		case VK_SHIFT:
+			record_input(old_input.shift_key, new_input.shift_key, is_down);
+			break;
+#endif
 #if KEYBOARD_PLUS
 		case VK_ADD:
 			record_input(old_input.plus_key, new_input.plus_key, is_down);

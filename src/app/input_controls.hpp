@@ -73,7 +73,8 @@ inline bool zoom_out(Input const& input)
 
 inline bool increase_resolution(Input const& input)
 {
-    return  
+    return 
+        input.keyboard.space_key.is_down ||
         input.controllers[0].shoulder_right.is_down;
 }
 
@@ -81,6 +82,7 @@ inline bool increase_resolution(Input const& input)
 inline bool decrease_resolution(Input const& input)
 {
     return 
+        input.keyboard.shift_key.is_down ||
         input.controllers[0].shoulder_left.is_down;
 }
 

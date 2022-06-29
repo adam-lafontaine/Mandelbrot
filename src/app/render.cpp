@@ -41,29 +41,6 @@ static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
 }
 
 
-static constexpr u32 get_num_colors(u32 color_factor)
-{
-	auto n_colors = 16u << (u32)(color_factor - 1);
-
-	return n_colors < N_COLORS ? n_colors : N_COLORS;
-}
-
-
-static constexpr u32 max_color_factor()
-{
-	u32 f = 0;
-	u32 n = 0;
-
-	while(n < N_COLORS)
-	{
-		++f;
-		n = get_num_colors(f);
-	}
-
-	return f;
-}
-
-
 std::function<std::array<u8, 3>(i32)> get_color_map_func(u32 color_factor)
 {
 	auto n_colors = get_num_colors(color_factor);
@@ -358,6 +335,14 @@ void render(AppState& state)
     {       
 		draw(state);
     }
+}
+
+
+u32 get_rgb_combo_qty()
+{
+	constexpr auto n = num_rgb_combinations();
+
+	return n;
 }
 
 

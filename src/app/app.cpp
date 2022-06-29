@@ -129,7 +129,7 @@ static void process_input(Input const& input, AppState& state)
 		state.render_new = true;
 	}
 
-	u32 qty = 6;
+	u32 qty = get_rgb_combo_qty();
     if(cycle_color_scheme_right(input))
     {
         ++state.rgb_option;
@@ -150,39 +150,6 @@ static void process_input(Input const& input, AppState& state)
 
         state.draw_new = true;
     }
-
-	// color scheme with 1 - 6
-	if (input.keyboard.one_key.is_down && state.rgb_option != 1)
-	{
-		state.rgb_option = 1;
-		state.draw_new = true;
-	}
-	if (input.keyboard.two_key.is_down && state.rgb_option != 2)
-	{
-		state.rgb_option = 2;
-		state.draw_new = true;
-	}
-	if (input.keyboard.three_key.is_down && state.rgb_option != 3)
-	{
-		state.rgb_option = 3;
-		state.draw_new = true;
-	}
-	if (input.keyboard.four_key.is_down && state.rgb_option != 4)
-	{
-		state.rgb_option = 4;
-		state.draw_new = true;
-	}
-	if (input.keyboard.five_key.is_down && state.rgb_option != 5)
-	{
-		state.rgb_option = 5;
-		state.draw_new = true;
-	}
-	if (input.keyboard.six_key.is_down && state.rgb_option != 6)
-	{
-		state.rgb_option = 6;
-		state.draw_new = true;
-	}
-
 
 	qty = get_color_count_qty();
 	if (cycle_color_count_up(input))

@@ -30,13 +30,13 @@
 #define KEYBOARD_Y 0
 #define KEYBOARD_Z 0
 #define KEYBOARD_0 0
-#define KEYBOARD_1 1
-#define KEYBOARD_2 1
-#define KEYBOARD_3 1
-#define KEYBOARD_4 1
-#define KEYBOARD_5 1
-#define KEYBOARD_6 1
-#define KEYBOARD_7 1
+#define KEYBOARD_1 0
+#define KEYBOARD_2 0
+#define KEYBOARD_3 0
+#define KEYBOARD_4 0
+#define KEYBOARD_5 0
+#define KEYBOARD_6 0
+#define KEYBOARD_7 0
 #define KEYBOARD_8 0
 #define KEYBOARD_9 0
 #define KEYBOARD_UP 1
@@ -45,7 +45,8 @@
 #define KEYBOARD_RIGHT 1
 #define KEYBOARD_RETURN 0
 #define KEYBOARD_ESCAPE 1
-#define KEYBOARD_SPACE 0
+#define KEYBOARD_SPACE 1
+#define KEYBOARD_SHIFT 1
 #define KEYBOARD_PLUS 1
 #define KEYBOARD_MINUS 1
 #define KEYBOARD_MULTIPLY 1
@@ -257,6 +258,9 @@ typedef union keyboard_input_t
 #endif
 #if KEYBOARD_SPACE
 		ButtonState space_key;
+#endif
+#if KEYBOARD_SHIFT
+		ButtonState shift_key;
 #endif
 #if KEYBOARD_PLUS
 		ButtonState plus_key;
