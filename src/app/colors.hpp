@@ -3,6 +3,7 @@
 #include "../utils/types.hpp"
 
 #include <array>
+#include <functional>
 
 constexpr std::array< std::array<u8, 16>, 3> palettes16 =
 { {
@@ -14,7 +15,7 @@ constexpr std::array< std::array<u8, 16>, 3> palettes16 =
 
 constexpr u8 lerp(u8 a, u8 b, r64 t)
 {
-	return (u8)(a + t * (b - a));
+	return (u8)(a + t * (b - a) + 0.5);
 }
 
 
@@ -71,43 +72,81 @@ constexpr std::array< std::array<u8, N>, 3> make_palettes()
 
 constexpr auto palettes32 = make_palettes<32>();
 
-
-constexpr auto palettes48 = make_palettes<48>();
+//constexpr auto palettes48 = make_palettes<48>();
 
 constexpr auto palettes64 = make_palettes<64>();
 
-
-constexpr auto palettes80 = make_palettes<80>();
-
+//constexpr auto palettes80 = make_palettes<80>();
 
 constexpr auto palettes96 = make_palettes<96>();
 
+//constexpr auto palettes112 = make_palettes<112>();
 
-constexpr auto palettes112 = make_palettes<112>();
-
-
-constexpr auto palettes128 = make_palettes<128>();
-
+//constexpr auto palettes128 = make_palettes<128>();
 
 constexpr auto palettes144 = make_palettes<144>();
 
+//constexpr auto palettes160 = make_palettes<160>();
 
-constexpr auto palettes160 = make_palettes<160>();
-
-
-constexpr auto palettes176 = make_palettes<176>();
-
+//constexpr auto palettes176 = make_palettes<176>();
 
 constexpr auto palettes192 = make_palettes<192>();
 
+//constexpr auto palettes208 = make_palettes<208>();
 
-constexpr auto palettes208 = make_palettes<208>();
+//constexpr auto palettes224 = make_palettes<224>();
 
-
-constexpr auto palettes224 = make_palettes<224>();
-
-
-constexpr auto palettes240 = make_palettes<240>();
-
+//constexpr auto palettes240 = make_palettes<240>();
 
 constexpr auto palettes256 = make_palettes<256>();
+
+constexpr auto palettes512 = make_palettes<512>();
+
+constexpr auto palettes1024 = make_palettes<1024>();
+
+
+static inline u32 get_num_colors(u32 n_values)
+{
+	constexpr std::array<u32, 8> sizes = { 1024, 512, 256, 192, 144, 96, 64, 32 };
+	
+	for (auto s : sizes)
+	{
+		if (n_values >= s)
+		{
+			return s;
+		}
+	}
+
+	return 32;
+}
+
+
+std::function<std::array<u8, 3>(i16)> get_color_map_func(u32 n_values)
+{
+	switch (get_num_colors(n_values))
+	{
+	case 1024:
+		return [](i16 i) { return std::array<u8, 3>{ { palettes1024[0][i], palettes1024[1][i], palettes1024[2][i] } }; };
+
+	case 512:
+		return [](i16 i) { return std::array<u8, 3>{ { palettes512[0][i], palettes512[1][i], palettes512[2][i] } }; };
+
+	case 256:
+		return [](i16 i) { return std::array<u8, 3>{ { palettes256[0][i], palettes256[1][i], palettes256[2][i] } }; };
+
+	case 192:
+		return [](i16 i) { return std::array<u8, 3>{ { palettes192[0][i], palettes192[1][i], palettes192[2][i] } }; };
+
+	case 144:
+		return [](i16 i) { return std::array<u8, 3>{ { palettes144[0][i], palettes144[1][i], palettes144[2][i] } }; };
+
+	case 96:
+		return [](i16 i) { return std::array<u8, 3>{ { palettes96[0][i], palettes96[1][i], palettes96[2][i] } }; };
+
+	case 64:
+		return [](i16 i) { return std::array<u8, 3>{ { palettes64[0][i], palettes64[1][i], palettes64[2][i] } }; };
+
+	case 32:
+		return [](i16 i) { return std::array<u8, 3>{ { palettes32[0][i], palettes32[1][i], palettes32[2][i] } }; };
+	}
+}

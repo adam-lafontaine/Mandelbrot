@@ -3,12 +3,6 @@
 #include "../input/input.hpp"
 
 
-constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
-constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 50000;
-constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
-constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
-
-
 inline bool pan_right(Input const& input)
 {
     return input.keyboard.right_key.is_down || input.controllers[0].stick_right_x.end >= 0.5f;

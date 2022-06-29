@@ -6,6 +6,12 @@
 #include <cmath>
 
 
+constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
+constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 50000;
+constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
+constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
+
+
 static void process_input(Input const& input, AppState& state)
 {
 	constexpr r64 zoom_speed_factor_per_second = 0.1;

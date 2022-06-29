@@ -330,12 +330,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     
 
     Input input[2] = {};
-    auto new_input = &input[0];
-    auto old_input = &input[1];
-
-    // TODO:
-    //bool in_current = 0;
-    //bool in_old = 1;
 
     bool in_current = 0;
     bool in_old = 1;
@@ -376,23 +370,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     while (g_running)
     {
         // does not miss frames but slows animation
-        new_input->dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
+        input[in_current].dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
 
         // animation speed maintained but frames missed
         //new_input->dt_frame = frame_ms_elapsed / 1000.0f;
 
-        win32::process_keyboard_input(old_input->keyboard, new_input->keyboard);        
-        win32::process_mouse_input(window, old_input->mouse, new_input->mouse);
-        app::update_and_render(app_memory, *new_input, app_pixel_buffer);
+        win32::process_keyboard_input(input[in_old].keyboard, input[in_current].keyboard);
+        win32::process_mouse_input(window, input[in_old].mouse, input[in_current].mouse);
+        app::update_and_render(app_memory, input[in_current], app_pixel_buffer);
 
         wait_for_framerate();
 
         win32::display_buffer_in_window(g_back_buffer, device_context);
         
         // swap inputs
-        auto temp = new_input;
-        new_input = old_input;
-        old_input = temp;
+        in_current = in_old;
+        in_old = !in_old;
     }
 
 
