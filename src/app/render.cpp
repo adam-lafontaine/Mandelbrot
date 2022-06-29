@@ -6,6 +6,39 @@
 #include <algorithm>
 
 
+class RangeList
+{
+public:
+	Range2Du32 copy_src;
+	Range2Du32 copy_dst;
+	Range2Du32 write_h;
+	Range2Du32 write_v;
+};
+
+
+class MbtProps
+{
+public:
+	u32 iter_limit;
+	r64 min_mx;
+	r64 min_my;
+	r64 mx_step;
+	r64 my_step;
+};
+
+
+// platform dependent e.g. win32_main.cpp
+u32 platform_to_color_32(u8 red, u8 green, u8 blue);
+
+
+static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
+{
+	pixel_t p = {};
+	p.value = platform_to_color_32(red, green, blue);
+
+	return p;
+}
+
 
 static i16 mandelbrot_color_index(r64 cx, r64 cy, u32 iter_limit)
 {
@@ -35,20 +68,6 @@ static i16 mandelbrot_color_index(r64 cx, r64 cy, u32 iter_limit)
     }
 
 	return iter == iter_limit ? -1 : index;
-}
-
-
-
-// platform dependent e.g. win32_main.cpp
-u32 platform_to_color_32(u8 red, u8 green, u8 blue);
-
-
-static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
-{
-	pixel_t p = {};
-	p.value = platform_to_color_32(red, green, blue);
-
-	return p;
 }
 
 
@@ -88,16 +107,6 @@ static void set_rgb_channels(u32& c1, u32& c2, u32& c3, u32 rgb_option)
 		break;
 	}
 }
-
-
-class RangeList
-{
-public:
-	Range2Du32 copy_src;
-	Range2Du32 copy_dst;
-	Range2Du32 write_h;
-	Range2Du32 write_v;
-};
 
 
 RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const& direction)
@@ -251,17 +260,6 @@ static void copy(Mat2Di16 const& src, Mat2Di16 const& dst, Range2Du32 const& src
 		}
 	}
 }
-
-
-class MbtProps
-{
-public:
-    u32 iter_limit;
-    r64 min_mx;
-    r64 min_my;
-    r64 mx_step;
-    r64 my_step;
-};
 
 
 static void mandelbrot(Mat2Di16 const& dst, Range2Du32 const& range, MbtProps const& props)

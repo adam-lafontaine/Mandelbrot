@@ -107,17 +107,17 @@ constexpr auto palettes1024 = make_palettes<1024>();
 
 static inline u32 get_num_colors(u32 n_values)
 {
-	constexpr std::array<u32, 8> sizes = { 1024, 512, 256, 192, 144, 96, 64, 32 };
+	constexpr std::array<u32, 9> sizes = { 1024, 512, 256, 192, 144, 96, 64, 32, 16 };
 	
 	for (auto s : sizes)
 	{
-		if (n_values >= s)
+		if (n_values >= 2 * s)
 		{
 			return s;
 		}
 	}
 
-	return 32;
+	return 16;
 }
 
 
@@ -148,5 +148,8 @@ std::function<std::array<u8, 3>(i16)> get_color_map_func(u32 n_values)
 
 	case 32:
 		return [](i16 i) { return std::array<u8, 3>{ { palettes32[0][i], palettes32[1][i], palettes32[2][i] } }; };
+
+	case 16:
+		return [](i16 i) { return std::array<u8, 3>{ { palettes16[0][i], palettes16[1][i], palettes16[2][i] } }; };
 	}
 }
