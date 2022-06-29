@@ -217,7 +217,7 @@ namespace app
 		auto const height = buffer.height;
 
 		auto const state_sz = sizeof(AppState);
-		auto const color_sz = sizeof(i16) * width * height;
+		auto const color_sz = sizeof(i32) * width * height;
 
 		auto const required_sz = state_sz + 2 *color_sz;
 
@@ -247,13 +247,13 @@ namespace app
 
 		state.color_indeces[0].width = width;
 		state.color_indeces[0].height = height;
-		state.color_indeces[0].data = (i16*)(begin + offset);
+		state.color_indeces[0].data = (i32*)(begin + offset);
 
 		offset += color_sz;
 
 		state.color_indeces[1].width = width;
 		state.color_indeces[1].height = height;
-		state.color_indeces[1].data = (i16*)(begin + offset);
+		state.color_indeces[1].data = (i32*)(begin + offset);
 
 		memory.is_app_initialized = true;
 

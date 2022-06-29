@@ -53,7 +53,7 @@ public:
 
 
 using Mat2Du32 = Matrix<u32>;
-using Mat2Di16 = Matrix<i16>;
+using Mat2Di32 = Matrix<i32>;
 using Image = Matrix<Pixel>;
 
 
@@ -78,7 +78,7 @@ public:
 	b32 ids_old = 0;
 	b32 ids_current = 1;
 
-	Mat2Di16 color_indeces[2];
+	Mat2Di32 color_indeces[2];
 
 	Image screen_buffer;
 };

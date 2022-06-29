@@ -217,7 +217,7 @@ RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const& direction)
 }
 
 
-static void draw(Mat2Di16 const& src, Image const& dst, u32 rgb_option, u32 iter_limit)
+static void draw(Mat2Di32 const& src, Image const& dst, u32 rgb_option, u32 iter_limit)
 {
 	u32 c1 = 0;
 	u32 c2 = 0;
@@ -241,7 +241,7 @@ static void draw(Mat2Di16 const& src, Image const& dst, u32 rgb_option, u32 iter
 }
 
 
-static void copy(Mat2Di16 const& src, Mat2Di16 const& dst, Range2Du32 const& src_r, Range2Du32 const& dst_r)
+static void copy(Mat2Di32 const& src, Mat2Di32 const& dst, Range2Du32 const& src_r, Range2Du32 const& dst_r)
 {
 	auto copy_width = src_r.x_end - src_r.x_begin;
 	auto copy_height = src_r.y_end - src_r.y_begin;
@@ -262,7 +262,7 @@ static void copy(Mat2Di16 const& src, Mat2Di16 const& dst, Range2Du32 const& src
 }
 
 
-static void mandelbrot(Mat2Di16 const& dst, Range2Du32 const& range, MbtProps const& props)
+static void mandelbrot(Mat2Di32 const& dst, Range2Du32 const& range, MbtProps const& props)
 {
 	for(u32 y = range.y_begin; y < range.y_end; ++y)
 	{		
@@ -279,7 +279,7 @@ static void mandelbrot(Mat2Di16 const& dst, Range2Du32 const& range, MbtProps co
 }
 
 
-static Range2Du32 get_full_range(Mat2Di16 const& mat)
+static Range2Du32 get_full_range(Mat2Di32 const& mat)
 {
 	Range2Du32 r{};
 	r.x_begin = 0;
