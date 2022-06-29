@@ -1,7 +1,18 @@
 #pragma once
-
 #include <cstdint>
 #include <cstddef>
+
+#if !_HAS_CXX17
+
+#define NO_CPP17
+
+#endif
+
+
+//#define NDEBUG
+
+
+
 
 using u8 = uint8_t;
 using u16 = uint16_t;
@@ -72,5 +83,3 @@ using Point2Dr32 = Vec2Di32;
 using Point2Dr64 = Vec2Dr64;
 using Point2Du32 = Vec2Du32;
 
-#define NO_CPP_17
-//#define NDEBUG

@@ -5,13 +5,24 @@
 #include <cassert>
 #include <algorithm>
 
-
-
+#ifdef NO_CPP17
 
 static void for_each(UnsignedRange const& ids, std::function<void(u32)> const& func)
 {
 	std::for_each(ids.begin(), ids.end(), func);
 }
+
+#else
+
+#include <execution>
+
+static void for_each(UnsignedRange const& ids, std::function<void(u32)> const& func)
+{
+	std::for_each(std::execution::par, ids.begin(), ids.end(), func);
+}
+
+
+#endif // NO_CPP17
 
 
 static void transform(Mat2Di32 const& src, Image const& dst, auto const& func)
@@ -262,9 +273,19 @@ static void draw(AppState const& state)
 		return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
 	};
 
-	transform(src, dst, to_color);
+	UnsignedRange rows(0u, src.height);
 
-	//std::transform(src.begin(), src.end(), dst.begin(), to_color);
+	auto const draw_row = [&](u32 y) 
+	{
+		auto src_row = src.row_begin(y);
+		auto dst_row = dst.row_begin(y);
+		for (u32 x = 0; x < src.width; ++x)
+		{
+			dst_row[x] = to_color(src_row[x]);
+		}
+	};
+
+	transform(src, dst, to_color);
 }
 
 

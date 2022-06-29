@@ -48,9 +48,6 @@
     <ClInclude Include="..\src\input\mouse.hpp">
       <Filter>Header Files\input</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\utils\image.hpp">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\utils\index_range.hpp">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
