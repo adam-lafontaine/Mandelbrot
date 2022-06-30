@@ -15,7 +15,7 @@ namespace app
 	class AppMemory
 	{
 	public:
-		b32 is_app_initialized;
+		bool is_app_initialized;
 		size_t permanent_storage_size;
 		void* permanent_storage;
 	};

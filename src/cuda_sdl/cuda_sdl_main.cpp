@@ -21,7 +21,7 @@ constexpr size_t APP_MEMORY_SIZE = Megabytes(16);
 constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
 constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
 
-GlobalVariable b32 g_running = false;
+GlobalVariable bool g_running = false;
 
 
 
@@ -397,7 +397,7 @@ int main(int argc, char *argv[])
     while(g_running)
     {
         SDL_Event event;
-        b32 has_event = SDL_PollEvent(&event);
+        bool has_event = SDL_PollEvent(&event);
         if(has_event)
         {            
             handle_sdl_event(event);

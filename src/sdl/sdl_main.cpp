@@ -192,10 +192,10 @@ constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
 constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
 
 // control the framerate of the application
-constexpr u32 TARGET_FRAMERATE_HZ = 60;
+constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
 constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
 
-GlobalVariable b32 g_running = false;
+GlobalVariable bool g_running = false;
 
 u32 platform_to_color_32(u8 red, u8 green, u8 blue)
 {
@@ -418,7 +418,7 @@ int main(int argc, char *argv[])
     while(g_running)
     {
         SDL_Event event;
-        b32 has_event = SDL_PollEvent(&event);
+        bool has_event = SDL_PollEvent(&event);
         if(has_event)
         {            
             handle_sdl_event(event);

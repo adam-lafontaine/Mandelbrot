@@ -39,7 +39,7 @@ static void record_controller_input(SDL_GameController* sdl, ControllerInput con
         return;
     }
 
-	b32 is_down = false;
+	bool is_down = false;
 	Sint16 axis = 0;
 
 #if CONTROLLER_UP
@@ -124,7 +124,7 @@ void process_controller_input(SDLInput const& sdl, Input const& old_input, Input
 }
 
 
-static void record_keyboard_input(SDL_Keycode key_code, KeyboardInput const& old_input, KeyboardInput& new_input, b32 is_down)
+static void record_keyboard_input(SDL_Keycode key_code, KeyboardInput const& old_input, KeyboardInput& new_input, bool is_down)
 {
 	switch (key_code)
 	{
@@ -431,7 +431,7 @@ static void record_keyboard_input(SDL_Keycode key_code, KeyboardInput const& old
 
 
 
-void process_keyboard_input(b32 has_event, SDL_Event const& event, Input const& old_input, Input& new_input)
+void process_keyboard_input(bool has_event, SDL_Event const& event, Input const& old_input, Input& new_input)
 {
 	copy_keyboard_state(old_input.keyboard, new_input.keyboard);
 	if(!has_event)
@@ -449,7 +449,7 @@ void process_keyboard_input(b32 has_event, SDL_Event const& event, Input const& 
 				return;
 			}
 
-			b32 is_down = event.key.state == SDL_PRESSED;
+			bool is_down = event.key.state == SDL_PRESSED;
 
             auto key_code = event.key.keysym.sym;
 			record_keyboard_input(key_code, old_input.keyboard, new_input.keyboard, is_down);
@@ -458,7 +458,7 @@ void process_keyboard_input(b32 has_event, SDL_Event const& event, Input const& 
 }
 
 
-static void record_mouse_button_input(Uint8 button_code, MouseInput const& old_input, MouseInput& new_input, b32 is_down)
+static void record_mouse_button_input(Uint8 button_code, MouseInput const& old_input, MouseInput& new_input, bool is_down)
 {
 	switch(button_code)
 	{		
@@ -496,7 +496,7 @@ static void record_mouse_button_input(Uint8 button_code, MouseInput const& old_i
 }
 
 
-void process_mouse_input(b32 has_event, SDL_Event const& event, Input const& old_input, Input& new_input)
+void process_mouse_input(bool has_event, SDL_Event const& event, Input const& old_input, Input& new_input)
 {
 
 	copy_mouse_state(old_input.mouse, new_input.mouse);
@@ -512,7 +512,7 @@ void process_mouse_input(b32 has_event, SDL_Event const& event, Input const& old
 		case SDL_MOUSEBUTTONDOWN:
 		case SDL_MOUSEBUTTONUP:
 		{
-			b32 is_down = event.type == SDL_MOUSEBUTTONDOWN;
+			bool is_down = event.type == SDL_MOUSEBUTTONDOWN;
 			auto button = event.button.button;
 
 			record_mouse_button_input(button, old_input.mouse, mouse, is_down);
