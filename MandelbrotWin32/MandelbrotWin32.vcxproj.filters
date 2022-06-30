@@ -36,16 +36,7 @@
     <ClInclude Include="..\src\app\app.hpp">
       <Filter>Header Files\app</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\input\button_state.hpp">
-      <Filter>Header Files\input</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\input\input.hpp">
-      <Filter>Header Files\input</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\input\keyboard.hpp">
-      <Filter>Header Files\input</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\input\mouse.hpp">
       <Filter>Header Files\input</Filter>
     </ClInclude>
     <ClInclude Include="..\src\utils\index_range.hpp">
@@ -72,20 +63,23 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\app\types.hpp">
-      <Filter>Header Files\app</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\app\colors.hpp">
       <Filter>Header Files\app</Filter>
     </ClInclude>
     <ClInclude Include="..\src\app\render.hpp">
       <Filter>Header Files\app</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\input\controller.hpp">
-      <Filter>Header Files\input</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\input\input_state.hpp">
       <Filter>Header Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\defines.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\app\app_types.hpp">
+      <Filter>Header Files\app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\app\input_controls.hpp">
+      <Filter>Header Files\app</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

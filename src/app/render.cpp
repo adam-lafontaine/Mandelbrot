@@ -67,15 +67,15 @@ static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
 }
 
 
-std::function<std::array<u8, 3>(i32)> get_color_map_func(u32 color_factor)
-{
-	/*auto n_colors = get_num_colors(color_factor);
-	auto f = N_COLORS / n_colors;*/
-
-	auto f = 1;
-
-	return [&f](i32 i) { return std::array<u8, 3>{ { palettes[0][f * i], palettes[1][f * i], palettes[2][f * i] } }; };
-}
+//std::function<std::array<u8, 3>(i32)> get_color_map_func(u32 color_factor)
+//{
+//	/*auto n_colors = get_num_colors(color_factor);
+//	auto f = N_COLORS / n_colors;*/
+//
+//	auto f = 1;
+//
+//	return [&f](i32 i) { return std::array<u8, 3>{ { palettes[0][f * i], palettes[1][f * i], palettes[2][f * i] } }; };
+//}
 
 
 static i32 mandelbrot_color_index(r64 cx, r64 cy, u32 iter_limit, u32 n_colors)
@@ -262,7 +262,9 @@ static void draw(AppState const& state)
 	u32 c3 = 0;
 	set_rgb_channels(c1, c2, c3, state.rgb_option);
 
-	auto color_map_func = get_color_map_func(state.color_count_option);
+	//auto const f = 1;
+
+	//auto color_map_func = get_color_map_func(state.color_count_option);
 
 	auto const to_color = [&](i32 i)
 	{
@@ -271,7 +273,8 @@ static void draw(AppState const& state)
 			return to_platform_pixel(0, 0, 0);
 		}
 
-		auto color_map = color_map_func(i);
+		//auto color_map = color_map_func(i);
+		u8 color_map[] = { palettes[0][i], palettes[1][i], palettes[2][i] };
 		return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
 	};
 

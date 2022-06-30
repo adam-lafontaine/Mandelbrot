@@ -144,15 +144,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\src\app\app.hpp" />
+    <ClInclude Include="..\src\app\app_types.hpp" />
     <ClInclude Include="..\src\app\colors.hpp" />
+    <ClInclude Include="..\src\app\input_controls.hpp" />
     <ClInclude Include="..\src\app\render.hpp" />
-    <ClInclude Include="..\src\app\types.hpp" />
-    <ClInclude Include="..\src\input\button_state.hpp" />
-    <ClInclude Include="..\src\input\controller.hpp" />
     <ClInclude Include="..\src\input\input.hpp" />
     <ClInclude Include="..\src\input\input_state.hpp" />
-    <ClInclude Include="..\src\input\keyboard.hpp" />
-    <ClInclude Include="..\src\input\mouse.hpp" />
+    <ClInclude Include="..\src\utils\defines.hpp" />
     <ClInclude Include="..\src\utils\index_range.hpp" />
     <ClInclude Include="..\src\utils\stopwatch.hpp" />
     <ClInclude Include="..\src\utils\types.hpp" />
