@@ -151,7 +151,7 @@ static void process_input(Input const& input, AppState& state)
         state.draw_new = true;
     }
 
-	qty = get_color_count_qty();
+	/*qty = get_color_count_qty();
 	if (cycle_color_count_up(input))
 	{
 		++state.color_count_option;
@@ -171,7 +171,7 @@ static void process_input(Input const& input, AppState& state)
 		}
 
 		state.draw_new = true;
-	}
+	}*/
 
     if(stop_application(input))
     {

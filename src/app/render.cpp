@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <algorithm>
+#include <functional>
 
 #ifdef NO_CPP17
 
@@ -68,17 +69,18 @@ static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
 
 std::function<std::array<u8, 3>(i32)> get_color_map_func(u32 color_factor)
 {
-	auto n_colors = get_num_colors(color_factor);
-	auto f = N_COLORS / n_colors;
+	/*auto n_colors = get_num_colors(color_factor);
+	auto f = N_COLORS / n_colors;*/
+
+	auto f = 1;
 
 	return [&f](i32 i) { return std::array<u8, 3>{ { palettes[0][f * i], palettes[1][f * i], palettes[2][f * i] } }; };
 }
 
 
-static i16 mandelbrot_color_index(r64 cx, r64 cy, u32 iter_limit, u32 n_colors)
+static i32 mandelbrot_color_index(r64 cx, r64 cy, u32 iter_limit, u32 n_colors)
 {
-	u32 iter = 0;	
-	u32 index = 0;
+	u32 iter = 0;
 
     r64 mx = 0.0;
     r64 my = 0.0;
@@ -88,11 +90,6 @@ static i16 mandelbrot_color_index(r64 cx, r64 cy, u32 iter_limit, u32 n_colors)
     while (iter < iter_limit && mx2 + my2 <= 4.0)
     {
 		++iter;
-		++index;
-		if (index >= n_colors)
-		{
-			index = 0;
-		}
 
         my = (mx + mx) * my + cy;
         mx = mx2 - my2 + cx;
@@ -100,7 +97,12 @@ static i16 mandelbrot_color_index(r64 cx, r64 cy, u32 iter_limit, u32 n_colors)
         mx2 = mx * mx;
     }
 
-	return iter == iter_limit ? -1 : index;
+	if (iter == iter_limit)
+	{
+		return -1;
+	}
+
+	return iter % n_colors;
 }
 
 
@@ -362,7 +364,7 @@ void render(AppState& state)
 
 		MbtProps props{};
 		props.iter_limit = state.iter_limit;
-		props.n_colors = get_num_colors(state.color_count_option);
+		props.n_colors = N_COLORS; // get_num_colors(state.color_count_option);
 		props.min_mx = MBT_MIN_X + state.mbt_pos.x;
 		props.min_my = MBT_MIN_Y + state.mbt_pos.y;
 		props.mx_step = state.mbt_screen_width / old_ids.width;
@@ -391,7 +393,8 @@ u32 get_rgb_combo_qty()
 
 u32 get_color_count_qty()
 {
-	constexpr auto n = max_color_factor();
+	/*constexpr auto n = max_color_factor();
 
-	return n;
+	return n;*/
+	return 0;
 }
