@@ -343,12 +343,19 @@ static void record_keyboard_input(SDL_Keycode key_code, KeyboardInput const& old
 		record_input(old_input.space_key, new_input.space_key, is_down);
 		break;
 #endif
+#if KEYBOARD_SHIFT
+		case SDLK_LSHIFT:
+			record_input(old_input.shift_key, new_input.shift_key, is_down);
+			break;
+		case SDLK_RSHIFT:
+			record_input(old_input.shift_key, new_input.shift_key, is_down);
+			break;
+#endif
 #if KEYBOARD_PLUS
 	case SDLK_KP_PLUS:
 		record_input(old_input.plus_key, new_input.plus_key, is_down);
 		break;
 #endif
-
 #if KEYBOARD_MINUS
 	case SDLK_KP_MINUS:
 		record_input(old_input.minus_key, new_input.minus_key, is_down);
@@ -364,7 +371,56 @@ static void record_keyboard_input(SDL_Keycode key_code, KeyboardInput const& old
 		record_input(old_input.div_key, new_input.div_key, is_down);
 		break;
 #endif
-
+#if KEYBOARD_NUMPAD_0
+		case SDLK_KP_0:
+			record_input(old_input.np_zero_key, new_input.np_zero_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_1
+		case SDLK_KP_1:
+			record_input(old_input.np_one_key, new_input.np_one_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_2
+		case SDLK_KP_2:
+			record_input(old_input.np_two_key, new_input.np_two_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_3
+		case SDLK_KP_3:
+			record_input(old_input.np_three_key, new_input.np_three_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_4
+		case SDLK_KP_4:
+			record_input(old_input.np_four_key, new_input.np_four_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_5
+		case SDLK_KP_5:
+			record_input(old_input.np_five_key, new_input.np_five_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_6
+		case SDLK_KP_6:
+			record_input(old_input.np_six_key, new_input.np_six_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_7
+		case SDLK_KP_7:
+			record_input(old_input.np_seven_key, new_input.np_seven_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_8
+		case SDLK_KP_8:
+			record_input(old_input.np_eight_key, new_input.np_eight_key, is_down);
+			break;
+#endif
+#if KEYBOARD_NUMPAD_9
+		case SDLK_KP_9:
+			record_input(old_input.np_nine_key, new_input.np_nine_key, is_down);
+			break;
+#endif
 	
 	default:
 		break;

@@ -26,7 +26,7 @@ static void for_each(UnsignedRange const& ids, std::function<void(u32)> const& f
 #endif // NO_CPP17
 
 
-static void transform(Mat2Di32 const& src, Image const& dst, auto const& func)
+static void transform(Mat2Di32 const& src, Image const& dst, std::function<Pixel(i32)> const& func)
 {
 	std::transform(src.begin(), src.end(), dst.begin(), func);
 }
