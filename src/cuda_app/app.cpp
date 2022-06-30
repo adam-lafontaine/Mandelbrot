@@ -5,6 +5,23 @@
 
 #include <cmath>
 
+#ifndef NDEBUG
+#define PRINT_APP_ERROR
+#endif
+
+#ifdef PRINT_APP_ERROR
+#include <cstdio>
+#endif
+
+static void print_error(cstr msg)
+{
+#ifdef PRINT_APP_ERROR
+	printf("\n*** APP ERROR ***\n\n");
+	printf("%s", msg);
+	printf("\n\n******************\n\n");
+#endif
+}
+
 
 constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
 constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 5000;
@@ -184,6 +201,7 @@ namespace app
 		DevicePointer screen_ptr{};
 		if(!cuda::unified_malloc(screen_ptr, screen_sz))
 		{
+			print_error("screen_ptr");
 			return false;
 		}
 
@@ -207,8 +225,9 @@ namespace app
 		auto const ids_sz = sizeof(i32) * n_pixels;
 
 		DevicePointer ids_ptr0{};
-		if(!cuda::device_malloc(ids_ptr0, ids_sz));
+		if(!cuda::device_malloc(ids_ptr0, ids_sz))
 		{
+			print_error("ids_ptr0");
 			return false;
 		}
 
@@ -218,8 +237,9 @@ namespace app
 		ids0.height = height;
 
 		DevicePointer ids_ptr1{};
-		if(!cuda::device_malloc(ids_ptr1, ids_sz));
+		if(!cuda::device_malloc(ids_ptr1, ids_sz))
 		{
+			print_error("ids_ptr1");
 			return false;
 		}
 
@@ -235,6 +255,7 @@ namespace app
 		DevicePointer ch_ptr1{};
 		if(!cuda::device_malloc(ch_ptr1, color_palette_channel_sz))
 		{
+			print_error("ch_ptr1");
 			return false;
 		}
 
@@ -243,6 +264,7 @@ namespace app
 		DevicePointer ch_ptr2{};
 		if(!cuda::device_malloc(ch_ptr2, color_palette_channel_sz))
 		{
+			print_error("ch_ptr2");
 			return false;
 		}
 
@@ -251,6 +273,7 @@ namespace app
 		DevicePointer ch_ptr3{};
 		if(!cuda::device_malloc(ch_ptr3, color_palette_channel_sz))
 		{
+			print_error("ch_ptr3");
 			return false;
 		}
 
@@ -260,16 +283,19 @@ namespace app
 
 		if(!cuda::memcpy_to_device(palettes[0].data(), palette.channel1, color_palette_channel_sz))
 		{
+			print_error("memcpy channel 1");
 			return false;
 		}
 
 		if(!cuda::memcpy_to_device(palettes[1].data(), palette.channel2, color_palette_channel_sz))
 		{
+			print_error("memcpy channel 2");
 			return false;
 		}
 
 		if(!cuda::memcpy_to_device(palettes[2].data(), palette.channel3, color_palette_channel_sz))
 		{
+			print_error("memcpy channel 2");
 			return false;
 		}
 
@@ -283,11 +309,13 @@ namespace app
 
 		if(!init_unified_memory(state.unified, buffer))
 		{
+			print_error("unified memory");
 			return false;
 		}
 
 		if(!init_device_memory(state.device, buffer))
         {
+			print_error("device memory");
             return false;
         }
 
@@ -333,9 +361,18 @@ namespace app
 	{
 		auto& state = get_state(memory);
 
-		cuda::free((void*)(state.device.color_ids[0].data));
-		cuda::free((void*)(state.device.color_ids[1].data));
+		auto const free_memory = [](auto data)
+		{
+			cuda::free((void*)(data));
+		};
 
-		cuda::free((void*)(state.unified.screen_buffer.data));
+		free_memory(state.device.color_ids[0].data);
+		free_memory(state.device.color_ids[1].data);
+
+		free_memory(state.device.color_palette.channel1);
+		free_memory(state.device.color_palette.channel2);
+		free_memory(state.device.color_palette.channel3);
+
+		free_memory(state.unified.screen_buffer.data);
 	}
 }

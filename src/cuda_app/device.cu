@@ -74,6 +74,8 @@ namespace cuda
 
         bool result = err == cudaSuccess;
 
+        assert(result);
+
         return result;
     }
 
@@ -97,7 +99,11 @@ namespace cuda
         cudaError_t err = cudaMemcpy(device_dst, host_src, n_bytes, cudaMemcpyHostToDevice);
         check_error(err, "memcpy_to_device");
 
-        return err == cudaSuccess;
+        bool result = err == cudaSuccess;
+
+        assert(result);
+
+        return result;
     }
 
 
@@ -106,7 +112,11 @@ namespace cuda
         cudaError_t err = cudaMemcpy(host_dst, device_src, n_bytes, cudaMemcpyDeviceToHost);
         check_error(err, "memcpy_to_host");
 
-        return err == cudaSuccess;
+        bool result = err == cudaSuccess;
+
+        assert(result);
+
+        return result;
     }
 
 
