@@ -7,7 +7,7 @@
 
 
 constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
-constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 50000;
+constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 5000;
 constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
 constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
 
@@ -151,28 +151,6 @@ static void process_input(Input const& input, AppState& state)
         state.draw_new = true;
     }
 
-	/*qty = get_color_count_qty();
-	if (cycle_color_count_up(input))
-	{
-		++state.color_count_option;
-		if (state.color_count_option > qty)
-		{
-			state.color_count_option = 1;
-		}
-
-		state.draw_new = true;
-	}
-	if (cycle_color_count_down(input))
-	{
-		--state.color_count_option;
-		if (state.color_count_option < 1)
-		{
-			state.color_count_option = qty;
-		}
-
-		state.draw_new = true;
-	}*/
-
     if(stop_application(input))
     {
         platform_signal_stop();
@@ -237,15 +215,15 @@ namespace app
 		auto begin = (u8*)(&state);
 		size_t offset = state_sz;
 
-		state.color_indeces[0].width = width;
-		state.color_indeces[0].height = height;
-		state.color_indeces[0].data = (i32*)(begin + offset);
+		state.color_ids[0].width = width;
+		state.color_ids[0].height = height;
+		state.color_ids[0].data = (i32*)(begin + offset);
 
 		offset += color_sz;
 
-		state.color_indeces[1].width = width;
-		state.color_indeces[1].height = height;
-		state.color_indeces[1].data = (i32*)(begin + offset);
+		state.color_ids[1].width = width;
+		state.color_ids[1].height = height;
+		state.color_ids[1].data = (i32*)(begin + offset);
 
 		memory.is_app_initialized = true;
 

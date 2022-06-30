@@ -46,7 +46,6 @@ class MbtProps
 {
 public:
 	u32 iter_limit;
-	u32 n_colors;
 	r64 min_mx;
 	r64 min_my;
 	r64 mx_step;
@@ -67,18 +66,7 @@ static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
 }
 
 
-//std::function<std::array<u8, 3>(i32)> get_color_map_func(u32 color_factor)
-//{
-//	/*auto n_colors = get_num_colors(color_factor);
-//	auto f = N_COLORS / n_colors;*/
-//
-//	auto f = 1;
-//
-//	return [&f](i32 i) { return std::array<u8, 3>{ { palettes[0][f * i], palettes[1][f * i], palettes[2][f * i] } }; };
-//}
-
-
-static i32 mandelbrot_color_index(r64 cx, r64 cy, u32 iter_limit, u32 n_colors)
+static u32 mandelbrot_iter(r64 cx, r64 cy, u32 iter_limit)
 {
 	u32 iter = 0;
 
@@ -97,12 +85,38 @@ static i32 mandelbrot_color_index(r64 cx, r64 cy, u32 iter_limit, u32 n_colors)
         mx2 = mx * mx;
     }
 
-	if (iter == iter_limit)
+	return iter;
+}
+
+
+static i32 color_index(u32 iter, u32 iter_limit)
+{
+	if (iter >= iter_limit)
 	{
 		return -1;
 	}
 
-	return iter % n_colors;
+	constexpr std::array<u32, 6> iter_levels = { 50, 300, 600, 1000, 1500, 2500 };
+
+	u32 min = 0;
+	u32 max = 0;
+	u32 n_colors = 8;
+
+	for (auto i : iter_levels)
+	{
+		n_colors *= 2;
+		min = max;
+		max = i;
+
+		if (iter < max)
+		{
+			return (iter - min) % n_colors * (N_COLORS / n_colors);
+		}
+	}	
+
+	min = max;
+	
+	return (iter - min) % N_COLORS;
 }
 
 
@@ -254,17 +268,13 @@ RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const& direction)
 
 static void draw(AppState const& state)
 {
-	auto& src = state.color_indeces[state.ids_current];
+	auto& src = state.color_ids[state.ids_current];
 	auto& dst = state.screen_buffer;
 
 	u32 c1 = 0;
 	u32 c2 = 0;
 	u32 c3 = 0;
 	set_rgb_channels(c1, c2, c3, state.rgb_option);
-
-	//auto const f = 1;
-
-	//auto color_map_func = get_color_map_func(state.color_count_option);
 
 	auto const to_color = [&](i32 i)
 	{
@@ -273,21 +283,8 @@ static void draw(AppState const& state)
 			return to_platform_pixel(0, 0, 0);
 		}
 
-		//auto color_map = color_map_func(i);
 		u8 color_map[] = { palettes[0][i], palettes[1][i], palettes[2][i] };
 		return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-	};
-
-	UnsignedRange rows(0u, src.height);
-
-	auto const draw_row = [&](u32 y) 
-	{
-		auto src_row = src.row_begin(y);
-		auto dst_row = dst.row_begin(y);
-		for (u32 x = 0; x < src.width; ++x)
-		{
-			dst_row[x] = to_color(src_row[x]);
-		}
 	};
 
 	transform(src, dst, to_color);
@@ -328,7 +325,8 @@ static void mandelbrot(Mat2Di32 const& dst, Range2Du32 const& range, MbtProps co
 		for (u32 x = range.x_begin; x < range.x_end; ++x)
 		{
 			r64 cx = props.min_mx + x * props.mx_step;
-			auto index = mandelbrot_color_index(cx, cy, props.iter_limit, props.n_colors);
+			auto iter = mandelbrot_iter(cx, cy, props.iter_limit);
+			auto index = color_index(iter, props.iter_limit);
 			dst_row[x] = index;
 		}
 	};
@@ -357,17 +355,16 @@ void render(AppState& state)
 		state.ids_current = state.ids_old;
 		state.ids_old = !state.ids_old;
 
-		auto& current_ids = state.color_indeces[state.ids_current];
-		auto& old_ids = state.color_indeces[state.ids_old];
+		auto& current_ids = state.color_ids[state.ids_current];
+		auto& old_ids = state.color_ids[state.ids_old];
 
-		auto& ids = state.color_indeces;
+		auto& ids = state.color_ids;
 		auto ranges = get_ranges(get_full_range(current_ids), state.pixel_shift);
 
 		copy(old_ids, current_ids, ranges.copy_src, ranges.copy_dst);
 
 		MbtProps props{};
 		props.iter_limit = state.iter_limit;
-		props.n_colors = N_COLORS; // get_num_colors(state.color_count_option);
 		props.min_mx = MBT_MIN_X + state.mbt_pos.x;
 		props.min_my = MBT_MIN_Y + state.mbt_pos.y;
 		props.mx_step = state.mbt_screen_width / old_ids.width;
@@ -391,13 +388,4 @@ u32 get_rgb_combo_qty()
 	constexpr auto n = num_rgb_combinations();
 
 	return n;
-}
-
-
-u32 get_color_count_qty()
-{
-	/*constexpr auto n = max_color_factor();
-
-	return n;*/
-	return 0;
 }

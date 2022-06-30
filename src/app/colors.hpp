@@ -68,32 +68,9 @@ constexpr std::array< std::array<u8, N>, 3> make_palettes()
 	} };
 }
 
-constexpr u32 N_COLORS = 16;
+constexpr u32 N_COLORS = 1024;
 
 constexpr auto palettes = make_palettes<N_COLORS>();
-
-
-//static constexpr u32 get_num_colors(u32 color_factor)
-//{
-//	auto n_colors = 16u << (u32)(color_factor - 1);
-//
-//	return n_colors < N_COLORS ? n_colors : N_COLORS;
-//}
-
-
-//static constexpr u32 max_color_factor()
-//{
-//	u32 f = 0;
-//	u32 n = 0;
-//
-//	while (n < N_COLORS)
-//	{
-//		++f;
-//		n = get_num_colors(f);
-//	}
-//
-//	return f;
-//}
 
 
 static constexpr u32 num_rgb_combinations()

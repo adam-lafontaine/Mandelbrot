@@ -25,6 +25,3 @@ void render(AppState& state);
 
 
 u32 get_rgb_combo_qty();
-
-
-u32 get_color_count_qty();

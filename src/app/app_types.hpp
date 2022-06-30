@@ -77,10 +77,10 @@ public:
 
 	u32 iter_limit;
 
-	b32 ids_old = 0;
-	b32 ids_current = 1;
+	bool ids_old = 0;
+	bool ids_current = 1;
 
-	Mat2Di32 color_indeces[2];
+	Mat2Di32 color_ids[2];
 
 	Image screen_buffer;
 };

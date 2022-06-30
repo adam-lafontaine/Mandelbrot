@@ -61,8 +61,8 @@ typedef union button_state_t
 #define KEYBOARD_RIGHT 1
 #define KEYBOARD_RETURN 0
 #define KEYBOARD_ESCAPE 1
-#define KEYBOARD_SPACE 1
-#define KEYBOARD_SHIFT 1
+#define KEYBOARD_SPACE 0
+#define KEYBOARD_SHIFT 0
 #define KEYBOARD_PLUS 1
 #define KEYBOARD_MINUS 1
 #define KEYBOARD_MULTIPLY 1
