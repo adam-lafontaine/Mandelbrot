@@ -192,7 +192,20 @@ namespace app
 
 		assert(required_sz <= memory.permanent_storage_size);
 
-		auto& state = get_state(memory);
+		auto& state = get_state(memory);		
+
+		auto begin = (u8*)(&state);
+		size_t offset = state_sz;
+
+		state.color_ids[0].width = width;
+		state.color_ids[0].height = height;
+		state.color_ids[0].data = (i32*)(begin + offset);
+
+		offset += color_sz;
+
+		state.color_ids[1].width = width;
+		state.color_ids[1].height = height;
+		state.color_ids[1].data = (i32*)(begin + offset);
 
 		state.render_new = true;
 
@@ -210,20 +223,6 @@ namespace app
 		state.mbt_screen_height = mbt_screen_height(state.zoom_level);
 
 		state.rgb_option = 1;
-		state.color_count_option = 1;
-
-		auto begin = (u8*)(&state);
-		size_t offset = state_sz;
-
-		state.color_ids[0].width = width;
-		state.color_ids[0].height = height;
-		state.color_ids[0].data = (i32*)(begin + offset);
-
-		offset += color_sz;
-
-		state.color_ids[1].width = width;
-		state.color_ids[1].height = height;
-		state.color_ids[1].data = (i32*)(begin + offset);
 
 		memory.is_app_initialized = true;
 

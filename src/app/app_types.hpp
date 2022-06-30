@@ -73,7 +73,6 @@ public:
 	r64 zoom_speed;
 
 	u32 rgb_option;
-	u32 color_count_option;
 
 	u32 iter_limit;
 

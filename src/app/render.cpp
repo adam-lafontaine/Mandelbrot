@@ -158,6 +158,76 @@ static void set_rgb_channels(u32& c1, u32& c2, u32& c3, u32 rgb_option)
 }
 
 
+static void draw(AppState const& state)
+{
+	auto& src = state.color_ids[state.ids_current];
+	auto& dst = state.screen_buffer;
+
+	u32 c1 = 0;
+	u32 c2 = 0;
+	u32 c3 = 0;
+	set_rgb_channels(c1, c2, c3, state.rgb_option);
+
+	auto const to_color = [&](i32 i)
+	{
+		if(i < 0)
+		{
+			return to_platform_pixel(0, 0, 0);
+		}
+
+		u8 color_map[] = { palettes[0][i], palettes[1][i], palettes[2][i] };
+		return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
+	};
+
+	transform(src, dst, to_color);
+}
+
+
+static void copy(Mat2Di32 const& src, Mat2Di32 const& dst, Range2Du32 const& src_r, Range2Du32 const& dst_r)
+{
+	auto copy_width = src_r.x_end - src_r.x_begin;
+	auto copy_height = src_r.y_end - src_r.y_begin;
+
+	assert(dst_r.x_end - dst_r.x_begin == copy_width);
+	assert(dst_r.y_end - dst_r.y_begin == copy_height);
+
+	auto const copy_row = [&](u32 row) 
+	{
+		auto src_row = src.row_begin(src_r.y_begin + row);
+		auto dst_row = dst.row_begin(dst_r.y_begin + row);
+
+		for (u32 w = 0; w < copy_width; ++w)
+		{
+			dst_row[dst_r.x_begin + w] = src_row[src_r.x_begin + w];
+		}
+	};
+
+	UnsignedRange rows(0u, copy_height);
+	for_each(rows, copy_row);
+}
+
+
+static void mandelbrot(Mat2Di32 const& dst, Range2Du32 const& range, MbtProps const& props)
+{
+	auto const mbt_row = [&](u32 y) 
+	{
+		auto dst_row = dst.row_begin(y);
+		r64 cy = props.min_my + y * props.my_step;
+
+		for (u32 x = range.x_begin; x < range.x_end; ++x)
+		{
+			r64 cx = props.min_mx + x * props.mx_step;
+			auto iter = mandelbrot_iter(cx, cy, props.iter_limit);
+			auto index = color_index(iter, props.iter_limit);
+			dst_row[x] = index;
+		}
+	};
+
+	UnsignedRange rows(range.y_begin, range.y_end);
+	for_each(rows, mbt_row);
+}
+
+
 RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const& direction)
 {
 	RangeList list{};
@@ -266,76 +336,6 @@ RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const& direction)
 }
 
 
-static void draw(AppState const& state)
-{
-	auto& src = state.color_ids[state.ids_current];
-	auto& dst = state.screen_buffer;
-
-	u32 c1 = 0;
-	u32 c2 = 0;
-	u32 c3 = 0;
-	set_rgb_channels(c1, c2, c3, state.rgb_option);
-
-	auto const to_color = [&](i32 i)
-	{
-		if(i < 0)
-		{
-			return to_platform_pixel(0, 0, 0);
-		}
-
-		u8 color_map[] = { palettes[0][i], palettes[1][i], palettes[2][i] };
-		return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-	};
-
-	transform(src, dst, to_color);
-}
-
-
-static void copy(Mat2Di32 const& src, Mat2Di32 const& dst, Range2Du32 const& src_r, Range2Du32 const& dst_r)
-{
-	auto copy_width = src_r.x_end - src_r.x_begin;
-	auto copy_height = src_r.y_end - src_r.y_begin;
-
-	assert(dst_r.x_end - dst_r.x_begin == copy_width);
-	assert(dst_r.y_end - dst_r.y_begin == copy_height);
-
-	auto const copy_row = [&](u32 row) 
-	{
-		auto src_row = src.row_begin(src_r.y_begin + row);
-		auto dst_row = dst.row_begin(dst_r.y_begin + row);
-
-		for (u32 w = 0; w < copy_width; ++w)
-		{
-			dst_row[dst_r.x_begin + w] = src_row[src_r.x_begin + w];
-		}
-	};
-
-	UnsignedRange rows(0u, copy_height);
-	for_each(rows, copy_row);
-}
-
-
-static void mandelbrot(Mat2Di32 const& dst, Range2Du32 const& range, MbtProps const& props)
-{
-	auto const mbt_row = [&](u32 y) 
-	{
-		auto dst_row = dst.row_begin(y);
-		r64 cy = props.min_my + y * props.my_step;
-
-		for (u32 x = range.x_begin; x < range.x_end; ++x)
-		{
-			r64 cx = props.min_mx + x * props.mx_step;
-			auto iter = mandelbrot_iter(cx, cy, props.iter_limit);
-			auto index = color_index(iter, props.iter_limit);
-			dst_row[x] = index;
-		}
-	};
-
-	UnsignedRange rows(range.y_begin, range.y_end);
-	for_each(rows, mbt_row);
-}
-
-
 static Range2Du32 get_full_range(Mat2Di32 const& mat)
 {
 	Range2Du32 r{};
@@ -357,11 +357,8 @@ void render(AppState& state)
 
 		auto& current_ids = state.color_ids[state.ids_current];
 		auto& old_ids = state.color_ids[state.ids_old];
-
-		auto& ids = state.color_ids;
+		
 		auto ranges = get_ranges(get_full_range(current_ids), state.pixel_shift);
-
-		copy(old_ids, current_ids, ranges.copy_src, ranges.copy_dst);
 
 		MbtProps props{};
 		props.iter_limit = state.iter_limit;
@@ -369,6 +366,8 @@ void render(AppState& state)
 		props.min_my = MBT_MIN_Y + state.mbt_pos.y;
 		props.mx_step = state.mbt_screen_width / old_ids.width;
 		props.my_step = state.mbt_screen_height / old_ids.height;
+
+		copy(old_ids, current_ids, ranges.copy_src, ranges.copy_dst);		
 
 		mandelbrot(current_ids, ranges.write_h, props);
 		mandelbrot(current_ids, ranges.write_v, props);

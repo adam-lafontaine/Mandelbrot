@@ -25,7 +25,7 @@ using i64 = int64_t;
 using r32 = float;
 using r64 = double;
 
-using b32 = uint32_t;
+using cstr = const char*;
 
 #define ArrayCount(arr) (sizeof(arr) / sizeof((arr)[0]))
 #define Kilobytes(value) ((value) * 1024LL)

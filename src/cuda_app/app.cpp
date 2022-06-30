@@ -1,9 +1,14 @@
 #include "app.hpp"
-#include "../app/colors.hpp"
 #include "../app/input_controls.hpp"
 #include "render.hpp"
 
 #include <cmath>
+
+
+constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
+constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 5000;
+constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
+constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
 
 
 static void process_input(Input const& input, AppState& state)
@@ -123,58 +128,27 @@ static void process_input(Input const& input, AppState& state)
 		state.render_new = true;
 	}
 
-    if(cycle_color_scheme_up(input))
+	u32 qty = get_rgb_combo_qty();
+    if(cycle_color_scheme_right(input))
     {
         ++state.rgb_option;
-        if(state.rgb_option > 6)
+        if(state.rgb_option > qty)
         {
             state.rgb_option = 1;
         }
 
         state.draw_new = true;
     }
-    if(cycle_color_scheme_down(input))
+    if(cycle_color_scheme_left(input))
     {
         --state.rgb_option;
         if(state.rgb_option < 1)
         {
-            state.rgb_option = 6;
+            state.rgb_option = qty;
         }
 
         state.draw_new = true;
     }
-
-	// color scheme with 1 - 6
-	if (input.keyboard.one_key.is_down && state.rgb_option != 1)
-	{
-		state.rgb_option = 1;
-		state.draw_new = true;
-	}
-	if (input.keyboard.two_key.is_down && state.rgb_option != 2)
-	{
-		state.rgb_option = 2;
-		state.draw_new = true;
-	}
-	if (input.keyboard.three_key.is_down && state.rgb_option != 3)
-	{
-		state.rgb_option = 3;
-		state.draw_new = true;
-	}
-	if (input.keyboard.four_key.is_down && state.rgb_option != 4)
-	{
-		state.rgb_option = 4;
-		state.draw_new = true;
-	}
-	if (input.keyboard.five_key.is_down && state.rgb_option != 5)
-	{
-		state.rgb_option = 5;
-		state.draw_new = true;
-	}
-	if (input.keyboard.six_key.is_down && state.rgb_option != 6)
-	{
-		state.rgb_option = 6;
-		state.draw_new = true;
-	}
 
     if(stop_application(input))
     {
@@ -185,20 +159,6 @@ static void process_input(Input const& input, AppState& state)
 
 namespace app
 {
-	static image_t make_buffer_image(ScreenBuffer const& buffer)
-	{
-		assert(buffer.bytes_per_pixel == RGBA_CHANNELS);
-
-		image_t image{};
-
-		image.width = buffer.width;
-		image.height = buffer.height;
-		image.data = (pixel_t*)buffer.memory;
-
-		return image;
-	}
-
-
     static AppState& get_state(AppMemory& memory)
     {
 		assert(sizeof(AppState) <= memory.permanent_storage_size);
@@ -219,17 +179,18 @@ namespace app
 		auto const screen_sz = sizeof(pixel_t) * n_pixels;
 
 		auto unified_sz = screen_sz;
-		if(!device::unified_malloc(unified.buffer, unified_sz))
+
+		DevicePointer screen_ptr{};
+		if(!cuda::unified_malloc(screen_ptr, screen_sz))
 		{
 			return false;
 		}
 
-		if(!device::push_device_image(unified.buffer, unified.screen_pixels, width, height))
-		{
-			return false;
-		}
+		auto& screen = unified.screen_buffer;
 
-		buffer.memory = unified.screen_pixels.data;
+		screen.data = (Pixel*)screen_ptr.data;
+		screen.width = width;
+		screen.height = height;
 
 		return true;
 	}
@@ -241,45 +202,30 @@ namespace app
 		auto const height = buffer.height;
 
         auto const n_pixels = width * height;
-        auto const iter_sz = 2 * sizeof(u32) * n_pixels;        
+        
+		auto const ids_sz = sizeof(i32) * n_pixels;
 
-        auto& color_palette = palettes256;
-        auto const n_colors = color_palette[0].size();
-        auto const color_sz = sizeof(u8) * RGB_CHANNELS * n_colors;
-
-        auto const min_val_sz = sizeof(u32) * MAX_GPU_THREADS;
-        auto const max_val_sz = sizeof(u32) * MAX_GPU_THREADS;
-
-        auto device_sz = iter_sz + color_sz + min_val_sz + max_val_sz;
-        if(!device::malloc(device.buffer, device_sz))
-        {
-            return false;
-        }
-
-		if(!device::push_device_matrix(device.buffer, device.iterations, width, height))
+		DevicePointer ids_ptr0{};
+		if(!cuda::device_malloc(ids_ptr0, ids_sz));
 		{
 			return false;
 		}
 
-		if(!device::push_device_palette(device.buffer, device.palette, n_colors))
+		auto& ids0 = device.color_ids[0];
+		ids0.data = (i32*)ids_ptr0.data;
+		ids0.width = width;
+		ids0.height = height;
+
+		DevicePointer ids_ptr1{};
+		if(!cuda::device_malloc(ids_ptr1, ids_sz));
 		{
 			return false;
 		}
 
-        if(!copy_to_device(color_palette, device.palette))
-        {
-            return false;
-        }
-
-		if(!device::push_device_array(device.buffer, device.min_iters, MAX_GPU_THREADS))
-		{
-			return false;
-		}
-
-		if(!device::push_device_array(device.buffer, device.max_iters, MAX_GPU_THREADS))
-		{
-			return false;
-		}
+		auto& ids1 = device.color_ids[1];
+		ids1.data = (i32*)ids_ptr1.data;
+		ids1.width = width;
+		ids1.height = height;
 
         return true;
     }
@@ -341,7 +287,9 @@ namespace app
 	{
 		auto& state = get_state(memory);
 
-        device::free(state.device.buffer);
-		device::free(state.unified.buffer);
+		cuda::free((void*)(state.device.color_ids[0].data));
+		cuda::free((void*)(state.device.color_ids[1].data));
+
+		cuda::free((void*)(state.unified.screen_buffer.data));
 	}
 }
