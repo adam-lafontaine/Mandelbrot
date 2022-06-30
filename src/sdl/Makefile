@@ -32,6 +32,9 @@ input_state += $(input_h)
 sdl_input_h := $(sdl)/sdl_input.hpp
 sdl_input_h += $(input_h)
 
+input_controls_h := $(app)/input_controls.hpp
+input_controls_h += $(input_h)
+
 app_h := $(app)/app.hpp
 app_h += $(input_h)
 
@@ -41,9 +44,6 @@ app_types_h += $(types_h)
 colors_h := $(app)/colors.hpp
 colors_h += $(types_h)
 
-input_controls_h := $(app)/input_controls.hpp
-input_controls_h += $(input_h)
-
 render_h := $(app)/render.hpp
 render_h += $(app_types_h)
 
@@ -51,6 +51,10 @@ render_h += $(app_types_h)
 main_c         := $(sdl)/sdl_main.cpp
 main_o         := $(build)/main.o
 object_files   := $(main_o)
+
+sdl_input_c := $(sdl)/sdl_input.cpp
+sdl_input_o := $(build)/sdl_input.o
+object_files += $(sdl_input_o)
 
 app_c := $(app)/app.cpp
 app_o := $(build)/app.o
@@ -60,21 +64,18 @@ render_c := $(app)/render.cpp
 render_o := $(build)/render.o
 object_files += $(render_o)
 
-sdl_input_c := $(sdl)/sdl_input.cpp
-sdl_input_o := $(build)/sdl_input.o
-object_files += $(sdl_input_o)
+
 
 program_exe := $(build)/$(exe_name)
 
 GPP += -O3
 
+$(render_o): $(render_c) $(render_h) $(colors_h) $(index_range_h)
+	@echo "\n $(render_o)"
+	$(GPP) -o $@ -c $<
 
 $(app_o): $(app_c) $(app_h) $(render_h) $(input_controls_h)
 	@echo "\n $(app_o)"
-	$(GPP) -o $@ -c $<
-
-$(render_o): $(render_c) $(render_h) $(colors_h) $(index_range_h)
-	@echo "\n $(render_o)"
 	$(GPP) -o $@ -c $<
 
 $(sdl_input_o): $(sdl_input_c) $(sdl_input_h) $(input_state_h)

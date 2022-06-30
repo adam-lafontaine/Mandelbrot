@@ -1,5 +1,4 @@
 #include "render.hpp"
-#include "../app/colors.hpp"
 #include "cuda_def.cuh"
 
 #include <cassert>
@@ -17,6 +16,8 @@ class DrawProps
 public:
 
     Mat2Di32 current_ids;
+
+    ColorPalette color_palette;
 
     Image screen_dst;
 
@@ -301,34 +302,36 @@ static u32 mandelbrot_iter(r64 cx, r64 cy, u32 iter_limit)
 
 
 GPU_FUNCTION
-static i32 color_index(u32 iter, u32 iter_limit)
+static i32 color_index(u32 iter, u32 iter_limit, u32 total_colors)
 {
 	if (iter >= iter_limit)
 	{
 		return -1;
 	}
 
-	constexpr std::array<u32, 6> iter_levels = { 50, 300, 600, 1000, 1500, 2500 };
+    u32 const n_iter_levels = 6;
+
+	u32 iter_levels[] = { 50, 300, 600, 1000, 1500, 2500 };
 
 	u32 min = 0;
 	u32 max = 0;
 	u32 n_colors = 8;
 
-	for (auto i : iter_levels)
-	{
-		n_colors *= 2;
+    for(u32 i = 0; i < n_iter_levels; ++i)
+    {
+        n_colors *= 2;
 		min = max;
-		max = i;
+		max = iter_levels[i];
 
 		if (iter < max)
 		{
-			return (iter - min) % n_colors * (N_COLORS / n_colors);
+			return (iter - min) % n_colors * (total_colors / n_colors);
 		}
-	}	
+    }
 
 	min = max;
 	
-	return (iter - min) % N_COLORS;
+	return (iter - min) % total_colors;
 }
 
 
@@ -339,7 +342,7 @@ static void mandelbrot_xy(Mat2Di32 const& dst, MbtProps const& props, u32 x, u32
     r64 cx = props.min_mx + x * props.mx_step;
 
     auto iter = gpu::mandelbrot_iter(cx, cy, props.iter_limit);
-    auto index = color_index(iter, props.iter_limit);
+    auto index = color_index(iter, props.iter_limit, props.draw_props.color_palette.n_colors);
 
     auto dst_i = y * dst.width + x;
     dst.data[dst_i] = index;
@@ -360,7 +363,8 @@ static void draw_pixel(DrawProps const& props, u32 pixel_index)
     }
     else
     {
-        u8 color_map[] = { palettes[0][color_id], palettes[1][color_id], palettes[2][color_id] };
+        auto& colors = props.color_palette;
+        u8 color_map[] = { colors.channel1[color_id], colors.channel2[color_id], colors.channel3[color_id] };
         dst.data[pixel_index] = to_pixel(color_map[props.channel1], color_map[props.channel2], color_map[props.channel3]);
     }
 }
@@ -446,6 +450,7 @@ void render(AppState& state)
 
     DrawProps draw_props{};
     draw_props.current_ids = current_ids;
+    draw_props.color_palette = state.device.color_palette;
     draw_props.screen_dst = state.unified.screen_buffer;
 
     set_rgb_channels(draw_props, state.rgb_option);

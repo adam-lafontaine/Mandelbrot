@@ -33,7 +33,7 @@ public:
 	u32 height;
 
 	T* data;
-
+	/*
 	T* row_begin(u64 y) const
 	{
 		assert(y < height);
@@ -50,6 +50,7 @@ public:
 	T* end() { return data + (u64)(width) * (u64)(height); }
 	T* begin() const { return data; }
 	T* end() const { return data + (u64)(width) * (u64)(height); }
+	*/
 };
 
 
@@ -58,11 +59,24 @@ using Mat2Di32 = Matrix<i32>;
 using Image = Matrix<Pixel>;
 
 
+class ColorPalette
+{
+public:
+	u32 n_colors;
+
+	u8* channel1;
+	u8* channel2;
+	u8* channel3;
+};
+
+
 
 class DeviceMemory
 {
 public:
     Mat2Di32 color_ids[2];
+
+	ColorPalette color_palette;
     
 };
 
@@ -94,8 +108,7 @@ public:
 	u32 iter_limit;
 
 	bool ids_old = 0;
-	bool ids_current = 1;
-	
+	bool ids_current = 1;	
     
     DeviceMemory device;
     UnifiedMemory unified;

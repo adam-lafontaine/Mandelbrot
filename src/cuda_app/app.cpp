@@ -1,5 +1,6 @@
 #include "app.hpp"
 #include "../app/input_controls.hpp"
+#include "../app/colors.hpp"
 #include "render.hpp"
 
 #include <cmath>
@@ -128,7 +129,7 @@ static void process_input(Input const& input, AppState& state)
 		state.render_new = true;
 	}
 
-	u32 qty = get_rgb_combo_qty();
+	u32 qty = num_rgb_combinations();
     if(cycle_color_scheme_right(input))
     {
         ++state.rgb_option;
@@ -226,6 +227,51 @@ namespace app
 		ids1.data = (i32*)ids_ptr1.data;
 		ids1.width = width;
 		ids1.height = height;
+
+		auto const color_palette_channel_sz = sizeof(u8) * N_COLORS;
+
+		auto& palette = device.color_palette;		
+
+		DevicePointer ch_ptr1{};
+		if(!cuda::device_malloc(ch_ptr1, color_palette_channel_sz))
+		{
+			return false;
+		}
+
+		palette.channel1 = (u8*)ch_ptr1.data;
+
+		DevicePointer ch_ptr2{};
+		if(!cuda::device_malloc(ch_ptr2, color_palette_channel_sz))
+		{
+			return false;
+		}
+
+		palette.channel2 = (u8*)ch_ptr2.data;
+
+		DevicePointer ch_ptr3{};
+		if(!cuda::device_malloc(ch_ptr3, color_palette_channel_sz))
+		{
+			return false;
+		}
+
+		palette.channel3 = (u8*)ch_ptr3.data;
+
+		palette.n_colors = N_COLORS;
+
+		if(!cuda::memcpy_to_device(palettes[0].data(), palette.channel1, color_palette_channel_sz))
+		{
+			return false;
+		}
+
+		if(!cuda::memcpy_to_device(palettes[1].data(), palette.channel2, color_palette_channel_sz))
+		{
+			return false;
+		}
+
+		if(!cuda::memcpy_to_device(palettes[2].data(), palette.channel3, color_palette_channel_sz))
+		{
+			return false;
+		}
 
         return true;
     }

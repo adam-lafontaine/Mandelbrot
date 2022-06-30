@@ -1,6 +1,8 @@
 #include "device.hpp"
 #include "cuda_def.cuh"
 
+#include <cassert>
+
 #ifdef CUDA_PRINT_ERROR
 
 #include <cstdio>

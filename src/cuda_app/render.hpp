@@ -22,6 +22,3 @@ inline r64 mbt_screen_height(r64 zoom)
 }
 
 void render(AppState& state);
-
-
-u32 get_rgb_combo_qty();
