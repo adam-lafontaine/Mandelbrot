@@ -32,7 +32,7 @@ public:
 };
 
 
-inline void set_rgb_channels(ChannelOptions& options, u32 rgb_option)
+static inline void set_rgb_channels(ChannelOptions& options, u32 rgb_option)
 {
 	auto& c1 = options.channel1;
     auto& c2 = options.channel2;

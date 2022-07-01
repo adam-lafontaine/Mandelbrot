@@ -325,6 +325,9 @@ colors_h += $(types_h)
 render_h := $(cuda_app)/render.hpp
 render_h += $(cuda_types_h)
 
+range_list_h := $(app)/range_list.hpp
+range_list_h += $(types_h)
+
 
 main_c         := $(cuda_sdl)/cuda_sdl_main.cpp
 main_o         := $(build)/main.o
@@ -357,7 +360,7 @@ $(device_o): $(device_c) $(device_h) $(cuda_def_h)
 	@echo "\n $(device_o)"
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
-$(render_o): $(render_c) $(render_h) $(cuda_def_h)
+$(render_o): $(render_c) $(render_h) $(cuda_def_h) $(range_list_h)
 	@echo "\n $(render_o)"
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 

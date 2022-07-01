@@ -50,6 +50,9 @@ colors_h += $(types_h)
 render_h := $(app)/render.hpp
 render_h += $(app_types_h)
 
+range_list_h := $(app)/range_list.hpp
+range_list_h += $(types_h)
+
 
 main_c         := $(sdl)/sdl_main.cpp
 main_o         := $(build)/main.o
@@ -73,7 +76,7 @@ program_exe := $(build)/$(exe_name)
 
 GPP += -O3
 
-$(render_o): $(render_c) $(render_h) $(colors_h) $(index_range_h)
+$(render_o): $(render_c) $(render_h) $(colors_h) $(index_range_h) $(range_list_h)
 	@echo "\n $(render_o)"
 	$(GPP) -o $@ -c $<
 
