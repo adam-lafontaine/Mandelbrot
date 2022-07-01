@@ -443,12 +443,6 @@ void render(AppState& state)
         return;
     }
 
-    if(state.render_new)
-    {
-        state.ids_current = state.ids_prev;
-        state.ids_prev = !state.ids_prev;
-    } 
-
     set_rgb_channels(state.channel_options, state.rgb_option);
 
 	if(state.render_new)
@@ -456,8 +450,8 @@ void render(AppState& state)
 		state.ids_current = state.ids_prev;
 		state.ids_prev = !state.ids_prev;
 
-		auto& current_ids = state.color_ids[state.ids_current];
-		auto& old_ids = state.color_ids[state.ids_prev];
+		auto& current_ids = state.color_ids[(int)state.ids_current];
+		auto& old_ids = state.color_ids[(int)state.ids_prev];
 		
 		auto ranges = get_ranges(get_full_range(current_ids), state.pixel_shift);
 		

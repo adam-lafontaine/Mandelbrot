@@ -50,7 +50,7 @@ namespace win32
 
 
 
-	static void record_keyboard_input(WPARAM wparam, KeyboardInput const& old_input, KeyboardInput& new_input, b32 is_down)
+	static void record_keyboard_input(WPARAM wparam, KeyboardInput const& old_input, KeyboardInput& new_input, bool is_down)
 	{
 		switch (wparam)
 		{
@@ -358,8 +358,8 @@ namespace win32
 		
 
 		MSG message;
-		b32 was_down = false;
-		b32 is_down = false;
+		bool was_down = false;
+		bool is_down = false;
 
 		while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
 		{

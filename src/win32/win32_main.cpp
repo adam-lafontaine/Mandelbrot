@@ -41,7 +41,7 @@ constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
 constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
 
 // flag to signal when the application should terminate
-GlobalVariable b32 g_running = false;
+GlobalVariable bool g_running = false;
 
 // contains the memory that the application will draw to
 GlobalVariable win32::BitmapBuffer g_back_buffer = {};
