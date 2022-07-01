@@ -38,8 +38,11 @@ input_controls_h += $(input_h)
 app_h := $(app)/app.hpp
 app_h += $(input_h)
 
+app_input_h := $(app)/app_input.hpp
+app_input_h += $(types_h)
+
 app_types_h := $(app)/app_types.hpp
-app_types_h += $(types_h)
+app_types_h += $(app_input_h)
 
 colors_h := $(app)/colors.hpp
 colors_h += $(types_h)

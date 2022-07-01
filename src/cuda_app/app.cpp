@@ -29,7 +29,26 @@ constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
 constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
 
 
-static void process_input(Input const& input, AppState& state)
+static void init_app_input(AppInput& state)
+{
+	state.render_new = true;		
+
+	state.mbt_pos.x = 0.0;
+	state.mbt_pos.y = 0.0;
+
+	state.zoom_level = 1.0;
+	state.zoom_speed = ZOOM_SPEED_LOWER_LIMIT;
+
+	state.iter_limit = MAX_ITERATIONS_START;
+
+	state.mbt_screen_width = mbt_screen_width(state.zoom_level);
+	state.mbt_screen_height = mbt_screen_height(state.zoom_level);
+
+	state.rgb_option = 1;
+}
+
+
+static void process_input(Input const& input, AppInput& state)
 {
 	constexpr r64 zoom_speed_factor_per_second = 0.1;
 	constexpr r64 iteration_adjustment_factor = 0.02;
@@ -342,20 +361,7 @@ namespace app
             return false;
         }
 
-		state.render_new = true;
-
-		state.mbt_pos.x = 0.0;
-		state.mbt_pos.y = 0.0;
-
-		state.zoom_level = 1.0;
-		state.zoom_speed = ZOOM_SPEED_LOWER_LIMIT;
-
-        state.mbt_screen_width = mbt_screen_width(state.zoom_level);
-		state.mbt_screen_height = mbt_screen_height(state.zoom_level);
-
-		state.iter_limit = MAX_ITERATIONS_START;
-
-		state.rgb_option = 1;		
+		init_app_input(state.app_input);		
 
 		memory.is_app_initialized = true;
         return true;
@@ -371,12 +377,12 @@ namespace app
 
 		auto& state = get_state(memory);
 
-		process_input(input, state);
+		process_input(input, state.app_input);
 
 		render(state);
 
-		state.render_new = false;
-		state.draw_new = false;
+		state.app_input.render_new = false;
+		state.app_input.draw_new = false;
 	}
 
 

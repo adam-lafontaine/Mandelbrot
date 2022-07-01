@@ -204,8 +204,8 @@ static void process_and_draw(AppState const& state)
 			else
 			{
 				r64 cx = state.min_mx + x * state.mx_step;
-				auto iter = mandelbrot_iter(cx, cy, state.iter_limit);
-				ids_row[x] = color_index(iter, state.iter_limit);
+				auto iter = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
+				ids_row[x] = color_index(iter, state.app_input.iter_limit);
 			}			
 
 			draw_xy(ids, pixels, state.channel_options, x, y);
@@ -302,35 +302,34 @@ void render(AppState& state)
 	auto width = state.screen_buffer.width;
 	auto height = state.screen_buffer.height;
 
-	if(!state.render_new && !state.draw_new)
+	if(!state.app_input.render_new && !state.app_input.draw_new)
     {
         return;
     }
 
-    set_rgb_channels(state.channel_options, state.rgb_option);
+    set_rgb_channels(state.channel_options, state.app_input.rgb_option);
 
-	if(state.render_new)
+	if(state.app_input.render_new)
 	{
 		state.ids_current = state.ids_prev;
 		state.ids_prev = !state.ids_prev;
 		
-		auto ranges = get_ranges(get_full_range(state.screen_buffer), state.pixel_shift);
+		auto ranges = get_ranges(get_full_range(state.screen_buffer), state.app_input.pixel_shift);
 		
-		state.iter_limit = state.iter_limit;
-		state.min_mx = MBT_MIN_X + state.mbt_pos.x;
-		state.min_my = MBT_MIN_Y + state.mbt_pos.y;
-		state.mx_step = state.mbt_screen_width / width;
-		state.my_step = state.mbt_screen_height / height;
+		state.min_mx = MBT_MIN_X + state.app_input.mbt_pos.x;
+		state.min_my = MBT_MIN_Y + state.app_input.mbt_pos.y;
+		state.mx_step = state.app_input.mbt_screen_width / width;
+		state.my_step = state.app_input.mbt_screen_height / height;
 
 		state.copy_src = ranges.copy_src;
         state.copy_dst = ranges.copy_dst;
 
 		process_and_draw(state);
 
-		state.draw_new = false;
+		state.app_input.draw_new = false;
 	}
     
-    if(state.draw_new)
+    if(state.app_input.draw_new)
     {       
 		draw(state);
     }

@@ -338,31 +338,31 @@ void render(AppState& state)
     auto n_threads = width * height;
     auto n_blocks = calc_thread_blocks(n_threads);
 
-    if(!state.render_new && !state.draw_new)
+    if(!state.app_input.render_new && !state.app_input.draw_new)
     {
         return;
     }
 
-    if(state.render_new)
+    if(state.app_input.render_new)
     {
         unified.ids_current = unified.ids_prev;
         unified.ids_prev = !unified.ids_prev;
     } 
 
-    set_rgb_channels(unified.channel_options, state.rgb_option);
+    set_rgb_channels(unified.channel_options, state.app_input.rgb_option);
 
     bool result = cuda::no_errors("render");
     assert(result);
 
-    if(state.render_new)
+    if(state.app_input.render_new)
     {	
-		auto ranges = get_ranges(get_full_range(unified.screen_buffer), state.pixel_shift);   
+		auto ranges = get_ranges(get_full_range(unified.screen_buffer), state.app_input.pixel_shift);   
         
-		unified.iter_limit = state.iter_limit;
-		unified.min_mx = MBT_MIN_X + state.mbt_pos.x;
-		unified.min_my = MBT_MIN_Y + state.mbt_pos.y;
-		unified.mx_step = state.mbt_screen_width / width;
-		unified.my_step = state.mbt_screen_height / height;
+		unified.iter_limit = state.app_input.iter_limit;
+		unified.min_mx = MBT_MIN_X + state.app_input.mbt_pos.x;
+		unified.min_my = MBT_MIN_Y + state.app_input.mbt_pos.y;
+		unified.mx_step = state.app_input.mbt_screen_width / width;
+		unified.my_step = state.app_input.mbt_screen_height / height;
 
         unified.copy_src = ranges.copy_src;
         unified.copy_dst = ranges.copy_dst;
@@ -376,10 +376,10 @@ void render(AppState& state)
         result = cuda::launch_success("gpu_draw 1");
         assert(result);
 
-        state.draw_new = false;
+        state.app_input.draw_new = false;
     }    
     
-    if(state.draw_new)
+    if(state.app_input.draw_new)
     {
         cuda_launch_kernel(gpu_draw, n_blocks, THREADS_PER_BLOCK, device_data, unified_data, n_threads);
 

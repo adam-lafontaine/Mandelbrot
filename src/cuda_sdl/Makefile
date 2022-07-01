@@ -307,11 +307,15 @@ input_controls_h += $(input_h)
 app_h := $(cuda_app)/app.hpp
 app_h += $(input_h)
 
+app_input_h := $(app)/app_input.hpp
+app_input_h += $(types_h)
+
 device_h := $(cuda_app)/device.hpp
 device_h += $(types_h)
 
 cuda_types_h := $(cuda_app)/cuda_types.hpp
 cuda_types_h += $(device_h)
+cuda_types_h += $(app_input_h)
 
 cuda_def_h := $(cuda_app)/cuda_def.cuh
 
