@@ -26,19 +26,11 @@ static void for_each(UnsignedRange const& ids, std::function<void(u32)> const& f
 #endif // NO_CPP17
 
 
-static void transform(Mat2Di32 const& src, Image const& dst, std::function<Pixel(i32)> const& func)
-{
-	std::transform(src.begin(), src.end(), dst.begin(), func);
-}
-
-
 class RangeList
 {
 public:
 	Range2Du32 copy_src;
 	Range2Du32 copy_dst;
-	Range2Du32 write_h;
-	Range2Du32 write_v;
 };
 
 
@@ -159,55 +151,6 @@ static void set_rgb_channels(ChannelOptions& options, u32 rgb_option)
 	}
 }
 
-/*
-static void draw(AppState const& state)
-{
-	auto& src = state.color_ids[state.ids_current];
-	auto& dst = state.screen_buffer;
-
-	u32 c1 = 0;
-	u32 c2 = 0;
-	u32 c3 = 0;
-	set_rgb_channels(c1, c2, c3, state.rgb_option);
-
-	auto const to_color = [&](i32 i)
-	{
-		if(i < 0)
-		{
-			return to_pixel(0, 0, 0);
-		}
-
-		u8 color_map[] = { palettes[0][i], palettes[1][i], palettes[2][i] };
-		return to_pixel(color_map[c1], color_map[c2], color_map[c3]);
-	};
-
-	transform(src, dst, to_color);
-}
-*/
-/*
-static void copy(Mat2Di32 const& src, Mat2Di32 const& dst, Range2Du32 const& src_r, Range2Du32 const& dst_r)
-{
-	auto copy_width = src_r.x_end - src_r.x_begin;
-	auto copy_height = src_r.y_end - src_r.y_begin;
-
-	assert(dst_r.x_end - dst_r.x_begin == copy_width);
-	assert(dst_r.y_end - dst_r.y_begin == copy_height);
-
-	auto const copy_row = [&](u32 row) 
-	{
-		auto src_row = src.row_begin(src_r.y_begin + row);
-		auto dst_row = dst.row_begin(dst_r.y_begin + row);
-
-		for (u32 w = 0; w < copy_width; ++w)
-		{
-			dst_row[dst_r.x_begin + w] = src_row[src_r.x_begin + w];
-		}
-	};
-
-	UnsignedRange rows(0u, copy_height);
-	for_each(rows, copy_row);
-}
-*/
 
 static void copy_xy(Mat2Di32 const& src, Mat2Di32 const& dst, Range2Du32 const& r_src, Range2Du32 const & r_dst, u32 dst_x, u32 dst_y)
 {
@@ -240,27 +183,6 @@ static void draw_xy(Mat2Di32 const& src, Image const& dst, ChannelOptions const&
     }
 }
 
-/*
-static void mandelbrot_range(Mat2Di32 const& dst, Range2Du32 const& range, MbtProps const& props)
-{
-	auto const mbt_row = [&](u32 y) 
-	{
-		auto dst_row = dst.row_begin(y);
-		r64 cy = props.min_my + y * props.my_step;
-
-		for (u32 x = range.x_begin; x < range.x_end; ++x)
-		{
-			r64 cx = props.min_mx + x * props.mx_step;
-			auto iter = mandelbrot_iter(cx, cy, props.iter_limit);
-			auto index = color_index(iter, props.iter_limit);
-			dst_row[x] = index;
-		}
-	};
-
-	UnsignedRange rows(range.y_begin, range.y_end);
-	for_each(rows, mbt_row);
-}
-*/
 
 static void process_and_draw(AppState const& state)
 {
@@ -323,7 +245,6 @@ RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const& direction)
 
 	if(no_horizontal && no_vertical)
 	{
-		list.write_h = full_range;
 		return list;
 	}
 
@@ -331,9 +252,6 @@ RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const& direction)
 	auto copy_left = direction.x < 0;
 	auto copy_down = direction.y > 0;
 	auto copy_up = direction.y < 0;
-
-	auto write_left = direction.x > 0;
-	auto write_top = direction.y > 0;
 
 	auto const n_cols = (u32)(std::abs(direction.x));
 	auto const n_rows = (u32)(std::abs(direction.y));
@@ -363,71 +281,17 @@ RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const& direction)
 		list.copy_src.y_end -= n_rows;
 	}
 
-	list.write_h = full_range;
-
-
-	if (no_horizontal && no_vertical)
-	{
-
-	}
-	else if (no_horizontal)
-	{
-		if (write_top)
-		{
-			list.write_h.y_end = n_rows;
-		}
-		else // if (write_bottom)
-		{
-			list.write_h.y_begin = list.write_h.y_end - n_rows - 1;
-		}
-	}
-	else if (no_vertical)
-	{
-		if (write_left)
-		{
-			list.write_h.x_end = n_cols;
-		}
-		else // if (wright_right)
-		{
-			list.write_h.x_begin = list.write_h.x_end - n_cols - 1;
-		}
-	}
-    else
-    {
-		list.write_v = list.write_h;
-        
-        if (write_top)
-        {
-            list.write_h.y_end = n_rows;
-            list.write_v.y_begin = n_rows;
-        }
-        else // if (write_bottom)
-        {
-            list.write_h.y_begin = full_range.y_end - n_rows - 1;
-            list.write_v.y_end = full_range.y_end - n_rows - 1;
-        }
-
-        if (write_left)
-        {
-            list.write_v.x_end = n_cols;
-        }
-        else // if (write_right)
-        {
-            list.write_v.x_begin = full_range.x_end - n_cols - 1;
-        }
-    }    
-
 	return list;
 }
 
 
-static Range2Du32 get_full_range(Mat2Di32 const& mat)
+static Range2Du32 get_full_range(Image const& image)
 {
 	Range2Du32 r{};
 	r.x_begin = 0;
-	r.x_end = mat.width;
+	r.x_end = image.width;
 	r.y_begin = 0;
-	r.y_end = mat.height;
+	r.y_end = image.height;
 
 	return r;
 }
@@ -449,11 +313,8 @@ void render(AppState& state)
 	{
 		state.ids_current = state.ids_prev;
 		state.ids_prev = !state.ids_prev;
-
-		auto& current_ids = state.color_ids[(int)state.ids_current];
-		auto& old_ids = state.color_ids[(int)state.ids_prev];
 		
-		auto ranges = get_ranges(get_full_range(current_ids), state.pixel_shift);
+		auto ranges = get_ranges(get_full_range(state.screen_buffer), state.pixel_shift);
 		
 		state.iter_limit = state.iter_limit;
 		state.min_mx = MBT_MIN_X + state.mbt_pos.x;
