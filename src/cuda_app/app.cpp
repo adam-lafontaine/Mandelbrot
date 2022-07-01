@@ -189,7 +189,7 @@ namespace app
 	{
 		assert(sizeof(pixel_t) == buffer.bytes_per_pixel);
 
-		auto& unified = state.unified;
+		UnifiedMemory unified{};
 		auto& screen = unified.screen_buffer;
 
 		auto const width = buffer.width;
@@ -216,6 +216,14 @@ namespace app
 		screen.height = height;
 
 		buffer.memory = screen.data;
+
+		if(!cuda::unified_malloc(state.unified, 1))
+		{
+			print_error("unified");
+			return false;
+		}
+
+		state.unified.data[0] = unified;
 
 		return true;
 	}

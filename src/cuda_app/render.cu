@@ -17,9 +17,7 @@ public:
 
     ColorPalette color_palette; 
 
-    Mat2Di32 current_ids;    
-
-    Image screen_dst;
+    Mat2Di32 current_ids;
 
     u32 channel1;
     u32 channel2;
@@ -344,10 +342,10 @@ static void mandelbrot_xy(MbtProps const& props, u32 x, u32 y)
 
 
 GPU_FUNCTION
-static void draw_pixel(DrawProps const& props, u32 pixel_index)
+static void draw_pixel(DrawProps const& props, UnifiedMemory* unified, u32 pixel_index)
 {
     auto& src = props.current_ids;
-    auto& dst = props.screen_dst;
+    auto& dst = unified->screen_buffer;
 
     auto color_id = src.data[pixel_index];
 
@@ -371,15 +369,15 @@ static void draw_pixel(DrawProps const& props, u32 pixel_index)
 
 
 GPU_KERNAL
-static void gpu_process_and_draw(MbtProps props, u32 n_threads)
+static void gpu_process_and_draw(MbtProps props, UnifiedMemory* unified, u32 n_threads)
 {
     int t = blockDim.x * blockIdx.x + threadIdx.x;
     if (t >= n_threads)
     {
         return;
     }
-    
-    assert(n_threads == props.current_ids.width * props.current_ids.height);
+
+    assert(n_threads == props.old_ids.width * props.old_ids.height);
 
     auto pixel_id = (u32)t;
     auto const width = props.old_ids.width;
@@ -401,12 +399,12 @@ static void gpu_process_and_draw(MbtProps props, u32 n_threads)
 
     auto& draw_props = props.draw_props;
 
-    gpu::draw_pixel(draw_props, pixel_id);
+    gpu::draw_pixel(draw_props, unified, pixel_id);
 }
 
 
 GPU_KERNAL
-static void gpu_draw(DrawProps props, u32 n_threads)
+static void gpu_draw(DrawProps props, UnifiedMemory* unified, u32 n_threads)
 {
     int t = blockDim.x * blockIdx.x + threadIdx.x;
     if (t >= n_threads)
@@ -418,14 +416,14 @@ static void gpu_draw(DrawProps props, u32 n_threads)
 
     auto pixel_id = (u32)t;
 
-    gpu::draw_pixel(props, pixel_id);
+    gpu::draw_pixel(props, unified, pixel_id);
 }
 
 
 void render(AppState& state)
 {
-    auto width = state.unified.screen_buffer.width;
-    auto height = state.unified.screen_buffer.height;
+    auto width = state.unified.data->screen_buffer.width;
+    auto height = state.unified.data->screen_buffer.height;
     auto n_threads = width * height;
     auto n_blocks = calc_thread_blocks(n_threads);
 
@@ -446,7 +444,8 @@ void render(AppState& state)
     DrawProps draw_props{};
     draw_props.current_ids = current_ids;
     draw_props.color_palette = state.device.color_palette;
-    draw_props.screen_dst = state.unified.screen_buffer;
+
+    auto unified = state.unified.data;
 
     set_rgb_channels(draw_props, state.rgb_option);
 
@@ -471,11 +470,11 @@ void render(AppState& state)
         
         props.draw_props = draw_props;        
 
-        cuda_launch_kernel(gpu_process_and_draw, n_blocks, THREADS_PER_BLOCK, props, n_threads);
+        cuda_launch_kernel(gpu_process_and_draw, n_blocks, THREADS_PER_BLOCK, props, unified, n_threads);
         result = cuda::launch_success("gpu_process_and_draw");
         assert(result);
 
-        cuda_launch_kernel(gpu_draw, n_blocks, THREADS_PER_BLOCK, draw_props, n_threads);
+        cuda_launch_kernel(gpu_draw, n_blocks, THREADS_PER_BLOCK, draw_props, unified, n_threads);
 
         result = cuda::launch_success("gpu_draw 1");
         assert(result);
@@ -485,7 +484,7 @@ void render(AppState& state)
     
     if(state.draw_new)
     {
-        cuda_launch_kernel(gpu_draw, n_blocks, THREADS_PER_BLOCK, draw_props, n_threads);
+        cuda_launch_kernel(gpu_draw, n_blocks, THREADS_PER_BLOCK, draw_props, unified, n_threads);
 
         result = cuda::launch_success("gpu_draw");
         assert(result);

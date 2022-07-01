@@ -95,9 +95,9 @@ public:
 	bool ids_current = true;	
     
     DeviceMemory device;
-    UnifiedMemory unified;
-
 	MemoryBuffer<i32> device_i32;
 	MemoryBuffer<u8> device_u8;
+
+    MemoryBuffer<UnifiedMemory> unified;
 	MemoryBuffer<Pixel> unified_pixel;
 };
