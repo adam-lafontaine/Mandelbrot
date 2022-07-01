@@ -55,15 +55,6 @@ public:
 };
 
 
-class ChannelOptions
-{
-public:
-	u32 channel1;
-    u32 channel2;
-    u32 channel3;
-};
-
-
 class DeviceMemory
 {
 public:

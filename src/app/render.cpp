@@ -110,48 +110,6 @@ static i32 color_index(u32 iter, u32 iter_limit)
 }
 
 
-static void set_rgb_channels(ChannelOptions& options, u32 rgb_option)
-{
-	auto& c1 = options.channel1;
-    auto& c2 = options.channel2;
-    auto& c3 = options.channel3;
-
-	switch (rgb_option)
-	{
-	case 1:
-		c1 = 0;
-		c2 = 1;
-		c3 = 2;
-		break;
-	case 2:
-		c1 = 0;
-		c2 = 2;
-		c3 = 1;
-		break;
-	case 3:
-		c1 = 1;
-		c2 = 0;
-		c3 = 2;
-		break;
-	case 4:
-		c1 = 1;
-		c2 = 2;
-		c3 = 0;
-		break;
-	case 5:
-		c1 = 2;
-		c2 = 0;
-		c3 = 1;
-		break;
-	case 6:
-		c1 = 2;
-		c2 = 1;
-		c3 = 0;
-		break;
-	}
-}
-
-
 static void copy_xy(Mat2Di32 const& src, Mat2Di32 const& dst, Range2Du32 const& r_src, Range2Du32 const & r_dst, u32 dst_x, u32 dst_y)
 {
     auto x_offset = dst_x - r_dst.x_begin;
