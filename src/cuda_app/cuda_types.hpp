@@ -54,6 +54,15 @@ public:
 };
 
 
+class ChannelOptions
+{
+public:
+	u32 channel1;
+    u32 channel2;
+    u32 channel3;
+};
+
+
 class DeviceMemory
 {
 public:
@@ -69,9 +78,7 @@ class UnifiedMemory
 public:
     Image screen_buffer;
 
-	u32 channel1;
-    u32 channel2;
-    u32 channel3;
+	ChannelOptions channel_options;
 
 	Range2Du32 copy_src;
     Range2Du32 copy_dst;

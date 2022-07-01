@@ -11,43 +11,43 @@ constexpr int calc_thread_blocks(u32 n_threads)
 }
 
 
-static void set_rgb_channels(UnifiedMemory& unified, u32 rgb_option)
+static void set_rgb_channels(ChannelOptions& options, u32 rgb_option)
 {
-    auto& cr = unified.channel1;
-    auto& cg = unified.channel2;
-    auto& cb = unified.channel3;
+	auto& c1 = options.channel1;
+    auto& c2 = options.channel2;
+    auto& c3 = options.channel3;
 
 	switch (rgb_option)
 	{
 	case 1:
-		cr = 0;
-		cg = 1;
-		cb = 2;
+		c1 = 0;
+		c2 = 1;
+		c3 = 2;
 		break;
 	case 2:
-		cr = 0;
-		cg = 2;
-		cb = 1;
+		c1 = 0;
+		c2 = 2;
+		c3 = 1;
 		break;
 	case 3:
-		cr = 1;
-		cg = 0;
-		cb = 2;
+		c1 = 1;
+		c2 = 0;
+		c3 = 2;
 		break;
 	case 4:
-		cr = 1;
-		cg = 2;
-		cb = 0;
+		c1 = 1;
+		c2 = 2;
+		c3 = 0;
 		break;
 	case 5:
-		cr = 2;
-		cg = 0;
-		cb = 1;
+		c1 = 2;
+		c2 = 0;
+		c3 = 1;
 		break;
 	case 6:
-		cr = 2;
-		cg = 1;
-		cb = 0;
+		c1 = 2;
+		c2 = 1;
+		c3 = 0;
 		break;
 	}
 }
@@ -246,6 +246,7 @@ static void draw_pixel(DeviceMemory const& device, UnifiedMemory const& unified,
 {
     auto& src = device.color_ids[unified.ids_current];
     auto& dst = unified.screen_buffer;
+    auto& options = unified.channel_options;
 
     auto color_id = src.data[pixel_index];
 
@@ -257,7 +258,7 @@ static void draw_pixel(DeviceMemory const& device, UnifiedMemory const& unified,
     {
         auto& colors = device.color_palette;
         u8 color_map[] = { colors.channel1[color_id], colors.channel2[color_id], colors.channel3[color_id] };
-        dst.data[pixel_index] = to_pixel(color_map[unified.channel1], color_map[unified.channel2], color_map[unified.channel3]);
+        dst.data[pixel_index] = to_pixel(color_map[options.channel1], color_map[options.channel2], color_map[options.channel3]);
     }
 }
 
@@ -348,7 +349,7 @@ void render(AppState& state)
         unified.ids_prev = !unified.ids_prev;
     } 
 
-    set_rgb_channels(unified, state.rgb_option);
+    set_rgb_channels(unified.channel_options, state.rgb_option);
 
     bool result = cuda::no_errors("render");
     assert(result);
