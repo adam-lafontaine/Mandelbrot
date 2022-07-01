@@ -91,8 +91,8 @@ public:
 
 	u32 iter_limit;
 
-	bool ids_old = 0;
-	bool ids_current = 1;	
+	bool ids_old = false;
+	bool ids_current = true;	
     
     DeviceMemory device;
     UnifiedMemory unified;

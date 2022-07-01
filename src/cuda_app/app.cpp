@@ -146,7 +146,7 @@ static void process_input(Input const& input, AppState& state)
 		state.render_new = true;
 	}
 
-	u32 qty = num_rgb_combinations();
+	constexpr auto qty = num_rgb_combinations();
     if(cycle_color_scheme_right(input))
     {
         ++state.rgb_option;

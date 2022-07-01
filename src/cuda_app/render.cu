@@ -254,13 +254,13 @@ static bool in_range(u32 x, u32 y, Range2Du32 const& range)
 
 
 GPU_FUNCTION
-static void copy_xy(Mat2Di32 const& src, Mat2Di32 const& dst, Range2Du32 const& r_src, Range2Du32 const & r_dst, u32 src_x, u32 src_y)
+static void copy_xy(Mat2Di32 const& src, Mat2Di32 const& dst, Range2Du32 const& r_src, Range2Du32 const & r_dst, u32 dst_x, u32 dst_y)
 {
-    auto x_offset = src_x - r_src.x_begin;
-    auto y_offset = src_y - r_src.y_begin;
+    auto x_offset = dst_x - r_dst.x_begin;
+    auto y_offset = dst_y - r_dst.y_begin;
 
-    auto dst_x = r_dst.x_begin + x_offset;
-    auto dst_y = r_dst.y_begin + y_offset;
+    auto src_x = r_src.x_begin + x_offset;
+    auto src_y = r_src.y_begin + y_offset;
 
     auto src_i = src_y * src.width + src_x;
     auto dst_i = dst_y * src.width + dst_x;    
@@ -369,32 +369,6 @@ static void draw_pixel(DrawProps const& props, u32 pixel_index)
 }
 
 
-/*
-GPU_KERNAL
-static void gpu_color_ids(Mat2Di32 ids, u32 n_threads)
-{
-    int t = blockDim.x * blockIdx.x + threadIdx.x;
-    if (t >= n_threads)
-    {
-        return;
-    }
-
-    auto pixel_id = (u32)t;
-
-    assert(n_threads == ids.width * ids.height);
-
-    ids.data[pixel_id] = 0;
-}
-
-
-GPU_KERNAL
-static void gpu_color_palette(ColorPalette palette, u32 threads)
-{
-
-}
-*/
-
-
 
 GPU_KERNAL
 static void gpu_process_and_draw(MbtProps props, u32 n_threads)
@@ -403,23 +377,12 @@ static void gpu_process_and_draw(MbtProps props, u32 n_threads)
     if (t >= n_threads)
     {
         return;
-    }
+    }    
 
-    auto& current_ids = props.draw_props.current_ids;
-    auto& old_ids = props.old_ids;
-
-    auto const width = old_ids.width;
-    auto const height = old_ids.height;
-
-    auto& draw_props = props.draw_props;
+    auto const width = props.old_ids.width;
+    auto const height = props.old_ids.height;    
 
     assert(n_threads == width * height);
-    assert(current_ids.data);
-    assert(old_ids.data);
-    assert(draw_props.screen_dst.data);
-    assert(draw_props.color_palette.channel1);
-    assert(draw_props.color_palette.channel2);
-    assert(draw_props.color_palette.channel3);
     
 
     auto pixel_id = (u32)t;
@@ -427,14 +390,19 @@ static void gpu_process_and_draw(MbtProps props, u32 n_threads)
     auto y = pixel_id / width;
     auto x = pixel_id - y * width;
 
-    if(gpu::in_range(x, y, props.copy_src))
+    if(gpu::in_range(x, y, props.copy_dst))
     {
+        auto& current_ids = props.draw_props.current_ids;
+        auto& old_ids = props.old_ids;
+
         gpu::copy_xy(old_ids, current_ids, props.copy_src, props.copy_dst, x, y);
     }
     else
     {
         gpu::mandelbrot_xy(props, x, y);
     }
+
+    auto& draw_props = props.draw_props;
 
     gpu::draw_pixel(draw_props, pixel_id);
 }
@@ -472,11 +440,14 @@ void render(AppState& state)
         return;
     }
 
-    state.ids_current = state.ids_old;
-    state.ids_old = !state.ids_old;
+    if(state.render_new)
+    {
+        state.ids_current = state.ids_old;
+        state.ids_old = !state.ids_old;
+    }    
 
-    auto& current_ids = state.device.color_ids[state.ids_current];
-    auto& old_ids = state.device.color_ids[state.ids_old];
+    auto& current_ids = state.device.color_ids[(int)state.ids_current];
+    auto& old_ids = state.device.color_ids[(int)state.ids_old];
 
     DrawProps draw_props{};
     draw_props.current_ids = current_ids;
@@ -514,8 +485,11 @@ void render(AppState& state)
 
         result = cuda::launch_success("gpu_draw 1");
         assert(result);
+
+        state.draw_new = false;
     }    
-    else if(state.draw_new)
+    
+    if(state.draw_new)
     {
         cuda_launch_kernel(gpu_draw, n_blocks, THREADS_PER_BLOCK, draw_props, n_threads);
 
