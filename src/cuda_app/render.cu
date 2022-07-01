@@ -255,7 +255,7 @@ static bool in_range(u32 x, u32 y, Range2Du32 const& range)
 {
     return 
         range.x_begin <= x &&
-        x > range.x_end &&
+        x < range.x_end &&
         range.y_begin <= y &&
         y < range.y_end;
 }
@@ -336,13 +336,15 @@ static i32 color_index(u32 iter, u32 iter_limit, u32 total_colors)
 
 
 GPU_FUNCTION
-static void mandelbrot_xy(Mat2Di32 const& dst, MbtProps const& props, u32 x, u32 y)
+static void mandelbrot_xy(MbtProps const& props, u32 x, u32 y)
 {
+    auto& dst = props.draw_props.current_ids;
+
     r64 cy = props.min_my + y * props.my_step;
     r64 cx = props.min_mx + x * props.mx_step;
 
     auto iter = gpu::mandelbrot_iter(cx, cy, props.iter_limit);
-    auto index = color_index(iter, props.iter_limit, props.draw_props.color_palette.n_colors);
+    auto index = gpu::color_index(iter, props.iter_limit, props.draw_props.color_palette.n_colors);
 
     auto dst_i = y * dst.width + x;
     dst.data[dst_i] = index;
@@ -375,6 +377,34 @@ static void draw_pixel(DrawProps const& props, u32 pixel_index)
 }
 
 
+// temp
+GPU_KERNAL
+static void gpu_process(MbtProps const& props, u32 n_threads)
+{
+    int t = blockDim.x * blockIdx.x + threadIdx.x;
+    if (t >= n_threads)
+    {
+        return;
+    }
+
+    auto& current_ids = props.draw_props.current_ids;
+    auto& old_ids = props.old_ids;
+
+    auto const width = old_ids.width;
+    auto const height = old_ids.height;
+
+    //auto& draw_props = props.draw_props;
+    //assert(n_threads == width * height);
+
+    auto pixel_id = (u32)t;
+
+    auto y = pixel_id / width;
+    auto x = pixel_id - y * width;
+
+    gpu::mandelbrot_xy(props, x, y);
+}
+
+/*
 GPU_KERNAL
 static void gpu_process_and_draw(MbtProps const& props, u32 n_threads)
 {
@@ -390,7 +420,16 @@ static void gpu_process_and_draw(MbtProps const& props, u32 n_threads)
     auto const width = old_ids.width;
     auto const height = old_ids.height;
 
+    auto& draw_props = props.draw_props;
+
     assert(n_threads == width * height);
+    assert(current_ids.data);
+    assert(old_ids.data);
+    assert(draw_props.screen_dst.data);
+    assert(draw_props.color_palette.channel1);
+    assert(draw_props.color_palette.channel2);
+    assert(draw_props.color_palette.channel3);
+    
 
     auto pixel_id = (u32)t;
 
@@ -406,9 +445,9 @@ static void gpu_process_and_draw(MbtProps const& props, u32 n_threads)
         gpu::mandelbrot_xy(current_ids, props, x, y);
     }
 
-    gpu::draw_pixel(props.draw_props, pixel_id);
+    gpu::draw_pixel(draw_props, pixel_id);
 }
-
+*/
 
 GPU_KERNAL
 static void gpu_draw(DrawProps const& props, u32 n_threads)
@@ -476,9 +515,18 @@ void render(AppState& state)
         
         props.draw_props = draw_props;        
 
-        cuda_launch_kernel(gpu_process_and_draw, n_blocks, THREADS_PER_BLOCK, props, n_threads);
+        //cuda_launch_kernel(gpu_process_and_draw, n_blocks, THREADS_PER_BLOCK, props, n_threads);
+        //result = cuda::launch_success("gpu_process_and_draw");
+        //assert(result);
 
-        result = cuda::launch_success("gpu_process_and_draw");
+        cuda_launch_kernel(gpu_process, n_blocks, THREADS_PER_BLOCK, props, n_threads);
+
+        result = cuda::launch_success("gpu_process");
+        assert(result);
+
+        cuda_launch_kernel(gpu_draw, n_blocks, THREADS_PER_BLOCK, draw_props, n_threads);
+
+        result = cuda::launch_success("gpu_draw 1");
         assert(result);
     }    
     else if(state.draw_new)

@@ -38,17 +38,16 @@ static void check_error(cudaError_t err, cstr label = "")
 
 namespace cuda
 {
-    bool device_malloc(DevicePointer& buffer, size_t n_bytes)
+    bool device_malloc(void** addr, size_t n_bytes)
     {
         assert(n_bytes);
-        assert(!buffer.data);
 
-        if(!n_bytes || buffer.data)
+        if(!n_bytes)
         {
             return false;
         }
 
-        cudaError_t err = cudaMalloc((void**)&(buffer.data), n_bytes);
+        cudaError_t err = cudaMalloc(addr, n_bytes);
         check_error(err, "device_malloc");
 
         bool result = err == cudaSuccess;
@@ -59,17 +58,16 @@ namespace cuda
     }
 
 
-    bool unified_malloc(DevicePointer& buffer, size_t n_bytes)
+    bool unified_malloc(void** addr, size_t n_bytes)
     {
         assert(n_bytes);
-        assert(!buffer.data);
 
-        if(!n_bytes || buffer.data)
+        if(!n_bytes)
         {
             return false;
         }
 
-        cudaError_t err = cudaMallocManaged((void**)&(buffer.data), n_bytes);
+        cudaError_t err = cudaMallocManaged(addr, n_bytes);
         check_error(err, "unified_malloc");
 
         bool result = err == cudaSuccess;

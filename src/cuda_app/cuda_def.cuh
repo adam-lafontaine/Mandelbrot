@@ -22,7 +22,7 @@
 // TODO: streams
 
 #define cuda_launch_kernel(kernel_name, n_blocks, blocksize, ...) \
-    kernel_name <<< (n_blocks), (blocksize) >>> (__VA_ARGS__);
+    kernel_name <<< (n_blocks), (blocksize) >>> (__VA_ARGS__)
 
 #else
 

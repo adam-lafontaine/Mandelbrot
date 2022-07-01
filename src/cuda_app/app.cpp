@@ -198,16 +198,14 @@ namespace app
 
 		auto unified_sz = screen_sz;
 
-		DevicePointer screen_ptr{};
-		if(!cuda::unified_malloc(screen_ptr, screen_sz))
+		auto& screen = unified.screen_buffer;
+		
+		if(!cuda::unified_malloc(device_addr(screen.data), screen_sz))
 		{
 			print_error("screen_ptr");
 			return false;
 		}
-
-		auto& screen = unified.screen_buffer;
-
-		screen.data = (Pixel*)screen_ptr.data;
+		
 		screen.width = width;
 		screen.height = height;
 
@@ -224,61 +222,50 @@ namespace app
         
 		auto const ids_sz = sizeof(i32) * n_pixels;
 
-		DevicePointer ids_ptr0{};
-		if(!cuda::device_malloc(ids_ptr0, ids_sz))
+		auto& ids0 = device.color_ids[0];
+		
+		if(!cuda::device_malloc(device_addr(ids0.data), ids_sz))
 		{
 			print_error("ids_ptr0");
 			return false;
 		}
-
-		auto& ids0 = device.color_ids[0];
-		ids0.data = (i32*)ids_ptr0.data;
+		
 		ids0.width = width;
 		ids0.height = height;
 
-		DevicePointer ids_ptr1{};
-		if(!cuda::device_malloc(ids_ptr1, ids_sz))
+		auto& ids1 = device.color_ids[1];
+		
+		if(!cuda::device_malloc(device_addr(ids1.data), ids_sz))
 		{
 			print_error("ids_ptr1");
 			return false;
 		}
-
-		auto& ids1 = device.color_ids[1];
-		ids1.data = (i32*)ids_ptr1.data;
+		
 		ids1.width = width;
 		ids1.height = height;
 
 		auto const color_palette_channel_sz = sizeof(u8) * N_COLORS;
 
-		auto& palette = device.color_palette;		
-
-		DevicePointer ch_ptr1{};
-		if(!cuda::device_malloc(ch_ptr1, color_palette_channel_sz))
+		auto& palette = device.color_palette;
+		
+		if(!cuda::device_malloc(device_addr(palette.channel1), color_palette_channel_sz))
 		{
 			print_error("ch_ptr1");
 			return false;
 		}
 
-		palette.channel1 = (u8*)ch_ptr1.data;
-
-		DevicePointer ch_ptr2{};
-		if(!cuda::device_malloc(ch_ptr2, color_palette_channel_sz))
+		if(!cuda::device_malloc(device_addr(palette.channel2), color_palette_channel_sz))
 		{
 			print_error("ch_ptr2");
 			return false;
 		}
-
-		palette.channel2 = (u8*)ch_ptr2.data;
-
-		DevicePointer ch_ptr3{};
-		if(!cuda::device_malloc(ch_ptr3, color_palette_channel_sz))
+		
+		if(!cuda::device_malloc(device_addr(palette.channel3), color_palette_channel_sz))
 		{
 			print_error("ch_ptr3");
 			return false;
 		}
-
-		palette.channel3 = (u8*)ch_ptr3.data;
-
+		
 		palette.n_colors = N_COLORS;
 
 		if(!cuda::memcpy_to_device(palettes[0].data(), palette.channel1, color_palette_channel_sz))
