@@ -69,6 +69,23 @@ class UnifiedMemory
 {
 public:
     Image screen_buffer;
+
+	u32 channel1;
+    u32 channel2;
+    u32 channel3;
+
+	Range2Du32 copy_src;
+    Range2Du32 copy_dst;
+
+	bool ids_old = false;
+	bool ids_current = true;
+
+	r64 min_mx;
+	r64 min_my;
+	r64 mx_step;
+	r64 my_step;
+
+    u32 iter_limit;
 };
 
 
@@ -90,11 +107,8 @@ public:
 	u32 rgb_option;
 
 	u32 iter_limit;
-
-	bool ids_old = false;
-	bool ids_current = true;	
     
-    DeviceMemory device;
+    MemoryBuffer<DeviceMemory> device;
 	MemoryBuffer<i32> device_i32;
 	MemoryBuffer<u8> device_u8;
 

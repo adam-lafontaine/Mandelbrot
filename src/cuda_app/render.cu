@@ -11,27 +11,11 @@ constexpr int calc_thread_blocks(u32 n_threads)
 }
 
 
-class DrawProps
+static void set_rgb_channels(UnifiedMemory& unified, u32 rgb_option)
 {
-public:
-
-    ColorPalette color_palette; 
-
-    Mat2Di32 current_ids;
-
-    u32 channel1;
-    u32 channel2;
-    u32 channel3;
-
-    u32 padding;
-};
-
-
-static void set_rgb_channels(DrawProps& props, u32 rgb_option)
-{
-    auto& cr = props.channel1;
-    auto& cg = props.channel2;
-    auto& cb = props.channel3;
+    auto& cr = unified.channel1;
+    auto& cg = unified.channel2;
+    auto& cb = unified.channel3;
 
 	switch (rgb_option)
 	{
@@ -74,8 +58,6 @@ class RangeList
 public:
 	Range2Du32 copy_src;
 	Range2Du32 copy_dst;
-	Range2Du32 write_h;
-	Range2Du32 write_v;
 };
 
 
@@ -84,12 +66,10 @@ RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const& direction)
 	RangeList list{};
 
 	auto no_horizontal = direction.x == 0;
-	auto no_vertical = direction.y == 0;
-	
+	auto no_vertical = direction.y == 0;	
 
 	if(no_horizontal && no_vertical)
 	{
-		list.write_h = full_range;
 		return list;
 	}
 
@@ -97,9 +77,6 @@ RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const& direction)
 	auto copy_left = direction.x < 0;
 	auto copy_down = direction.y > 0;
 	auto copy_up = direction.y < 0;
-
-	auto write_left = direction.x > 0;
-	auto write_top = direction.y > 0;
 
 	auto const n_cols = (u32)(std::abs(direction.x));
 	auto const n_rows = (u32)(std::abs(direction.y));
@@ -129,97 +106,20 @@ RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const& direction)
 		list.copy_src.y_end -= n_rows;
 	}
 
-	list.write_h = full_range;
-
-
-	if (no_horizontal && no_vertical)
-	{
-
-	}
-	else if (no_horizontal)
-	{
-		if (write_top)
-		{
-			list.write_h.y_end = n_rows;
-		}
-		else // if (write_bottom)
-		{
-			list.write_h.y_begin = list.write_h.y_end - n_rows - 1;
-		}
-	}
-	else if (no_vertical)
-	{
-		if (write_left)
-		{
-			list.write_h.x_end = n_cols;
-		}
-		else // if (wright_right)
-		{
-			list.write_h.x_begin = list.write_h.x_end - n_cols - 1;
-		}
-	}
-    else
-    {
-		list.write_v = list.write_h;
-        
-        if (write_top)
-        {
-            list.write_h.y_end = n_rows;
-            list.write_v.y_begin = n_rows;
-        }
-        else // if (write_bottom)
-        {
-            list.write_h.y_begin = full_range.y_end - n_rows - 1;
-            list.write_v.y_end = full_range.y_end - n_rows - 1;
-        }
-
-        if (write_left)
-        {
-            list.write_v.x_end = n_cols;
-        }
-        else // if (write_right)
-        {
-            list.write_v.x_begin = full_range.x_end - n_cols - 1;
-        }
-    }    
-
 	return list;
 }
 
 
-static Range2Du32 get_full_range(Mat2Di32 const& mat)
+static Range2Du32 get_full_range(Image image)
 {
 	Range2Du32 r{};
 	r.x_begin = 0;
-	r.x_end = mat.width;
+	r.x_end = image.width;
 	r.y_begin = 0;
-	r.y_end = mat.height;
+	r.y_end = image.height;
 
 	return r;
 }
-
-
-class MbtProps
-{
-public:
-    DrawProps draw_props;
-
-    Range2Du32 copy_src;
-    Range2Du32 copy_dst;
-
-    Mat2Di32 old_ids;
-	
-	r64 min_mx;
-	r64 min_my;
-	r64 mx_step;
-	r64 my_step;
-
-    u32 iter_limit;
-    u32 padding;
-};
-
-
-
 
 
 namespace gpu
@@ -326,15 +226,15 @@ static i32 color_index(u32 iter, u32 iter_limit, u32 total_colors)
 
 
 GPU_FUNCTION
-static void mandelbrot_xy(MbtProps const& props, u32 x, u32 y)
+static void mandelbrot_xy(DeviceMemory const& device, UnifiedMemory const& unified, u32 x, u32 y)
 {
-    auto& dst = props.draw_props.current_ids;
+    auto& dst = device.color_ids[unified.ids_current];
 
-    r64 cy = props.min_my + y * props.my_step;
-    r64 cx = props.min_mx + x * props.mx_step;
+    r64 cy = unified.min_my + y * unified.my_step;
+    r64 cx = unified.min_mx + x * unified.mx_step;
 
-    auto iter = gpu::mandelbrot_iter(cx, cy, props.iter_limit);
-    auto index = gpu::color_index(iter, props.iter_limit, props.draw_props.color_palette.n_colors);
+    auto iter = gpu::mandelbrot_iter(cx, cy, unified.iter_limit);
+    auto index = gpu::color_index(iter, unified.iter_limit, device.color_palette.n_colors);
 
     auto dst_i = y * dst.width + x;
     dst.data[dst_i] = index;
@@ -342,10 +242,10 @@ static void mandelbrot_xy(MbtProps const& props, u32 x, u32 y)
 
 
 GPU_FUNCTION
-static void draw_pixel(DrawProps const& props, UnifiedMemory* unified, u32 pixel_index)
+static void draw_pixel(DeviceMemory const& device, UnifiedMemory const& unified, u32 pixel_index)
 {
-    auto& src = props.current_ids;
-    auto& dst = unified->screen_buffer;
+    auto& src = device.color_ids[unified.ids_current];
+    auto& dst = unified.screen_buffer;
 
     auto color_id = src.data[pixel_index];
 
@@ -355,9 +255,9 @@ static void draw_pixel(DrawProps const& props, UnifiedMemory* unified, u32 pixel
     }
     else
     {
-        auto& colors = props.color_palette;
+        auto& colors = device.color_palette;
         u8 color_map[] = { colors.channel1[color_id], colors.channel2[color_id], colors.channel3[color_id] };
-        dst.data[pixel_index] = to_pixel(color_map[props.channel1], color_map[props.channel2], color_map[props.channel3]);
+        dst.data[pixel_index] = to_pixel(color_map[unified.channel1], color_map[unified.channel2], color_map[unified.channel3]);
     }
 }
 
@@ -369,7 +269,7 @@ static void draw_pixel(DrawProps const& props, UnifiedMemory* unified, u32 pixel
 
 
 GPU_KERNAL
-static void gpu_process_and_draw(MbtProps props, UnifiedMemory* unified, u32 n_threads)
+static void gpu_process_and_draw(DeviceMemory* device, UnifiedMemory* unified, u32 n_threads)
 {
     int t = blockDim.x * blockIdx.x + threadIdx.x;
     if (t >= n_threads)
@@ -377,34 +277,36 @@ static void gpu_process_and_draw(MbtProps props, UnifiedMemory* unified, u32 n_t
         return;
     }
 
-    assert(n_threads == props.old_ids.width * props.old_ids.height);
+    auto& D = *device;
+    auto& U = *unified;
+
+    assert(n_threads == U.screen_buffer.width * U.screen_buffer.height);
 
     auto pixel_id = (u32)t;
-    auto const width = props.old_ids.width;
+    auto const width = U.screen_buffer.width;
 
     auto y = pixel_id / width;
     auto x = pixel_id - y * width;
 
-    if(gpu::in_range(x, y, props.copy_dst))
+    if(gpu::in_range(x, y, U.copy_dst))
     {
-        auto& current_ids = props.draw_props.current_ids;
-        auto& old_ids = props.old_ids;
+        auto& current_ids = D.color_ids[U.ids_current];
+        auto& old_ids = D.color_ids[U.ids_old];
 
-        gpu::copy_xy(old_ids, current_ids, props.copy_src, props.copy_dst, x, y);
+        gpu::copy_xy(old_ids, current_ids, U.copy_src, U.copy_dst, x, y);
     }
     else
     {
-        gpu::mandelbrot_xy(props, x, y);
+        gpu::mandelbrot_xy(D, U, x, y);
     }
 
-    auto& draw_props = props.draw_props;
 
-    gpu::draw_pixel(draw_props, unified, pixel_id);
+    gpu::draw_pixel(D, U, pixel_id);
 }
 
 
 GPU_KERNAL
-static void gpu_draw(DrawProps props, UnifiedMemory* unified, u32 n_threads)
+static void gpu_draw(DeviceMemory* device, UnifiedMemory* unified, u32 n_threads)
 {
     int t = blockDim.x * blockIdx.x + threadIdx.x;
     if (t >= n_threads)
@@ -412,18 +314,26 @@ static void gpu_draw(DrawProps props, UnifiedMemory* unified, u32 n_threads)
         return;
     }
 
-    assert(n_threads == props.current_ids.width * props.current_ids.height);
+    auto& D = *device;
+    auto& U = *unified;
+
+    assert(n_threads == U.screen_buffer.width * U.screen_buffer.height);
 
     auto pixel_id = (u32)t;
 
-    gpu::draw_pixel(props, unified, pixel_id);
+    gpu::draw_pixel(D, U, pixel_id);
 }
 
 
 void render(AppState& state)
 {
-    auto width = state.unified.data->screen_buffer.width;
-    auto height = state.unified.data->screen_buffer.height;
+    auto device_data = state.device.data;
+    auto unified_data = state.unified.data;
+
+    auto& unified = *unified_data;
+
+    auto width = unified.screen_buffer.width;
+    auto height = unified.screen_buffer.height;
     auto n_threads = width * height;
     auto n_blocks = calc_thread_blocks(n_threads);
 
@@ -434,47 +344,33 @@ void render(AppState& state)
 
     if(state.render_new)
     {
-        state.ids_current = state.ids_old;
-        state.ids_old = !state.ids_old;
-    }    
+        unified.ids_current = unified.ids_old;
+        unified.ids_old = !unified.ids_old;
+    } 
 
-    auto& current_ids = state.device.color_ids[(int)state.ids_current];
-    auto& old_ids = state.device.color_ids[(int)state.ids_old];
-
-    DrawProps draw_props{};
-    draw_props.current_ids = current_ids;
-    draw_props.color_palette = state.device.color_palette;
-
-    auto unified = state.unified.data;
-
-    set_rgb_channels(draw_props, state.rgb_option);
+    set_rgb_channels(unified, state.rgb_option);
 
     bool result = cuda::no_errors("render");
     assert(result);
 
     if(state.render_new)
     {	
-		auto ranges = get_ranges(get_full_range(current_ids), state.pixel_shift);        
-
-        MbtProps props{};
-		props.iter_limit = state.iter_limit;
-		props.min_mx = MBT_MIN_X + state.mbt_pos.x;
-		props.min_my = MBT_MIN_Y + state.mbt_pos.y;
-		props.mx_step = state.mbt_screen_width / width;
-		props.my_step = state.mbt_screen_height / height;
-
-        props.copy_src = ranges.copy_src;
-        props.copy_dst = ranges.copy_dst;
-
-        props.old_ids = old_ids;
+		auto ranges = get_ranges(get_full_range(unified.screen_buffer), state.pixel_shift);   
         
-        props.draw_props = draw_props;        
+		unified.iter_limit = state.iter_limit;
+		unified.min_mx = MBT_MIN_X + state.mbt_pos.x;
+		unified.min_my = MBT_MIN_Y + state.mbt_pos.y;
+		unified.mx_step = state.mbt_screen_width / width;
+		unified.my_step = state.mbt_screen_height / height;
 
-        cuda_launch_kernel(gpu_process_and_draw, n_blocks, THREADS_PER_BLOCK, props, unified, n_threads);
+        unified.copy_src = ranges.copy_src;
+        unified.copy_dst = ranges.copy_dst;
+
+        cuda_launch_kernel(gpu_process_and_draw, n_blocks, THREADS_PER_BLOCK, device_data, unified_data, n_threads);
         result = cuda::launch_success("gpu_process_and_draw");
         assert(result);
 
-        cuda_launch_kernel(gpu_draw, n_blocks, THREADS_PER_BLOCK, draw_props, unified, n_threads);
+        cuda_launch_kernel(gpu_draw, n_blocks, THREADS_PER_BLOCK, device_data, unified_data, n_threads);
 
         result = cuda::launch_success("gpu_draw 1");
         assert(result);
@@ -484,7 +380,7 @@ void render(AppState& state)
     
     if(state.draw_new)
     {
-        cuda_launch_kernel(gpu_draw, n_blocks, THREADS_PER_BLOCK, draw_props, unified, n_threads);
+        cuda_launch_kernel(gpu_draw, n_blocks, THREADS_PER_BLOCK, device_data, unified_data, n_threads);
 
         result = cuda::launch_success("gpu_draw");
         assert(result);

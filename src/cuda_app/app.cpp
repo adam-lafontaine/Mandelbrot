@@ -219,7 +219,7 @@ namespace app
 
 		if(!cuda::unified_malloc(state.unified, 1))
 		{
-			print_error("unified");
+			print_error("state.unified");
 			return false;
 		}
 
@@ -231,7 +231,7 @@ namespace app
 
     static bool init_device_memory(AppState& state, ScreenBuffer const& buffer)
     {
-		auto& device = state.device;
+		DeviceMemory device{};
 
         auto const width = buffer.width;
 		auto const height = buffer.height;
@@ -307,6 +307,18 @@ namespace app
 		if(!cuda::memcpy_to_device(palettes[2].data(), palette.channel3, palette_channel_sz))
 		{
 			print_error("memcpy channel3");
+			return false;
+		}
+
+		if(!cuda::device_malloc(state.device, 1))
+		{
+			print_error("state.device");
+			return false;
+		}
+
+		if(!cuda::memcpy_to_device(&device, state.device.data, sizeof(DeviceMemory)))
+		{
+			print_error("memcpy device");
 			return false;
 		}
 

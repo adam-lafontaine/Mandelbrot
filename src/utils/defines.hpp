@@ -10,7 +10,7 @@
 #endif
 
 
-//#define NDEBUG
+#define NDEBUG
 
 
 using u8 = uint8_t;
