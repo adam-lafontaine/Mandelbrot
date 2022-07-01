@@ -144,9 +144,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\src\app\app.hpp" />
+    <ClInclude Include="..\src\app\app_input.hpp" />
     <ClInclude Include="..\src\app\app_types.hpp" />
     <ClInclude Include="..\src\app\colors.hpp" />
     <ClInclude Include="..\src\app\input_controls.hpp" />
+    <ClInclude Include="..\src\app\range_list.hpp" />
     <ClInclude Include="..\src\app\render.hpp" />
     <ClInclude Include="..\src\input\input.hpp" />
     <ClInclude Include="..\src\input\input_state.hpp" />
