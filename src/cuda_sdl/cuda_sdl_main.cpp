@@ -348,6 +348,13 @@ int main(int argc, char *argv[])
         cleanup();
         return EXIT_FAILURE;
     }
+
+    if(!app_screen_buffer.memory)
+    {
+        display_error("Screen buffer memory not set");
+        cleanup();
+        return EXIT_FAILURE;
+    }
     
     if(!init_bitmap_buffer(back_buffer, app_screen_buffer, window))
     {

@@ -43,11 +43,14 @@ using Image = Matrix<Pixel>;
 class ColorPalette
 {
 public:
-	u32 n_colors;
 
 	u8* channel1;
 	u8* channel2;
 	u8* channel3;
+
+	u32 n_colors;
+
+	u32 padding;
 };
 
 

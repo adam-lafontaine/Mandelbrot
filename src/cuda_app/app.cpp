@@ -213,7 +213,9 @@ namespace app
 		}
 
 		screen.width = width;
-		screen.height = height;	
+		screen.height = height;
+
+		buffer.memory = screen.data;
 
 		return true;
 	}
@@ -280,7 +282,7 @@ namespace app
 
 		palette.n_colors = N_COLORS;
 
-		auto const palette_channel_sz = sizeof(u8) * N_COLORS;		
+		auto const palette_channel_sz = sizeof(u8) * N_COLORS;
 
 		if(!cuda::memcpy_to_device(palettes[0].data(), palette.channel1, palette_channel_sz))
 		{
@@ -296,7 +298,7 @@ namespace app
 
 		if(!cuda::memcpy_to_device(palettes[2].data(), palette.channel3, palette_channel_sz))
 		{
-			print_error("memcpy channel2");
+			print_error("memcpy channel3");
 			return false;
 		}
 
