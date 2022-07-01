@@ -57,6 +57,15 @@ using Mat2Di32 = Matrix<i32>;
 using Image = Matrix<Pixel>;
 
 
+class ChannelOptions
+{
+public:
+	u32 channel1;
+    u32 channel2;
+    u32 channel3;
+};
+
+
 class AppState
 {
 public:
@@ -76,10 +85,22 @@ public:
 
 	u32 iter_limit;
 
-	bool ids_old = 0;
+	bool ids_prev = 0;
 	bool ids_current = 1;
 
 	Mat2Di32 color_ids[2];
 
 	Image screen_buffer;
+
+	ChannelOptions channel_options;
+
+	Range2Du32 copy_src;
+    Range2Du32 copy_dst;
+	Range2Du32 write_h;
+	Range2Du32 write_v; // temp
+
+	r64 min_mx;
+	r64 min_my;
+	r64 mx_step;
+	r64 my_step;
 };

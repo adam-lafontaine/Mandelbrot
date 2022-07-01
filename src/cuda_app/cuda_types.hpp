@@ -54,7 +54,6 @@ public:
 };
 
 
-
 class DeviceMemory
 {
 public:
@@ -77,8 +76,8 @@ public:
 	Range2Du32 copy_src;
     Range2Du32 copy_dst;
 
-	bool ids_old = false;
-	bool ids_current = true;
+	bool ids_prev = 0;
+	bool ids_current = 1;
 
 	r64 min_mx;
 	r64 min_my;

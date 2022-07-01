@@ -291,9 +291,9 @@ static void gpu_process_and_draw(DeviceMemory* device, UnifiedMemory* unified, u
     if(gpu::in_range(x, y, U.copy_dst))
     {
         auto& current_ids = D.color_ids[U.ids_current];
-        auto& old_ids = D.color_ids[U.ids_old];
+        auto& prev_ids = D.color_ids[U.ids_prev];
 
-        gpu::copy_xy(old_ids, current_ids, U.copy_src, U.copy_dst, x, y);
+        gpu::copy_xy(prev_ids, current_ids, U.copy_src, U.copy_dst, x, y);
     }
     else
     {
@@ -344,8 +344,8 @@ void render(AppState& state)
 
     if(state.render_new)
     {
-        unified.ids_current = unified.ids_old;
-        unified.ids_old = !unified.ids_old;
+        unified.ids_current = unified.ids_prev;
+        unified.ids_prev = !unified.ids_prev;
     } 
 
     set_rgb_channels(unified, state.rgb_option);
