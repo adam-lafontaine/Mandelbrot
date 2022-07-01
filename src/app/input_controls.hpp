@@ -91,7 +91,8 @@ inline bool cycle_color_scheme_right(Input const& input)
 {
     return 
         input.keyboard.right_key.pressed || 
-        input.controllers[0].dpad_right.pressed;
+        input.controllers[0].dpad_right.pressed ||
+        input.controllers[0].shoulder_right.pressed;
 }
 
 
@@ -99,7 +100,8 @@ inline bool cycle_color_scheme_left(Input const& input)
 {
     return 
         input.keyboard.left_key.pressed || 
-        input.controllers[0].dpad_left.pressed;
+        input.controllers[0].dpad_left.pressed ||
+        input.controllers[0].shoulder_left.pressed;
 }
 
 
