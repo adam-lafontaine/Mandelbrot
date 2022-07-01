@@ -377,15 +377,12 @@ static void gpu_process_and_draw(MbtProps props, u32 n_threads)
     if (t >= n_threads)
     {
         return;
-    }    
-
-    auto const width = props.old_ids.width;
-    auto const height = props.old_ids.height;    
-
-    assert(n_threads == width * height);
+    }
     
+    assert(n_threads == props.current_ids.width * props.current_ids.height);
 
     auto pixel_id = (u32)t;
+    auto const width = props.old_ids.width;
 
     auto y = pixel_id / width;
     auto x = pixel_id - y * width;
@@ -417,10 +414,7 @@ static void gpu_draw(DrawProps props, u32 n_threads)
         return;
     }
 
-    auto const width = props.current_ids.width;
-    auto const height = props.current_ids.height;
-
-    assert(n_threads == width * height);
+    assert(n_threads == props.current_ids.width * props.current_ids.height);
 
     auto pixel_id = (u32)t;
 
