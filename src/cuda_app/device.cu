@@ -56,6 +56,7 @@ namespace cuda
         if(result)
         {
             buffer.capacity = n_bytes;
+            buffer.size = 0;
         }
         
         return result;
@@ -80,6 +81,7 @@ namespace cuda
         if(result)
         {
             buffer.capacity = n_bytes;
+            buffer.size = 0;
         }
         
         return result;
@@ -127,7 +129,6 @@ namespace cuda
         auto data = buffer.data + buffer.size;
 
         buffer.size += n_bytes;
-        buffer.capacity -= n_bytes;
 
         return data;
     }
@@ -151,7 +152,6 @@ namespace cuda
         if(is_valid)
         {
             buffer.size -= n_bytes;
-            buffer.capacity += n_bytes;
             return true;
         }
 

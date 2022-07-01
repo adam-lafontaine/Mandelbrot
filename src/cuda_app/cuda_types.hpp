@@ -93,4 +93,8 @@ public:
     
     DeviceMemory device;
     UnifiedMemory unified;
+
+	MemoryBuffer<i32> device_i32;
+	MemoryBuffer<u8> device_u8;
+	MemoryBuffer<Pixel> unified_pixel;
 };

@@ -185,104 +185,118 @@ namespace app
     }
 
 
-	static bool init_unified_memory(UnifiedMemory& unified, ScreenBuffer& buffer)
+	static bool init_unified_memory(AppState& state, ScreenBuffer& buffer)
 	{
 		assert(sizeof(pixel_t) == buffer.bytes_per_pixel);
+
+		auto& unified = state.unified;
+		auto& screen = unified.screen_buffer;
 
 		auto const width = buffer.width;
 		auto const height = buffer.height;
 
         auto const n_pixels = width * height;
 
-		auto const screen_sz = sizeof(pixel_t) * n_pixels;
-
-		auto unified_sz = screen_sz;
-
-		auto& screen = unified.screen_buffer;
-		
-		if(!cuda::unified_malloc(device_addr(screen.data), screen_sz))
+		if(!cuda::unified_malloc(state.unified_pixel, n_pixels))
 		{
-			print_error("screen_ptr");
+			print_error("unified_pixel");
 			return false;
 		}
-		
+
+		assert(state.unified_pixel.data);
+
+		screen.data = cuda::push_elements(state.unified_pixel, n_pixels);
+		if(!screen.data)
+		{
+			print_error("screen data");
+			return false;
+		}
+
 		screen.width = width;
-		screen.height = height;
+		screen.height = height;	
 
 		return true;
 	}
 
 
-    static bool init_device_memory(DeviceMemory& device, ScreenBuffer const& buffer)
+    static bool init_device_memory(AppState& state, ScreenBuffer const& buffer)
     {
+		auto& device = state.device;
+
         auto const width = buffer.width;
 		auto const height = buffer.height;
 
+		auto const n_id_matrices = 2;
         auto const n_pixels = width * height;
-        
-		auto const ids_sz = sizeof(i32) * n_pixels;
 
-		auto& ids0 = device.color_ids[0];
-		
-		if(!cuda::device_malloc(device_addr(ids0.data), ids_sz))
+		if(!cuda::device_malloc(state.device_i32, n_id_matrices * n_pixels))
 		{
-			print_error("ids_ptr0");
-			return false;
-		}
-		
-		ids0.width = width;
-		ids0.height = height;
-
-		auto& ids1 = device.color_ids[1];
-		
-		if(!cuda::device_malloc(device_addr(ids1.data), ids_sz))
-		{
-			print_error("ids_ptr1");
-			return false;
-		}
-		
-		ids1.width = width;
-		ids1.height = height;
-
-		auto const color_palette_channel_sz = sizeof(u8) * N_COLORS;
-
-		auto& palette = device.color_palette;
-		
-		if(!cuda::device_malloc(device_addr(palette.channel1), color_palette_channel_sz))
-		{
-			print_error("ch_ptr1");
+			print_error("device_i32");
 			return false;
 		}
 
-		if(!cuda::device_malloc(device_addr(palette.channel2), color_palette_channel_sz))
+		for(u32 i = 0; i < n_id_matrices; ++i)
 		{
-			print_error("ch_ptr2");
+			auto& id_matrix = device.color_ids[i];
+			id_matrix.data = cuda::push_elements(state.device_i32, n_pixels);
+			if(!id_matrix.data)
+			{
+				print_error("color_ids");
+				return false;
+			}
+
+			id_matrix.width = width;
+			id_matrix.height = height;
+		}
+
+		auto& palette = device.color_palette;	
+		
+		if(!cuda::device_malloc(state.device_u8, 3 * N_COLORS))
+		{
+			print_error("device_u8");
 			return false;
 		}
-		
-		if(!cuda::device_malloc(device_addr(palette.channel3), color_palette_channel_sz))
+
+		palette.channel1 = cuda::push_elements(state.device_u8, N_COLORS);
+		if(!palette.channel1)
 		{
-			print_error("ch_ptr3");
+			print_error("channel1");
 			return false;
 		}
-		
+
+		palette.channel2 = cuda::push_elements(state.device_u8, N_COLORS);
+		if(!palette.channel2)
+		{
+			print_error("channel2");
+			return false;
+		}
+
+		palette.channel3 = cuda::push_elements(state.device_u8, N_COLORS);
+		if(!palette.channel3)
+		{
+			print_error("channel3");
+			return false;
+		}
+
 		palette.n_colors = N_COLORS;
 
-		if(!cuda::memcpy_to_device(palettes[0].data(), palette.channel1, color_palette_channel_sz))
+		auto const palette_channel_sz = sizeof(u8) * N_COLORS;		
+
+		if(!cuda::memcpy_to_device(palettes[0].data(), palette.channel1, palette_channel_sz))
 		{
-			print_error("memcpy channel 1");
+			print_error("memcpy channel1");
 			return false;
 		}
 
-		if(!cuda::memcpy_to_device(palettes[1].data(), palette.channel2, color_palette_channel_sz))
+		if(!cuda::memcpy_to_device(palettes[1].data(), palette.channel2, palette_channel_sz))
 		{
-			print_error("memcpy channel 2");
+			print_error("memcpy channel2");
 			return false;
 		}
 
-		if(!cuda::memcpy_to_device(palettes[2].data(), palette.channel3, color_palette_channel_sz))
+		if(!cuda::memcpy_to_device(palettes[2].data(), palette.channel3, palette_channel_sz))
 		{
-			print_error("memcpy channel 2");
+			print_error("memcpy channel2");
 			return false;
 		}
 
@@ -294,13 +308,13 @@ namespace app
 	{
 		auto& state = get_state(memory);
 
-		if(!init_unified_memory(state.unified, buffer))
+		if(!init_unified_memory(state, buffer))
 		{
 			print_error("unified memory");
 			return false;
 		}
 
-		if(!init_device_memory(state.device, buffer))
+		if(!init_device_memory(state, buffer))
         {
 			print_error("device memory");
             return false;
@@ -348,18 +362,8 @@ namespace app
 	{
 		auto& state = get_state(memory);
 
-		auto const free_memory = [](auto data)
-		{
-			cuda::free((void*)(data));
-		};
-
-		free_memory(state.device.color_ids[0].data);
-		free_memory(state.device.color_ids[1].data);
-
-		free_memory(state.device.color_palette.channel1);
-		free_memory(state.device.color_palette.channel2);
-		free_memory(state.device.color_palette.channel3);
-
-		free_memory(state.unified.screen_buffer.data);
+		cuda::free(state.device_i32);
+		cuda::free(state.device_u8);
+		cuda::free(state.unified_pixel);
 	}
 }

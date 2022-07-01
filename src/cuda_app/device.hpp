@@ -72,7 +72,9 @@ namespace cuda
             return false;
         }
 
+        buffer.data = (T*)b.data;
         buffer.capacity = n_elements;
+        buffer.size = 0;
 
         return true;
     }
@@ -88,7 +90,9 @@ namespace cuda
             return false;
         }
 
+        buffer.data = (T*)b.data;
         buffer.capacity = n_elements;
+        buffer.size = 0;
 
         return true;
     }
@@ -100,7 +104,9 @@ namespace cuda
         buffer.capacity = 0;
         buffer.size = 0;
 
-        return free(to_byte_buffer(buffer));
+        auto b = to_byte_buffer(buffer);
+
+        return cuda::free(b);
     }
 
 
@@ -115,8 +121,7 @@ namespace cuda
         {
             return nullptr;
         }
-
-        buffer.capacity -= n_elements;
+        
         buffer.size += n_elements;
 
         return (T*)data;
@@ -132,10 +137,9 @@ namespace cuda
         {
             return false;
         }
-
-        buffer.capacity += n_elements;
+        
         buffer.size -= n_elements;
 
-        return false;
+        return true;
     }
 }
