@@ -147,9 +147,9 @@
     <ClInclude Include="..\src\app\app_input.hpp" />
     <ClInclude Include="..\src\app\app_types.hpp" />
     <ClInclude Include="..\src\app\colors.hpp" />
-    <ClInclude Include="..\src\app\input_controls.hpp" />
     <ClInclude Include="..\src\app\range_list.hpp" />
     <ClInclude Include="..\src\app\render.hpp" />
+    <ClInclude Include="..\src\app\render_include.hpp" />
     <ClInclude Include="..\src\input\input.hpp" />
     <ClInclude Include="..\src\input\input_state.hpp" />
     <ClInclude Include="..\src\utils\defines.hpp" />
@@ -164,6 +164,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\app\app.cpp" />
+    <ClCompile Include="..\src\app\app_input.cpp" />
     <ClCompile Include="..\src\app\render.cpp" />
     <ClCompile Include="..\src\win32\win32_input.cpp" />
     <ClCompile Include="..\src\win32\win32_main.cpp" />
