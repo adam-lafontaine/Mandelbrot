@@ -75,6 +75,9 @@
     <ClInclude Include="..\src\sdl\sdl_input.hpp">
       <Filter>Header Files\sdl</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\app\app.cpp">
@@ -92,5 +95,15 @@
     <ClCompile Include="..\src\sdl\sdl_main.cpp">
       <Filter>Source Files\sdl</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MandelbrotWin32SDL2.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\src\resources\icon.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

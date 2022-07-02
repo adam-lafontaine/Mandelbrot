@@ -145,6 +145,7 @@
     <ClInclude Include="..\src\utils\index_range.hpp" />
     <ClInclude Include="..\src\utils\stopwatch.hpp" />
     <ClInclude Include="..\src\utils\types.hpp" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\app\app.cpp" />
@@ -152,6 +153,12 @@
     <ClCompile Include="..\src\app\render.cpp" />
     <ClCompile Include="..\src\sdl\sdl_input.cpp" />
     <ClCompile Include="..\src\sdl\sdl_main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MandelbrotWin32SDL2.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\src\resources\icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
