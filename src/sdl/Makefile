@@ -32,12 +32,9 @@ input_state += $(input_h)
 sdl_input_h := $(sdl)/sdl_input.hpp
 sdl_input_h += $(input_h)
 
-input_controls_h := $(app)/input_controls.hpp
-input_controls_h += $(input_h)
-
 app_input_h := $(app)/app_input.hpp
 app_input_h += $(types_h)
-app_input_h += $(input_controls_h)
+app_input_h += $(input_h)
 
 colors_h := $(app)/colors.hpp
 colors_h += $(types_h)

@@ -11,6 +11,116 @@ constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
 constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
 
 
+static bool pan_right(Input const& input)
+{
+    return 
+        input.keyboard.d_key.is_down || 
+        input.keyboard.np_six_key.is_down || 
+        input.controllers[0].stick_right_x.end >= 0.5f;
+}
+
+
+static bool pan_left(Input const& input)
+{
+    return 
+        input.keyboard.a_key.is_down || 
+        input.keyboard.np_four_key.is_down || 
+        input.controllers[0].stick_right_x.end <= -0.5f;
+}
+
+
+static bool pan_up(Input const& input)
+{
+    return 
+        input.keyboard.w_key.is_down || 
+        input.keyboard.np_eight_key.is_down || 
+        input.controllers[0].stick_right_y.end >= 0.5f;
+}
+
+
+static bool pan_down(Input const& input)
+{
+    return 
+        input.keyboard.s_key.is_down || 
+        input.keyboard.np_two_key.is_down || 
+        input.controllers[0].stick_right_y.end <= -0.5f;
+}
+
+
+static bool increase_zoom_speed(Input const& input)
+{
+    return 
+        input.keyboard.mult_key.is_down || 
+        input.controllers[0].trigger_right.end >= 0.5f;
+}
+
+
+static bool decrease_zoom_speed(Input const& input)
+{
+    return 
+        input.keyboard.div_key.is_down || 
+        input.controllers[0].trigger_left.end >= 0.5f;
+}
+
+
+static bool zoom_in(Input const& input)
+{
+    return 
+        input.keyboard.plus_key.is_down || 
+        input.controllers[0].stick_left_y.end >= 0.5f;
+}
+
+
+static bool zoom_out(Input const& input)
+{
+    return 
+        input.keyboard.minus_key.is_down || 
+        input.controllers[0].stick_left_y.end <= -0.5f;
+}
+
+
+static bool increase_resolution(Input const& input)
+{
+    return 
+        input.keyboard.up_key.is_down ||
+        input.controllers[0].dpad_up.is_down;
+}
+
+
+static bool decrease_resolution(Input const& input)
+{
+    return 
+        input.keyboard.down_key.is_down ||
+        input.controllers[0].dpad_down.is_down;
+}
+
+
+static bool cycle_color_scheme_right(Input const& input)
+{
+    return 
+        input.keyboard.right_key.pressed || 
+        input.controllers[0].dpad_right.pressed ||
+        input.controllers[0].shoulder_right.pressed;
+}
+
+
+static bool cycle_color_scheme_left(Input const& input)
+{
+    return 
+        input.keyboard.left_key.pressed || 
+        input.controllers[0].dpad_left.pressed ||
+        input.controllers[0].shoulder_left.pressed;
+}
+
+
+static bool stop_application(Input const& input)
+{
+    return 
+        input.keyboard.escape_key.pressed || 
+        input.controllers[0].button_b.pressed;
+}
+
+
 void set_rgb_channels(ChannelOptions& options, u32 rgb_option)
 {
 	auto& c1 = options.channel1;

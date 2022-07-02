@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../utils/types.hpp"
-#include "input_controls.hpp"
+#include "../input/input.hpp"
 
 
 class AppInput
