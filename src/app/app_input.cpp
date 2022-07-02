@@ -6,7 +6,7 @@
 
 
 constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
-constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 5000;
+constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 1000;
 constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
 constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
 
@@ -185,7 +185,7 @@ void init_app_input(AppInput& state)
 void process_input(Input const& input, AppInput& state)
 {
 	constexpr r64 zoom_speed_factor_per_second = 0.1;
-	constexpr r64 iteration_adjustment_factor = 0.02;
+	constexpr r64 iteration_adjustment_factor = 0.005;
 
 	auto zoom_speed_factor = 1.0 + zoom_speed_factor_per_second * input.dt_frame;
 

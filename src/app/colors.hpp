@@ -68,7 +68,37 @@ constexpr std::array< std::array<u8, N>, 3> make_palettes()
 	} };
 }
 
-constexpr u32 N_COLORS = 1024;
+
+constexpr u32 N_COLOR_LEVELS = 8;
+
+
+constexpr u32 calc_n_palette_colors()
+{
+	u32 n = 16;
+
+	for (u32 i = 0; i < N_COLOR_LEVELS; ++i)
+	{
+		n *= 2;
+	}
+
+	return n;
+}
+
+
+constexpr std::array<u32, N_COLOR_LEVELS> make_color_levels()
+{
+	u32 min_level = 50;
+	u32 max_level = 1000;
+
+	constexpr std::array<u32, N_COLOR_LEVELS> levels = { 50, 100, 200, 300, 400, 500, 600, 800 };
+
+	return levels;
+}
+
+
+constexpr std::array<u32, N_COLOR_LEVELS> color_levels = make_color_levels();
+
+constexpr u32 N_COLORS = calc_n_palette_colors();
 
 constexpr auto palettes = make_palettes<N_COLORS>();
 

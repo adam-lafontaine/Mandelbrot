@@ -31,11 +31,19 @@ namespace app
 	};
 
 
+	class DebugInfo
+	{
+	public:
+		u32 max_iter;
+		r64 zoom;
+	};
+
+
 	// app.cpp
 	bool initialize_memory(AppMemory& memory, ScreenBuffer const& buffer);	
 
 	// app.cpp
-	void update_and_render(AppMemory& memory, Input const& input, ScreenBuffer const& buffer);
+	void update_and_render(AppMemory& memory, Input const& input, ScreenBuffer const& buffer, DebugInfo& dbg);
 
 	// app.cpp
 	void end_program(AppMemory& memory);

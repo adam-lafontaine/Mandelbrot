@@ -335,9 +335,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     bool in_old = 1;
     Stopwatch sw;
     r64 frame_ms_elapsed = TARGET_MS_PER_FRAME;
-    wchar_t title_buffer[30];
+    wchar_t title_buffer[50];
     r64 ms_elapsed = 0.0;
     r64 title_refresh_ms = 500.0;
+
+    app::DebugInfo dbg{};
 
     auto const wait_for_framerate = [&]()
     {
@@ -346,7 +348,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         if (ms_elapsed >= title_refresh_ms)
         {
             ms_elapsed = 0.0;
-            swprintf_s(title_buffer, L"%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
+            swprintf_s(title_buffer, L"%s (%u | %.1f | %d)", WINDOW_TITLE, dbg.max_iter, dbg.zoom, (int)frame_ms_elapsed);
             SetWindowTextW(window, title_buffer);
         }
 
@@ -377,7 +379,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         win32::process_keyboard_input(input[in_old].keyboard, input[in_current].keyboard);
         win32::process_mouse_input(window, input[in_old].mouse, input[in_current].mouse);
-        app::update_and_render(app_memory, input[in_current], app_pixel_buffer);
+        app::update_and_render(app_memory, input[in_current], app_pixel_buffer, dbg);
 
         wait_for_framerate();
 

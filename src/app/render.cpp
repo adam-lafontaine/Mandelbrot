@@ -79,15 +79,13 @@ static i32 color_index(u32 iter, u32 iter_limit)
 	if (iter >= iter_limit)
 	{
 		return -1;
-	}
-
-	constexpr std::array<u32, 6> iter_levels = { 50, 300, 600, 1000, 1500, 2500 };
+	}	
 
 	u32 min = 0;
 	u32 max = 0;
 	u32 n_colors = 8;
 
-	for (auto i : iter_levels)
+	for (auto i : color_levels)
 	{
 		n_colors *= 2;
 		min = max;
