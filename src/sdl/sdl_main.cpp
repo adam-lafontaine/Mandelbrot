@@ -1,6 +1,10 @@
 // D-Bus not build with -rdynamic...
 // sudo killall ibus-daemon
 
+#if defined(_WIN32)
+#define SDL_MAIN_HANDLED
+#endif
+
 #include "../app/app.hpp"
 #include "../utils/stopwatch.hpp"
 #include "sdl_input.hpp"
@@ -104,7 +108,7 @@ static void open_game_controllers(SDLInput& sdl, Input& input)
 
 static void close_game_controllers(SDLInput& sdl, Input const& input)
 {
-    for(int c = 0; c < input.num_controllers; ++c)
+    for(u32 c = 0; c < input.num_controllers; ++c)
     {
         if(sdl.rumbles[c])
         {

@@ -2,6 +2,7 @@
 #include "app.hpp"
 #include "render_include.hpp"
 
+#include <algorithm>
 #include <cmath>
 
 
