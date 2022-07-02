@@ -304,11 +304,20 @@ sdl_input_h += $(input_h)
 input_controls_h := $(app)/input_controls.hpp
 input_controls_h += $(input_h)
 
-app_h := $(cuda_app)/app.hpp
-app_h += $(input_h)
-
 app_input_h := $(app)/app_input.hpp
 app_input_h += $(types_h)
+app_input_h += $(input_controls_h)
+
+colors_h := $(app)/colors.hpp
+colors_h += $(types_h)
+
+render_include_h := $(app)/render_include.hpp
+render_include_h += $(types_h)
+
+range_list_h := $(app)/range_list.hpp
+range_list_h += $(types_h)
+
+cuda_def_h := $(cuda_app)/cuda_def.cuh
 
 device_h := $(cuda_app)/device.hpp
 device_h += $(types_h)
@@ -317,16 +326,11 @@ cuda_types_h := $(cuda_app)/cuda_types.hpp
 cuda_types_h += $(device_h)
 cuda_types_h += $(app_input_h)
 
-cuda_def_h := $(cuda_app)/cuda_def.cuh
-
-colors_h := $(app)/colors.hpp
-colors_h += $(types_h)
-
 render_h := $(cuda_app)/render.hpp
 render_h += $(cuda_types_h)
 
-range_list_h := $(app)/range_list.hpp
-range_list_h += $(types_h)
+app_h := $(cuda_app)/app.hpp
+app_h += $(input_h)
 
 
 main_c         := $(cuda_sdl)/cuda_sdl_main.cpp
@@ -336,6 +340,10 @@ object_files   := $(main_o)
 sdl_input_c := $(sdl)/sdl_input.cpp
 sdl_input_o := $(build)/sdl_input.o
 object_files += $(sdl_input_o)
+
+app_input_c := $(app)/app_input.cpp
+app_input_o := $(build)/app_input.o
+object_files += $(app_input_o)
 
 device_c := $(cuda_app)/device.cu
 device_o := $(build)/device.o
@@ -366,6 +374,10 @@ $(render_o): $(render_c) $(render_h) $(cuda_def_h) $(range_list_h)
 
 $(app_o): $(app_c) $(app_h) $(render_h) $(input_controls_h) $(colors_h) 
 	@echo "\n $(app_o)"
+	$(GPP) -o $@ -c $<
+
+$(app_input_o): $(app_input_c) $(app_input_h ) $(app_h) $(render_include_h)
+	@echo "\n $(app_input_o)"
 	$(GPP) -o $@ -c $<
 
 $(sdl_input_o): $(sdl_input_c) $(sdl_input_h) $(input_state_h)

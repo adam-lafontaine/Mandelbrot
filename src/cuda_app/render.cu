@@ -1,5 +1,6 @@
-#include "render.hpp"
 #include "cuda_def.cuh"
+#include "render.hpp"
+#include "../app/render_include.hpp"
 #include "../app/range_list.hpp"
 
 #include <cassert>
@@ -118,7 +119,7 @@ static i32 color_index(u32 iter, u32 iter_limit, u32 total_colors)
 GPU_FUNCTION
 static void mandelbrot_xy(DeviceMemory const& device, UnifiedMemory const& unified, u32 x, u32 y)
 {
-    auto& dst = device.color_ids[unified.ids_current];
+    auto& dst = device.color_ids[unified.current_id];
 
     r64 cy = unified.min_my + y * unified.my_step;
     r64 cx = unified.min_mx + x * unified.mx_step;
@@ -134,7 +135,7 @@ static void mandelbrot_xy(DeviceMemory const& device, UnifiedMemory const& unifi
 GPU_FUNCTION
 static void draw_pixel(DeviceMemory const& device, UnifiedMemory const& unified, u32 pixel_index)
 {
-    auto& src = device.color_ids[unified.ids_current];
+    auto& src = device.color_ids[unified.current_id];
     auto& dst = unified.screen_buffer;
     auto& options = unified.channel_options;
 
@@ -181,8 +182,8 @@ static void gpu_process_and_draw(DeviceMemory* device, UnifiedMemory* unified, u
 
     if(gpu::in_range(x, y, U.copy_dst))
     {
-        auto& current_ids = D.color_ids[U.ids_current];
-        auto& prev_ids = D.color_ids[U.ids_prev];
+        auto& current_ids = D.color_ids[U.current_id];
+        auto& prev_ids = D.color_ids[U.prev_id];
 
         gpu::copy_xy(prev_ids, current_ids, U.copy_src, U.copy_dst, x, y);
     }
@@ -235,8 +236,8 @@ void render(AppState& state)
 
     if(state.app_input.render_new)
     {
-        unified.ids_current = unified.ids_prev;
-        unified.ids_prev = !unified.ids_prev;
+        unified.current_id = unified.prev_id;
+        unified.prev_id = !unified.prev_id;
     } 
 
     set_rgb_channels(unified.channel_options, state.app_input.rgb_option);

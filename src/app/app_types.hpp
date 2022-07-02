@@ -63,8 +63,8 @@ class AppState
 public:
 	AppInput app_input;
 
-	bool ids_prev = 0;
-	bool ids_current = 1;
+	bool prev_id = 0;
+	bool current_id = 1;
 
 	Mat2Di32 color_ids[2];
 

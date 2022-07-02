@@ -75,8 +75,8 @@ public:
 	Range2Du32 copy_src;
     Range2Du32 copy_dst;
 
-	bool ids_prev = 0;
-	bool ids_current = 1;
+	bool prev_id = 0;
+	bool current_id = 1;
 
 	r64 min_mx;
 	r64 min_my;

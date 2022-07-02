@@ -1,4 +1,5 @@
 #include "render.hpp"
+#include "render_include.hpp"
 #include "colors.hpp"
 #include "../utils/index_range.hpp"
 #include "range_list.hpp"
@@ -6,6 +7,7 @@
 #include <cassert>
 #include <algorithm>
 #include <functional>
+#include <cmath>
 
 #ifdef NO_CPP17
 
@@ -137,14 +139,14 @@ static void draw_xy(Mat2Di32 const& src, Image const& dst, ChannelOptions const&
 
 static void process_and_draw(AppState const& state)
 {
-	auto& ids = state.color_ids[state.ids_current];
-	auto& prev_ids = state.color_ids[state.ids_prev];
+	auto& ids = state.color_ids[state.current_id];
+	auto& prev_ids = state.color_ids[state.prev_id];
 	auto& pixels = state.screen_buffer;
 
 	auto const mbt_row = [&](u32 y) 
 	{
 		auto ids_row = ids.row_begin(y);
-		r64 cy = state.min_my + y * state.my_step;
+		r64 cy = std::fma((r64)y, state.my_step, state.min_my); // state.min_my + y * state.my_step;
 
 		for(u32 x = 0; x < ids.width; ++x)
 		{
@@ -154,7 +156,7 @@ static void process_and_draw(AppState const& state)
 			}
 			else
 			{
-				r64 cx = state.min_mx + x * state.mx_step;
+				r64 cx = std::fma((r64)x, state.mx_step, state.min_mx); // state.min_mx + x * state.mx_step;
 				auto iter = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
 				ids_row[x] = color_index(iter, state.app_input.iter_limit);
 			}			
@@ -170,7 +172,7 @@ static void process_and_draw(AppState const& state)
 
 static void draw(AppState const& state)
 {
-	auto& ids = state.color_ids[state.ids_current];
+	auto& ids = state.color_ids[state.current_id];
 	auto& pixels = state.screen_buffer;
 
 	auto const draw_row = [&](u32 y)
@@ -203,8 +205,8 @@ void render(AppState& state)
 
 	if(state.app_input.render_new)
 	{
-		state.ids_current = state.ids_prev;
-		state.ids_prev = !state.ids_prev;
+		state.current_id = state.prev_id;
+		state.prev_id = !state.prev_id;
 		
 		auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
 		
