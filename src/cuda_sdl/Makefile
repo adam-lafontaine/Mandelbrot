@@ -314,6 +314,9 @@ render_include_h += $(types_h)
 range_list_h := $(app)/range_list.hpp
 range_list_h += $(types_h)
 
+app_h := $(app)/app.hpp
+app_h += $(input_h)
+
 cuda_def_h := $(cuda_app)/cuda_def.cuh
 
 device_h := $(cuda_app)/device.hpp
@@ -325,9 +328,6 @@ cuda_types_h += $(app_input_h)
 
 render_h := $(cuda_app)/render.hpp
 render_h += $(cuda_types_h)
-
-app_h := $(cuda_app)/app.hpp
-app_h += $(input_h)
 
 
 main_c         := $(cuda_sdl)/cuda_sdl_main.cpp

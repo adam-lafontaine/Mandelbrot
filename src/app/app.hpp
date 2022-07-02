@@ -40,7 +40,7 @@ namespace app
 
 
 	// app.cpp
-	bool initialize_memory(AppMemory& memory, ScreenBuffer const& buffer);	
+	bool initialize_memory(AppMemory& memory, ScreenBuffer& buffer);	
 
 	// app.cpp
 	void update_and_render(AppMemory& memory, Input const& input, DebugInfo& dbg);

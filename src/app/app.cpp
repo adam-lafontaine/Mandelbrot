@@ -25,7 +25,7 @@ namespace app
 	}
 
 
-	bool initialize_memory(AppMemory& memory, ScreenBuffer const& buffer)
+	bool initialize_memory(AppMemory& memory, ScreenBuffer& buffer)
 	{
 		auto const width = buffer.width;
 		auto const height = buffer.height;

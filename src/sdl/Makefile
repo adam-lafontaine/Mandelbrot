@@ -45,14 +45,14 @@ render_include_h += $(types_h)
 range_list_h := $(app)/range_list.hpp
 range_list_h += $(types_h)
 
+app_h := $(app)/app.hpp
+app_h += $(input_h)
+
 app_types_h := $(app)/app_types.hpp
 app_types_h += $(app_input_h)
 
 render_h := $(app)/render.hpp
 render_h += $(app_types_h)
-
-app_h := $(app)/app.hpp
-app_h += $(input_h)
 
 
 main_c         := $(sdl)/sdl_main.cpp

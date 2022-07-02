@@ -439,7 +439,7 @@ int main(int argc, char *argv[])
 
         process_mouse_input(has_event, event, input[in_old], input[in_current]);
 
-        app::update_and_render(app_memory, input[in_current], app_buffer, dbg);
+        app::update_and_render(app_memory, input[in_current], dbg);
 
         wait_for_framerate();
         display_bitmap_in_window(back_buffer);
