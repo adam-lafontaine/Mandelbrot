@@ -1,72 +1,57 @@
 #include "render.hpp"
+#include "render_include.hpp"
 #include "colors.hpp"
 #include "../utils/index_range.hpp"
+#include "range_list.hpp"
 
 #include <cassert>
 #include <algorithm>
 #include <functional>
+#include <cmath>
 
+#ifdef NO_CPP17
 
-class MandelbrotProps
+static void for_each(UnsignedRange const& ids, std::function<void(u32)> const& func)
 {
-public:
-    u32 iter_limit;
-    r64 min_mx;
-    r64 min_my;
-    r64 mx_step;
-    r64 my_step;
+	std::for_each(ids.begin(), ids.end(), func);
+}
 
-    u32* iterations_dst;
-    u32 width;
+#else
 
-    Range2Du32 range1;
-    Range2Du32 range2;
-};
+#include <execution>
 
-
-static Point2Du32 get_position(Range2Du32 const& r, u32 width, u32 r_id)
+static void for_each(UnsignedRange const& ids, std::function<void(u32)> const& func)
 {
-    auto w1 = r.x_end - r.x_begin;
-
-    assert(r_id < w1 * (r.y_end - r.y_begin));
-
-    auto h = r_id / w1;
-
-    Point2Du32 pt{};
-    pt.x = r.x_begin + r_id - w1 * h;
-    pt.y = r.y_begin + h;
-
-    return pt;
+	std::for_each(std::execution::par, ids.begin(), ids.end(), func);
 }
 
 
-static Point2Du32 get_position(Range2Du32 const& range1, Range2Du32 const& range2, u32 width, u32 r_id)
-{
-    auto w1 = range1.x_end - range1.x_begin;
-    auto h1 = range1.y_end - range1.y_begin;
+#endif // NO_CPP17
 
-    if(r_id < w1 * h1)
-    {
-        return get_position(range1, width, r_id);
-    }
-    
-    return get_position(range2, width, r_id - w1 * h1);
+
+static Pixel to_pixel(u8 r, u8 g, u8 b)
+{
+    Pixel p{};
+    p.red = r;
+    p.green = g;
+    p.blue = b;
+    p.alpha = 255;
+
+    return p;
 }
 
 
-static u32 get_index(u32 x, u32 y, u32 width)
+static bool in_range(u32 x, u32 y, Range2Du32 const& range)
 {
-    return width * y + x;
+    return 
+        range.x_begin <= x &&
+        x < range.x_end &&
+        range.y_begin <= y &&
+        y < range.y_end;
 }
 
 
-static u32 get_index(Point2Du32 const& pos, u32 width)
-{
-    return get_index(pos.x, pos.y, width);
-}
-
-
-static u32 mandelbrot_iterations(r64 cx, r64 cy, u32 iter_limit)
+static u32 mandelbrot_iter(r64 cx, r64 cy, u32 iter_limit)
 {
 	u32 iter = 0;
 
@@ -85,593 +70,167 @@ static u32 mandelbrot_iterations(r64 cx, r64 cy, u32 iter_limit)
         mx2 = mx * mx;
     }
 
-    return iter;
+	return iter;
 }
 
 
-#ifdef NO_CPP_17
-
-
-static void transform(u32* src_begin, u32* src_end, pixel_t* dst_begin, std::function<pixel_t(u32)> const& f)
+static i32 color_index(u32 iter, u32 iter_limit)
 {
-	std::transform(src_begin, src_end, dst_begin, f);
-}
-
-
-static void copy(u32* src_begin, u32* src_end, u32* dst_begin)
-{
-	std::copy(src_begin, src_end, dst_begin);
-}
-
-
-static void mandelbrot(MandelbrotProps const& props, Range2Du32 const& range)
-{
-	auto const width = props.width;
-
-	for(u32 y = range.y_begin; y < range.y_end; ++y)
-	{		
-		auto row_offset = width * y;
-		r64 cy = props.min_my + y * props.my_step;
-
-		for(u32 x = range.x_begin; x < range.x_end; ++x)
-		{
-			r64 cx = props.min_mx + x * props.mx_step;
-			auto iter = mandelbrot_iterations(cx, cy, props.iter_limit);
-
-			props.iterations_dst[row_offset + x] = iter;
-		}
-	}
-}
-
-
-static void mandelbrot(MandelbrotProps const& props)
-{
-	mandelbrot(props, props.range1);
-	mandelbrot(props, props.range2);	
-}
-
-#else
-
-#include <execution>
-
-
-static void transform(u32* src_begin, u32* src_end, pixel_t* dst_begin, std::function<pixel_t(u32)> const& f)
-{
-	std::transform(std::execution::par, src_begin, src_end, dst_begin, f);
-}
-
-
-static void copy(u32* src_begin, u32* src_end, u32* dst_begin)
-{
-	std::copy(std::execution::par, src_begin, src_end, dst_begin);
-}
-
-
-static void mandelbrot_by_xy(MandelbrotProps const& props, Point2Du32 pos)
-{
-	auto const width = props.width;
-    
-    r64 const cx = props.min_mx + pos.x * props.mx_step;
-    r64 const cy = props.min_my + pos.y * props.my_step;
-
-    auto iter = mandelbrot_iterations(cx, cy, props.iter_limit);
-
-	auto i = get_index(pos, width);
-
-    props.iterations_dst[i] = iter;
-}
-
-
-static void mandelbrot(MandelbrotProps const& props)
-{
-	u32 n_elements = (props.range1.x_end - props.range1.x_begin) * (props.range1.y_end - props.range1.y_begin) +
-        (props.range2.x_end - props.range2.x_begin) * (props.range2.y_end - props.range2.y_begin);
-
-	auto r_ids = UnsignedRange(0u, n_elements);
-
-	auto const do_mandelbrot = [&](u32 r_id)
+	if (iter >= iter_limit)
 	{
-		auto const width = props.width;
-		auto pos = get_position(props.range1, props.range2, width, r_id);
-		
-		mandelbrot_by_xy(props, pos);
-	};
+		return -1;
+	}	
+
+	u32 min = 0;
+	u32 max = 0;
+	u32 n_colors = 8;
+
+	for (auto i : color_levels)
+	{
+		n_colors *= 2;
+		min = max;
+		max = i;
+
+		if (iter < max)
+		{
+			return (iter - min) % n_colors * (N_COLORS / n_colors);
+		}
+	}	
+
+	min = max;
 	
-	std::for_each(std::execution::par, r_ids.begin(), r_ids.end(), do_mandelbrot);
-}
-
-#endif
-
-
-
-// platform dependent e.g. win32_main.cpp
-u32 platform_to_color_32(u8 red, u8 green, u8 blue);
-
-
-static Range2Du32 get_range(mat_u32_t const& mat)
-{
-	Range2Du32 r{};
-	r.x_begin = 0;
-	r.x_end = mat.width;
-	r.y_begin = 0;
-	r.y_end = mat.height;
-
-	return r;
+	return (iter - min) % N_COLORS;
 }
 
 
-static pixel_t to_platform_pixel(u8 red, u8 green, u8 blue)
+static void copy_xy(Mat2Di32 const& src, Mat2Di32 const& dst, Range2Du32 const& r_src, Range2Du32 const & r_dst, u32 dst_x, u32 dst_y)
 {
-	pixel_t p = {};
-	p.value = platform_to_color_32(red, green, blue);
+    auto x_offset = dst_x - r_dst.x_begin;
+    auto y_offset = dst_y - r_dst.y_begin;
 
-	return p;
+    auto src_x = r_src.x_begin + x_offset;
+    auto src_y = r_src.y_begin + y_offset;
+
+    auto src_i = src_y * src.width + src_x;
+    auto dst_i = dst_y * src.width + dst_x;    
+
+    dst.data[dst_i] = src.data[src_i];
 }
 
 
-static void set_rgb_channels(u32& c1, u32& c2, u32& c3, u32 rgb_option)
+static void draw_xy(Mat2Di32 const& src, Image const& dst, ChannelOptions const& options, u32 x, u32 y)
 {
-	switch (rgb_option)
-	{
-	case 1:
-		c1 = 0;
-		c2 = 1;
-		c3 = 2;
-		break;
-	case 2:
-		c1 = 0;
-		c2 = 2;
-		c3 = 1;
-		break;
-	case 3:
-		c1 = 1;
-		c2 = 0;
-		c3 = 2;
-		break;
-	case 4:
-		c1 = 1;
-		c2 = 2;
-		c3 = 0;
-		break;
-	case 5:
-		c1 = 2;
-		c2 = 0;
-		c3 = 1;
-		break;
-	case 6:
-		c1 = 2;
-		c2 = 1;
-		c3 = 0;
-		break;
-	}
-}
-
-
-static pixel_t to_rgb_16(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 16;
-	u8 color_map[] = { palettes16[0][i], palettes16[1][i], palettes16[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_32(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 32;
-	u8 color_map[] = { palettes32[0][i], palettes32[1][i], palettes32[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_48(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 48;
-	u8 color_map[] = { palettes48[0][i], palettes48[1][i], palettes48[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_64(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 64;
-	u8 color_map[] = { palettes64[0][i], palettes64[1][i], palettes64[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_80(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 80;
-	u8 color_map[] = { palettes80[0][i], palettes80[1][i], palettes80[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_96(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 96;
-	u8 color_map[] = { palettes96[0][i], palettes96[1][i], palettes96[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_112(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 112;
-	u8 color_map[] = { palettes112[0][i], palettes112[1][i], palettes112[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_128(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 128;
-	u8 color_map[] = { palettes128[0][i], palettes128[1][i], palettes128[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_144(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 144;
-	u8 color_map[] = { palettes144[0][i], palettes144[1][i], palettes144[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_160(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 160;
-	u8 color_map[] = { palettes160[0][i], palettes160[1][i], palettes160[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_176(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 176;
-	u8 color_map[] = { palettes176[0][i], palettes176[1][i], palettes176[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_192(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 192;
-	u8 color_map[] = { palettes192[0][i], palettes192[1][i], palettes192[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_208(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 208;
-	u8 color_map[] = { palettes208[0][i], palettes208[1][i], palettes208[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_224(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 224;
-	u8 color_map[] = { palettes224[0][i], palettes224[1][i], palettes224[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_240(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 240;
-	u8 color_map[] = { palettes240[0][i], palettes240[1][i], palettes240[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-static pixel_t to_rgb_256(u32 iterations, u32 c1, u32 c2, u32 c3)
-{
-	auto i = iterations % 256;
-	u8 color_map[] = { palettes256[0][i], palettes256[1][i], palettes256[2][i] };
-	return to_platform_pixel(color_map[c1], color_map[c2], color_map[c3]);
-}
-
-
-std::function<pixel_t(u32, u32, u32, u32)> get_rgb_function(u32 max_iter)
-{
-	switch (max_iter / 128)
-	{
-	case 0:
-		return to_rgb_16;
-	case 1:
-		return to_rgb_32;
-	case 2:
-		return to_rgb_48;
-	case 3:
-		return to_rgb_64;
-	case 4:
-		return to_rgb_80;
-	case 5:
-		return to_rgb_96;
-	case 6:
-		return to_rgb_112;
-	case 7:
-		return to_rgb_128;
-	case 8:
-		return to_rgb_144;
-	case 9:
-		return to_rgb_160;
-	case 10:
-		return to_rgb_176;
-	case 11:
-		return to_rgb_192;
-	case 12:
-		return to_rgb_208;
-	case 13:
-		return to_rgb_224;
-	case 14:
-		return to_rgb_240;
-	default:
-		return to_rgb_256;
-	}
-}
-
-
-static void for_each_row(mat_u32_t const& mat, std::function<void(u32 y)> const& func)
-{
-	UnsignedRange y_ids(0u, mat.height);
-	auto const y_id_begin = y_ids.begin();
-	auto const y_id_end = y_ids.end();
-
-	std::for_each(y_id_begin, y_id_end, func);
-}
-
-
-static void copy_left(mat_u32_t const& mat, u32 n_cols)
-{
-	u32 const x_len = mat.width - n_cols;
-
-	auto const copy_row_part = [&](u32 y)
-	{
-		auto row = mat.row_begin(y);
-		for (u32 ix = 0; ix < x_len; ++ix)
-		{
-			auto src_x = ix + n_cols;
-			auto dst_x = src_x - n_cols;
-			row[dst_x] = row[src_x];
-		}
-	};
-
-	for_each_row(mat, copy_row_part);
-}
-
-
-static void copy_right(mat_u32_t const& mat, u32 n_cols)
-{
-	u32 const x_len = mat.width - n_cols;
-
-	auto const copy_row_part = [&](u32 y)
-	{
-		auto row = mat.row_begin(y);
-		for (u32 ix = 0; ix < x_len; ++ix)
-		{
-			auto src_x = x_len - 1 - ix;
-			auto dst_x = src_x + n_cols;
-			row[dst_x] = row[src_x];
-		}
-	};
-
-	for_each_row(mat, copy_row_part);
-}
-
-
-static void copy(mat_u32_t const& mat, Vec2Di32 const& direction)
-{
-	auto const n_cols = (u32)(std::abs(direction.x));
-	auto const n_rows = (u32)(std::abs(direction.y));
-
-	if (n_cols == 0 && n_rows == 0)
-	{
-		return;
-	}
-
-	auto right = direction.x > 0;
-
-	if (n_rows == 0)
-	{
-		if (right)
-		{
-			copy_right(mat, n_cols);
-		}
-		else
-		{
-			copy_left(mat, n_cols);
-		}
-
-		return;
-	}
-
-	auto up = direction.y < 0;
-
-	u32 const x_len = mat.width - n_cols;
-	u32 const y_len = mat.height - n_rows;
-
-	u32 src_x_begin = right ? 0 : n_cols;
-	u32 dst_x_begin = src_x_begin + direction.x;
-
-	u32 src_y_begin = 0;
-	i32 dy = 0;
-	if (up)
-	{
-		src_y_begin = n_rows;
-		dy = 1;
-	}
-	else
-	{
-		src_y_begin = y_len - 1;
-		dy = -1;
-	}
-
-	for (u32 iy = 0; iy < y_len; ++iy)
-	{
-		auto src_y = src_y_begin + dy * iy;
-		auto dst_y = src_y + direction.y;
-
-		auto src_begin = mat.row_begin(src_y) + src_x_begin;
-		auto dst_begin = mat.row_begin(dst_y) + dst_x_begin;
-
-		auto src_end = src_begin + x_len;
-
-		copy(src_begin, src_end, dst_begin);
-	}
-}
-
-
-static void mandelbrot(mat_u32_t const& dst, AppState const& state)
-{
-	auto const width = dst.width;
-	auto const height = dst.height;
-
-	auto& shift = state.pixel_shift;
-
-	auto do_left = shift.x > 0;
-	auto do_top = shift.y > 0;
-
-    auto const n_cols = (u32)(std::abs(shift.x));
-	auto const n_rows = (u32)(std::abs(shift.y));
-
-	auto no_horizontal = n_cols == 0;
-	auto no_vertical = n_rows == 0;
-
-    Range2Du32 range1{};
-    range1.x_begin = 0;
-    range1.x_end = width;
-    range1.y_begin = 0;
-    range1.y_end = height;
-    
-    Range2Du32 range2{};
-    range2.x_begin = 0;
-    range2.x_end = 0;
-    range2.y_begin = 0;
-    range2.y_end = 0;
-
-    if (no_horizontal && no_vertical)
-	{
-
-	}
-	else if (no_horizontal)
-	{
-		if (do_top)
-		{
-			range1.y_end = n_rows;
-		}
-		else // if (do_bottom)
-		{
-			range1.y_begin = height - 1 - n_rows;
-		}
-	}
-	else if (no_vertical)
-	{
-		if (do_left)
-		{
-			range1.x_end = n_cols;
-		}
-		else // if (do_right)
-		{
-			range1.x_begin = width - 1 - n_cols;
-		}
-	}
+	auto pixel_index = y * dst.width + x;
+	auto color_id = src.data[pixel_index];
+
+	if(color_id < 0)
+    {
+        dst.data[pixel_index] = to_pixel(0, 0, 0); // TODO: platform pixel
+    }
     else
     {
-        range2 = range1;
-        
-        if (do_top)
-        {
-            range1.y_end = n_rows;
-            range2.y_begin = n_rows;
-        }
-        else // if (do_bottom)
-        {
-            range1.y_begin = height - 1 - n_rows;
-            range2.y_end = height - 1 - n_rows;
-        }
-
-        if (do_left)
-        {
-            range2.x_end = n_cols;
-        }
-        else // if (do_right)
-        {
-            range2.x_begin = width - 1 - n_cols;
-        }
-    }    
-
-	MandelbrotProps props{};
-	props.iter_limit = state.iter_limit;
-	props.min_mx = MBT_MIN_X + state.mbt_pos.x;
-	props.min_my = MBT_MIN_Y + state.mbt_pos.y;
-	props.mx_step = state.mbt_screen_width / width;
-	props.my_step = state.mbt_screen_height / height;
-    props.width = width;
-    props.iterations_dst = dst.data;
-    props.range1 = range1;
-    props.range2 = range2;
-
-	mandelbrot(props);
+        u8 color_map[] = { palettes[0][color_id], palettes[1][color_id], palettes[2][color_id] };
+        dst.data[pixel_index] = to_pixel(color_map[options.channel1], color_map[options.channel2], color_map[options.channel3]);
+    }
 }
 
 
-static void find_min_max_iter(AppState& state)
+static void process_and_draw(AppState const& state)
 {
-	auto& mat = state.iterations;
-	auto [mat_min, mat_max] = std::minmax_element(mat.begin(), mat.end());
-	state.iter_min = *mat_min;
-	state.iter_max = *mat_max;
-}
+	auto& ids = state.color_ids[state.current_id];
+	auto& prev_ids = state.color_ids[state.prev_id];
+	auto& pixels = state.screen_buffer;
 
-
-static void draw(image_t const& dst, AppState const& state)
-{
-	auto const min = state.iter_min;
-	auto const max = state.iter_max;	
-
-	auto diff = max - min;
-
-	u32 c1 = 0;
-	u32 c2 = 0;
-	u32 c3 = 0;
-	set_rgb_channels(c1, c2, c3, state.rgb_option);
-
-	auto const to_rgb = get_rgb_function(diff);
-
-	auto const to_color = [&](u32 i)
+	auto const mbt_row = [&](u32 y) 
 	{
-		if (i >= max)
-		{
-			return to_platform_pixel(0, 0, 0);
-		}
+		auto ids_row = ids.row_begin(y);
+		r64 cy = std::fma((r64)y, state.my_step, state.min_my); // state.min_my + y * state.my_step;
 
-		return to_rgb(i - min, c1, c2, c3);
+		for(u32 x = 0; x < ids.width; ++x)
+		{
+			if(in_range(x, y, state.copy_dst))
+			{
+				copy_xy(prev_ids, ids, state.copy_src, state.copy_dst, x, y);				
+			}
+			else
+			{
+				r64 cx = std::fma((r64)x, state.mx_step, state.min_mx); // state.min_mx + x * state.mx_step;
+				auto iter = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
+				ids_row[x] = color_index(iter, state.app_input.iter_limit);
+			}			
+
+			draw_xy(ids, pixels, state.channel_options, x, y);
+		}
 	};
 
-	auto& mat = state.iterations;
-
-	transform(mat.begin(), mat.end(), dst.begin(), to_color);
+	UnsignedRange rows(0u, ids.height);
+	for_each(rows, mbt_row);
 }
+
+
+static void draw(AppState const& state)
+{
+	auto& ids = state.color_ids[state.current_id];
+	auto& pixels = state.screen_buffer;
+
+	auto const draw_row = [&](u32 y)
+	{
+		for(u32 x = 0; x < pixels.width; ++x)
+		{
+			draw_xy(ids, pixels, state.channel_options, x, y);
+		}
+	};
+
+	UnsignedRange rows(0u, pixels.height);
+	for_each(rows, draw_row);
+}
+
+
+
 
 
 void render(AppState& state)
 {
-	if(state.render_new)
+	auto width = state.screen_buffer.width;
+	auto height = state.screen_buffer.height;
+
+	if(!state.app_input.render_new && !state.app_input.draw_new)
+    {
+        return;
+    }
+
+    set_rgb_channels(state.channel_options, state.app_input.rgb_option);
+
+	if(state.app_input.render_new)
 	{
-		copy(state.iterations, state.pixel_shift);
+		state.current_id = state.prev_id;
+		state.prev_id = !state.prev_id;
+		
+		auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
+		
+		state.min_mx = MBT_MIN_X + state.app_input.mbt_pos.x;
+		state.min_my = MBT_MIN_Y + state.app_input.mbt_pos.y;
+		state.mx_step = state.app_input.mbt_screen_width / width;
+		state.my_step = state.app_input.mbt_screen_height / height;
 
-		mandelbrot(state.iterations, state);
-		find_min_max_iter(state);
+		state.copy_src = ranges.copy_src;
+        state.copy_dst = ranges.copy_dst;
 
-		state.draw_new = true;
+		process_and_draw(state);
+
+		state.app_input.draw_new = false;
 	}
     
-    if(state.draw_new)
-    {
-        draw(state.screen_buffer, state);
+    if(state.app_input.draw_new)
+    {       
+		draw(state);
     }
+}
+
+
+u32 get_rgb_combo_qty()
+{
+	constexpr auto n = num_rgb_combinations();
+
+	return n;
 }

@@ -1,7 +1,7 @@
 // D-Bus not build with -rdynamic...
 // sudo killall ibus-daemon
 
-#include "../cuda_app/app.hpp"
+#include "../app/app.hpp"
 #include "../utils/stopwatch.hpp"
 #include "../sdl/sdl_input.hpp"
 
@@ -21,7 +21,7 @@ constexpr size_t APP_MEMORY_SIZE = Megabytes(16);
 constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
 constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
 
-GlobalVariable b32 g_running = false;
+GlobalVariable bool g_running = false;
 
 
 
@@ -171,12 +171,6 @@ static void destroy_bitmap_buffer(BitmapBuffer& buffer)
     {
         SDL_DestroyTexture(buffer.texture);
     }
-}
-
-
-u32 platform_to_color_32(u8 red, u8 green, u8 blue)
-{
-    return red << 16 | green << 8 | blue;
 }
 
 
@@ -348,6 +342,13 @@ int main(int argc, char *argv[])
         cleanup();
         return EXIT_FAILURE;
     }
+
+    if(!app_screen_buffer.memory)
+    {
+        display_error("Screen buffer memory not set");
+        cleanup();
+        return EXIT_FAILURE;
+    }
     
     if(!init_bitmap_buffer(back_buffer, app_screen_buffer, window))
     {
@@ -363,9 +364,11 @@ int main(int argc, char *argv[])
     bool in_old = 1;
     Stopwatch sw;
     r64 frame_ms_elapsed = TARGET_MS_PER_FRAME;
-    char title_buffer[30];
+    char title_buffer[50];
     r64 ms_elapsed = 0.0;
     r64 title_refresh_ms = 500.0;
+
+    app::DebugInfo dbg{};
 
     auto const wait_for_framerate = [&]()
     {
@@ -374,7 +377,8 @@ int main(int argc, char *argv[])
         if(ms_elapsed >= title_refresh_ms)
         {
             ms_elapsed = 0.0;
-            snprintf(title_buffer, 30, "%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
+            //snprintf(title_buffer, 50, "%s (%u | %.1f | %d)", WINDOW_TITLE, dbg.max_iter, dbg.zoom, (int)frame_ms_elapsed);
+            snprintf(title_buffer, 50, "%s (%d)", WINDOW_TITLE, (int)frame_ms_elapsed);
             SDL_SetWindowTitle(window, title_buffer);
         }
 
@@ -397,7 +401,7 @@ int main(int argc, char *argv[])
     while(g_running)
     {
         SDL_Event event;
-        b32 has_event = SDL_PollEvent(&event);
+        bool has_event = SDL_PollEvent(&event);
         if(has_event)
         {            
             handle_sdl_event(event);
@@ -415,7 +419,7 @@ int main(int argc, char *argv[])
 
         process_mouse_input(has_event, event, input[in_old], input[in_current]);
 
-        app::update_and_render(app_memory, input[in_current]);
+        app::update_and_render(app_memory, input[in_current], dbg);
 
         wait_for_framerate();
         display_bitmap_in_window(back_buffer);

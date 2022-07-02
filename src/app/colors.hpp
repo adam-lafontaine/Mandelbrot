@@ -14,7 +14,7 @@ constexpr std::array< std::array<u8, 16>, 3> palettes16 =
 
 constexpr u8 lerp(u8 a, u8 b, r64 t)
 {
-	return (u8)(a + t * (b - a));
+	return (u8)(a + t * (b - a) + 0.5);
 }
 
 
@@ -57,121 +57,53 @@ constexpr std::array<u8, N> make_palette(u32 c)
 }
 
 
-constexpr std::array< std::array<u8, 32>, 3> palettes32 =
-{ {
-	make_palette<32>(0),
-	make_palette<32>(1),
-	make_palette<32>(2)
-} };
+template<size_t N>
+constexpr std::array< std::array<u8, N>, 3> make_palettes()
+{
+	return 
+	{ {
+		make_palette<N>(0),
+		make_palette<N>(1),
+		make_palette<N>(2)
+	} };
+}
 
 
-constexpr std::array< std::array<u8, 48>, 3> palettes48 =
-{ {
-	make_palette<48>(0),
-	make_palette<48>(1),
-	make_palette<48>(2)
-} };
+constexpr u32 N_COLOR_LEVELS = 8;
 
 
-constexpr std::array< std::array<u8, 64>, 3> palettes64 =
-{ {
-	make_palette<64>(0),
-	make_palette<64>(1),
-	make_palette<64>(2)
-} };
+constexpr u32 calc_n_palette_colors()
+{
+	u32 n = 16;
+
+	for (u32 i = 0; i < N_COLOR_LEVELS; ++i)
+	{
+		n *= 2;
+	}
+
+	return n;
+}
 
 
-constexpr std::array< std::array<u8, 80>, 3> palettes80 =
-{ {
-	make_palette<80>(0),
-	make_palette<80>(1),
-	make_palette<80>(2)
-} };
+constexpr std::array<u32, N_COLOR_LEVELS> make_color_levels()
+{
+	u32 min_level = 50;
+	u32 max_level = 1000;
+
+	constexpr std::array<u32, N_COLOR_LEVELS> levels = { 50, 100, 200, 300, 400, 500, 600, 800 };
+
+	return levels;
+}
 
 
-constexpr std::array< std::array<u8, 96>, 3> palettes96 =
-{ {
-	make_palette<96>(0),
-	make_palette<96>(1),
-	make_palette<96>(2)
-} };
+constexpr std::array<u32, N_COLOR_LEVELS> color_levels = make_color_levels();
+
+constexpr u32 N_COLORS = calc_n_palette_colors();
+
+constexpr auto palettes = make_palettes<N_COLORS>();
 
 
-constexpr std::array< std::array<u8, 112>, 3> palettes112 =
-{ {
-	make_palette<112>(0),
-	make_palette<112>(1),
-	make_palette<112>(2)
-} };
-
-
-constexpr std::array< std::array<u8, 128>, 3> palettes128 =
-{ {
-	make_palette<128>(0),
-	make_palette<128>(1),
-	make_palette<128>(2)
-} };
-
-
-constexpr std::array< std::array<u8, 144>, 3> palettes144 =
-{ {
-	make_palette<144>(0),
-	make_palette<144>(1),
-	make_palette<144>(2)
-} };
-
-
-constexpr std::array< std::array<u8, 160>, 3> palettes160 =
-{ {
-	make_palette<160>(0),
-	make_palette<160>(1),
-	make_palette<160>(2)
-} };
-
-
-constexpr std::array< std::array<u8, 176>, 3> palettes176 =
-{ {
-	make_palette<176>(0),
-	make_palette<176>(1),
-	make_palette<176>(2)
-} };
-
-
-constexpr std::array< std::array<u8, 192>, 3> palettes192 =
-{ {
-	make_palette<192>(0),
-	make_palette<192>(1),
-	make_palette<192>(2)
-} };
-
-
-constexpr std::array< std::array<u8, 208>, 3> palettes208 =
-{ {
-	make_palette<208>(0),
-	make_palette<208>(1),
-	make_palette<208>(2)
-} };
-
-
-constexpr std::array< std::array<u8, 224>, 3> palettes224 =
-{ {
-	make_palette<224>(0),
-	make_palette<224>(1),
-	make_palette<224>(2)
-} };
-
-
-constexpr std::array< std::array<u8, 240>, 3> palettes240 =
-{ {
-	make_palette<240>(0),
-	make_palette<240>(1),
-	make_palette<240>(2)
-} };
-
-
-constexpr std::array< std::array<u8, 256>, 3> palettes256 =
-{ {
-	make_palette<256>(0),
-	make_palette<256>(1),
-	make_palette<256>(2)
-} };
+static constexpr u32 num_rgb_combinations()
+{
+	return 3 * 2 * 1; // 3!
+}

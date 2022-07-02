@@ -276,76 +276,112 @@ SDL2 := `sdl2-config --cflags --libs`
 build    := ../../build/cuda_sdl
 code     := ..
 app      := $(code)/app
-cuda_app := $(code)/cuda_app
 input    := $(code)/input
 utils    := $(code)/utils
 sdl      := $(code)/sdl
+cuda_app := $(code)/cuda_app
 cuda_sdl := $(code)/cuda_sdl
 
 exe_name := mandelbrot_cuda
+
+
+defines_h := $(utils)/defines.hpp
+
+stopwatch_h := $(utils)/stopwatch.hpp
+
+types_h := $(utils)/types.hpp
+types_h += $(defines_h)
+
+input_h := $(input)/input.hpp
+input_h += $(types_h)
+
+input_state_h := $(input)/input_state.hpp
+input_state += $(input_h)
+
+sdl_input_h := $(sdl)/sdl_input.hpp
+sdl_input_h += $(input_h)
+
+app_input_h := $(app)/app_input.hpp
+app_input_h += $(types_h)
+app_input_h += $(input_h)
+
+colors_h := $(app)/colors.hpp
+colors_h += $(types_h)
+
+render_include_h := $(app)/render_include.hpp
+render_include_h += $(types_h)
+
+range_list_h := $(app)/range_list.hpp
+range_list_h += $(types_h)
+
+app_h := $(app)/app.hpp
+app_h += $(input_h)
+
+cuda_def_h := $(cuda_app)/cuda_def.cuh
+
+device_h := $(cuda_app)/device.hpp
+device_h += $(types_h)
+
+cuda_types_h := $(cuda_app)/cuda_types.hpp
+cuda_types_h += $(device_h)
+cuda_types_h += $(app_input_h)
+
+render_h := $(cuda_app)/render.hpp
+render_h += $(cuda_types_h)
+
 
 main_c         := $(cuda_sdl)/cuda_sdl_main.cpp
 main_o         := $(build)/main.o
 object_files   := $(main_o)
 
-types_h := $(app)/types.hpp
-types_h += $(cuda_app)/cuda_types.hpp
-types_h += $(utils)/types.hpp
+sdl_input_c := $(sdl)/sdl_input.cpp
+sdl_input_o := $(build)/sdl_input.o
+object_files += $(sdl_input_o)
 
-device_h := $(cuda_app)/device.hpp
-device_h += $(cuda_app)/cuda_def.cuh
+app_input_c := $(app)/app_input.cpp
+app_input_o := $(build)/app_input.o
+object_files += $(app_input_o)
 
 device_c := $(cuda_app)/device.cu
 device_o := $(build)/device.o
 object_files += $(device_o)
 
-app_h := $(cuda_app)/app.hpp
-
 app_c := $(cuda_app)/app.cpp
 app_o := $(build)/app.o
 object_files += $(app_o)
-
-controls_h := $(app)/input_controls.hpp
-
-render_h := $(cuda_app)/render.hpp
-render_h += $(app)/colors.hpp
 
 render_c := $(cuda_app)/render.cu
 render_o := $(build)/render.o
 object_files += $(render_o)
 
-input_h := $(input)/input.hpp
-input_h += $(input)/button_state.hpp
-input_h += $(input)/keyboard.hpp
-input_h += $(input)/mouse.hpp
-input_h += $(input)/controller.hpp
-input_h += $(sdl)/sdl_input.hpp
 
-input_c := $(sdl)/sdl_input.cpp
-input_o := $(build)/input.o
-object_files += $(input_o)
 
 program_exe := $(build)/$(exe_name)
 
 GPP += -O3
+#ALL_CCFLAGS += --expt-relaxed-constexpr
 
-$(device_o): $(device_c) $(device_h) $(types_h)
+$(device_o): $(device_c) $(device_h) $(cuda_def_h)
 	@echo "\n $(device_o)"
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
-$(render_o): $(render_c) $(render_h) $(device_h) $(types_h)
+$(render_o): $(render_c) $(render_h) $(cuda_def_h) $(range_list_h)
 	@echo "\n $(render_o)"
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
-$(input_o): $(input_c) $(input_h)
-	@echo "\n $(input_o)"
-	$(GPP) -o $@ -c $< $(SDL2)
-
-$(app_o): $(app_c) $(app_h) $(input_h) $(render_h) $(device_h) $(types_h) $(controls_h)
+$(app_o): $(app_c) $(app_h) $(render_h) $(input_controls_h) $(colors_h) 
 	@echo "\n $(app_o)"
 	$(GPP) -o $@ -c $<
 
-$(main_o): $(main_c) $(app_h) $(input_h)
+$(app_input_o): $(app_input_c) $(app_input_h ) $(app_h) $(render_include_h)
+	@echo "\n $(app_input_o)"
+	$(GPP) -o $@ -c $<
+
+$(sdl_input_o): $(sdl_input_c) $(sdl_input_h) $(input_state_h)
+	@echo "\n $(sdl_input_o)"
+	$(GPP) -o $@ -c $< $(SDL2)
+
+$(main_o): $(main_c) $(app_h) $(stopwatch_h) $(sdl_input_h)
 	@echo "\n $(main_o)"
 	$(GPP) -o $@ -c $< $(SDL2)
 

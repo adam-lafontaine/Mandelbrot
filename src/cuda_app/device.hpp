@@ -3,194 +3,143 @@
 #include "../utils/types.hpp"
 
 #include <cstddef>
-#include <cassert>
-#include <array>
-#include <vector>
 
 
-bool cuda_memcpy_to_device(const void* host_src, void* device_dst, size_t n_bytes);
+class ByteBuffer
+{
+public:
+    u8* data = nullptr;
+    size_t capacity = 0;
+    size_t size = 0;
+};
 
-bool cuda_memcpy_to_host(const void* device_src, void* host_dst, size_t n_bytes);
 
-
-bool cuda_no_errors();
-
-bool cuda_launch_success();
-
-
-template <typename T>
-class DeviceArray
+template<typename T>
+class MemoryBuffer
 {
 public:
     T* data = nullptr;
-    u32 n_elements = 0;
+    size_t capacity = 0;
+    size_t size = 0;    
 };
 
 
-template <class T, size_t N>
-bool copy_to_device(std::array<T, N> const& src, DeviceArray<T>& dst)
+template<typename T>
+ByteBuffer to_byte_buffer(MemoryBuffer<T> const& buffer)
 {
-    assert(dst.data);
-    assert(dst.n_elements);
-    assert(dst.n_elements == src.size());
+    constexpr auto S = sizeof(T);
 
-    auto bytes = N * sizeof(T);
+    ByteBuffer b{};
+    b.data = (u8*)buffer.data;
+    b.capacity = S * buffer.capacity;
+    b.size = S * buffer.size;
 
-    return cuda_memcpy_to_device(src.data(), dst.data, bytes);
+    return b;
 }
 
 
-template <typename T>
-bool copy_to_device(std::vector<T> const& src, DeviceArray<T>& dst)
+namespace cuda
 {
-    assert(dst.data);
-    assert(dst.n_elements);
-    assert(dst.n_elements == src.size());
+    bool device_malloc(ByteBuffer& buffer, size_t n_bytes);
 
-    auto bytes = src.size() * sizeof(T);
+    bool unified_malloc(ByteBuffer& buffer, size_t n_bytes);
 
-    return cuda_memcpy_to_device(src.data(), dst.data, bytes);
-}
+    bool free(ByteBuffer& buffer);
 
 
-constexpr auto RGB_CHANNELS = 3u;
-constexpr auto RGBA_CHANNELS = 4u;
+    u8* push_bytes(ByteBuffer& buffer, size_t n_bytes);
+
+    bool pop_bytes(ByteBuffer& buffer, size_t n_bytes);
 
 
-typedef union Pixel
-{
-	struct
-	{
-        u8 blue;
-		u8 green;
-		u8 red;
-		u8 alpha;		
-	};
+    bool memcpy_to_device(const void* host_src, void* device_dst, size_t n_bytes);
 
-	u8 channels[RGBA_CHANNELS];
-
-	u32 value;
-
-} pixel_t;
-
-using pixel_t = Pixel;
+    bool memcpy_to_host(const void* device_src, void* host_dst, size_t n_bytes);
 
 
-class Image
-{
-public:
+    bool no_errors(cstr label);
 
-	u32 width;
-	u32 height;
-
-	pixel_t* data;
-};
-
-using image_t = Image;
+    bool launch_success(cstr label);
 
 
-class DeviceImage
-{
-public:
-
-    u32 width;
-    u32 height;
-
-    pixel_t* data;
-};
-
-
-bool copy_to_device(image_t const& src, DeviceImage const& dst);
-
-bool copy_to_host(DeviceImage const& src, image_t const& dst);
-
-
-
-class DeviceMatrix
-{
-public:
-	u32 width;
-	u32 height;
-
-	u32* data_src;
-    u32* data_dst;
-};
-
-
-class DeviceColorPalette
-{
-public:
-    u8* channels[RGB_CHANNELS];
-
-    u32 n_colors = 0;
-};
-
-
-template <size_t N>
-bool copy_to_device(std::array< std::array<u8, N>, RGB_CHANNELS> const& src, DeviceColorPalette& dst)
-{
-    assert(dst.channels[0]);
-    assert(dst.n_colors);
-    assert(dst.n_colors == src[0].size());
-
-    auto bytes = src[0].size() * sizeof(u8);
-    for(u32 c = 0; c < RGB_CHANNELS; ++c)
+    template<typename T>
+    bool device_malloc(MemoryBuffer<T>& buffer, size_t n_elements)
     {
-        if(!cuda_memcpy_to_device(src[c].data(), dst.channels[c], bytes))
+        auto b = to_byte_buffer(buffer);
+        
+        if(!device_malloc(b, sizeof(T) * n_elements))
         {
             return false;
         }
+
+        buffer.data = (T*)b.data;
+        buffer.capacity = n_elements;
+        buffer.size = 0;
+
+        return true;
     }
 
-    return true;
-}
 
-
-namespace device
-{
-    using u8 = uint8_t;
-
-    class MemoryBuffer
+    template<typename T>
+    bool unified_malloc(MemoryBuffer<T>& buffer, size_t n_elements)
     {
-    public:
-        u8* data = nullptr;
-        size_t capacity = 0;
-        size_t size = 0;
-    };
-
-
-    bool malloc(MemoryBuffer& buffer, size_t n_bytes);
-
-    bool unified_malloc(MemoryBuffer& buffer, size_t n_bytes);
-
-    bool free(MemoryBuffer& buffer);
-
-    u8* push_bytes(MemoryBuffer& buffer, size_t n_bytes);
-
-    bool pop_bytes(MemoryBuffer& buffer, size_t n_bytes);
-
-
-    template <typename T>
-    inline bool push_device_array(MemoryBuffer& buffer, DeviceArray<T>& arr, u32 n_elements)
-    {
-        auto data = push_bytes(buffer, n_elements * sizeof(T));
-
-        if(data)
+        auto b = to_byte_buffer(buffer);
+        
+        if(!unified_malloc(b, sizeof(T) * n_elements))
         {
-            arr.n_elements = n_elements;
-            arr.data = (T*)data;
-
-            return true;
+            return false;
         }
 
-        return false;
+        buffer.data = (T*)b.data;
+        buffer.capacity = n_elements;
+        buffer.size = 0;
+
+        return true;
     }
 
 
-    bool push_device_image(MemoryBuffer& buffer, DeviceImage& image, u32 width, u32 height);
+    template<typename T>
+    bool free(MemoryBuffer<T>& buffer)
+    {
+        buffer.capacity = 0;
+        buffer.size = 0;
 
-    bool push_device_matrix(MemoryBuffer& buffer, DeviceMatrix& matrix, u32 width, u32 height);
+        auto b = to_byte_buffer(buffer);
 
-    bool push_device_palette(MemoryBuffer& buffer, DeviceColorPalette& palette, u32 n_colors);
+        return cuda::free(b);
+    }
 
+
+    template<typename T>
+    T* push_elements(MemoryBuffer<T>& buffer, size_t n_elements)
+    {
+        auto b = to_byte_buffer(buffer);
+
+        auto data = push_bytes(b, sizeof(T) * n_elements);
+
+        if(!data)
+        {
+            return nullptr;
+        }
+        
+        buffer.size += n_elements;
+
+        return (T*)data;
+    }
+
+
+    template<typename T>
+    bool pop_elements(MemoryBuffer<T>& buffer, size_t n_elements)
+    {
+        auto b = to_byte_buffer(buffer);
+
+        if(!pop_bytes(b, sizeof(T) * n_elements))
+        {
+            return false;
+        }
+        
+        buffer.size -= n_elements;
+
+        return true;
+    }
 }

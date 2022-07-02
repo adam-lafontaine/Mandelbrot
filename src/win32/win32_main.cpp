@@ -3,6 +3,7 @@
 #include "../utils/stopwatch.hpp"
 
 #include <string>
+#include <thread>
 
 #define CHECK_LEAKS
 #if defined(_WIN32) && defined(_DEBUG) && defined(CHECK_LEAKS)
@@ -40,7 +41,7 @@ constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
 constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
 
 // flag to signal when the application should terminate
-GlobalVariable b32 g_running = false;
+GlobalVariable bool g_running = false;
 
 // contains the memory that the application will draw to
 GlobalVariable win32::BitmapBuffer g_back_buffer = {};
@@ -321,67 +322,73 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return 0;
     }
 
-    auto app_pixel_buffer = make_app_pixel_buffer();
+    SetWindowTextW(window, WINDOW_TITLE);
 
-    // manage framerate   
+    auto app_pixel_buffer = make_app_pixel_buffer();    
+
+    g_running = app::initialize_memory(app_memory, app_pixel_buffer);
+    
+
+    Input input[2] = {};
+
+    bool in_current = 0;
+    bool in_old = 1;
     Stopwatch sw;
-    auto const wait_for_framerate = [&]() 
-    {
-        auto frame_ms_elapsed = sw.get_time_milli();
-        DWORD sleep_ms = (DWORD)(TARGET_MS_PER_FRAME - frame_ms_elapsed);
+    r64 frame_ms_elapsed = TARGET_MS_PER_FRAME;
+    wchar_t title_buffer[50];
+    r64 ms_elapsed = 0.0;
+    r64 title_refresh_ms = 500.0;
 
+    app::DebugInfo dbg{};
+
+    auto const wait_for_framerate = [&]()
+    {
+        frame_ms_elapsed = sw.get_time_milli();
+
+        if (ms_elapsed >= title_refresh_ms)
+        {
+            ms_elapsed = 0.0;
+            //swprintf_s(title_buffer, L"%s (%u | %.1f | %d)", WINDOW_TITLE, dbg.max_iter, dbg.zoom, (int)frame_ms_elapsed);
+            swprintf_s(title_buffer, L"%s (%d)", WINDOW_TITLE, (int)frame_ms_elapsed);
+            SetWindowTextW(window, title_buffer);
+        }
+
+        auto sleep_ms = (u32)(TARGET_MS_PER_FRAME - frame_ms_elapsed);
         if (frame_ms_elapsed < TARGET_MS_PER_FRAME && sleep_ms > 0)
         {
-            SetWindowTextW(window, WINDOW_TITLE);
-            Sleep(sleep_ms);
+            std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
             while (frame_ms_elapsed < TARGET_MS_PER_FRAME)
             {
                 frame_ms_elapsed = sw.get_time_milli();
             }
         }
-        else
-        {
-            wchar_t buffer[30];
-            swprintf_s(buffer, L"%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
-            SetWindowTextW(window, buffer);
-        }
+
+        ms_elapsed += frame_ms_elapsed;
 
         sw.start();
     };
 
-    app::initialize_memory(app_memory, app_pixel_buffer);
-    
 
-    Input input[2] = {};
-    auto new_input = &input[0];
-    auto old_input = &input[1];
-
-    // TODO:
-    //bool in_current = 0;
-    //bool in_old = 1;
-
-    g_running = true;
     sw.start();
     while (g_running)
     {
         // does not miss frames but slows animation
-        new_input->dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
+        input[in_current].dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
 
         // animation speed maintained but frames missed
         //new_input->dt_frame = frame_ms_elapsed / 1000.0f;
 
-        win32::process_keyboard_input(old_input->keyboard, new_input->keyboard);        
-        win32::process_mouse_input(window, old_input->mouse, new_input->mouse);
-        app::update_and_render(app_memory, *new_input, app_pixel_buffer);
+        win32::process_keyboard_input(input[in_old].keyboard, input[in_current].keyboard);
+        win32::process_mouse_input(window, input[in_old].mouse, input[in_current].mouse);
+        app::update_and_render(app_memory, input[in_current], dbg);
 
         wait_for_framerate();
 
         win32::display_buffer_in_window(g_back_buffer, device_context);
         
         // swap inputs
-        auto temp = new_input;
-        new_input = old_input;
-        old_input = temp;
+        in_current = in_old;
+        in_old = !in_old;
     }
 
 

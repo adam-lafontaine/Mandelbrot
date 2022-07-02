@@ -62,6 +62,9 @@ public:
 
     iterator begin() { return iterator(m_min); }
     iterator end() { return iterator(m_max + 1); }
+
+    iterator begin() const { return iterator(m_min); }
+    iterator end() const { return iterator(m_max + 1); }
 };
 
 
@@ -124,4 +127,7 @@ public:
 
     iterator begin() { return iterator(m_min); }
     iterator end() { return iterator(m_max + 1); }
+
+    iterator begin() const { return iterator(m_min); }
+    iterator end() const { return iterator(m_max + 1); }
 };

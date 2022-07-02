@@ -14,6 +14,6 @@ public:
 
 void process_controller_input(SDLInput const& sdl, Input const& old_input, Input& new_input);
 
-void process_keyboard_input(b32 has_event, SDL_Event const& event, Input const& old_input, Input& new_input);
+void process_keyboard_input(bool has_event, SDL_Event const& event, Input const& old_input, Input& new_input);
 
-void process_mouse_input(b32 has_event, SDL_Event const& event, Input const& old_input, Input& new_input);
+void process_mouse_input(bool has_event, SDL_Event const& event, Input const& old_input, Input& new_input);
