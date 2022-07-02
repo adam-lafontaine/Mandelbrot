@@ -1,4 +1,4 @@
-#include "app.hpp"
+#include "../app/app.hpp"
 #include "render.hpp"
 #include "../app/app_input.hpp"
 #include "../app/colors.hpp"
@@ -198,7 +198,7 @@ namespace app
 	}
 
 
-	void update_and_render(AppMemory& memory, Input const& input)
+	void update_and_render(AppMemory& memory, Input const& input, DebugInfo& dbg)
 	{
 		if (!memory.is_app_initialized)
 		{
@@ -208,6 +208,9 @@ namespace app
 		auto& state = get_state(memory);
 
 		process_input(input, state.app_input);
+
+		dbg.max_iter = state.app_input.iter_limit;
+		dbg.zoom = state.app_input.zoom_level;
 
 		render(state);
 

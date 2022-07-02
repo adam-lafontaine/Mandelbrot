@@ -364,9 +364,11 @@ int main(int argc, char *argv[])
     bool in_old = 1;
     Stopwatch sw;
     r64 frame_ms_elapsed = TARGET_MS_PER_FRAME;
-    char title_buffer[30];
+    char title_buffer[50];
     r64 ms_elapsed = 0.0;
     r64 title_refresh_ms = 500.0;
+
+    app::DebugInfo dbg{};
 
     auto const wait_for_framerate = [&]()
     {
@@ -375,7 +377,8 @@ int main(int argc, char *argv[])
         if(ms_elapsed >= title_refresh_ms)
         {
             ms_elapsed = 0.0;
-            snprintf(title_buffer, 30, "%s %d", WINDOW_TITLE, (int)frame_ms_elapsed);
+            //snprintf(title_buffer, 50, "%s (%u | %.1f | %d)", WINDOW_TITLE, dbg.max_iter, dbg.zoom, (int)frame_ms_elapsed);
+            snprintf(title_buffer, 50, "%s (%d)", WINDOW_TITLE, (int)frame_ms_elapsed);
             SDL_SetWindowTitle(window, title_buffer);
         }
 
@@ -416,7 +419,7 @@ int main(int argc, char *argv[])
 
         process_mouse_input(has_event, event, input[in_old], input[in_current]);
 
-        app::update_and_render(app_memory, input[in_current]);
+        app::update_and_render(app_memory, input[in_current], dbg);
 
         wait_for_framerate();
         display_bitmap_in_window(back_buffer);
