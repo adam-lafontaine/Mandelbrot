@@ -62,7 +62,7 @@ namespace app
 	}
 
 
-	void update_and_render(AppMemory& memory, Input const& input, ScreenBuffer const& buffer, DebugInfo& dbg)
+	void update_and_render(AppMemory& memory, Input const& input, DebugInfo& dbg)
 	{
 		if (!memory.is_app_initialized)
 		{
