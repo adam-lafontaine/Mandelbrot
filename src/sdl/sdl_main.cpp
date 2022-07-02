@@ -1,6 +1,10 @@
 // D-Bus not build with -rdynamic...
 // sudo killall ibus-daemon
 
+#if defined(_WIN32)
+#define SDL_MAIN_HANDLED
+#endif
+
 #include "../app/app.hpp"
 #include "../utils/stopwatch.hpp"
 #include "sdl_input.hpp"
@@ -104,7 +108,7 @@ static void open_game_controllers(SDLInput& sdl, Input& input)
 
 static void close_game_controllers(SDLInput& sdl, Input const& input)
 {
-    for(int c = 0; c < input.num_controllers; ++c)
+    for(u32 c = 0; c < input.num_controllers; ++c)
     {
         if(sdl.rumbles[c])
         {
@@ -317,6 +321,27 @@ static void close_sdl()
 }
 
 
+SDL_Window* create_window()
+{
+    auto window = SDL_CreateWindow(
+        WINDOW_TITLE,
+        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
+        WINDOW_WIDTH,
+        WINDOW_HEIGHT,
+        SDL_WINDOW_RESIZABLE);
+
+    if (!window)
+    {
+        return window;
+    }
+
+    SDL_SetWindowTitle(window, WINDOW_TITLE);
+
+    return window;
+}
+
+
 int main(int argc, char *argv[])
 {
     printf("\n");
@@ -326,20 +351,16 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    auto window = SDL_CreateWindow(
-                    WINDOW_TITLE,
-                    SDL_WINDOWPOS_UNDEFINED,
-                    SDL_WINDOWPOS_UNDEFINED,
-                    WINDOW_WIDTH,
-                    WINDOW_HEIGHT,
-                    SDL_WINDOW_RESIZABLE);
+    auto window = create_window();
+
+    
     if(!window)
     {
         display_error("SDL_CreateWindow failed");
         return EXIT_FAILURE;
     }
 
-    SDL_SetWindowTitle(window, WINDOW_TITLE);
+    
 
     app::AppMemory app_memory = {};
     app::ScreenBuffer app_buffer = {};
