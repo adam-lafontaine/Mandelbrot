@@ -1,0 +1,60 @@
+Instructions for Ubuntu/Debian
+
+
+Unzip the files:
+
+In the terminal where the zip file was downloaded to.
+
+unzip Linux.zip
+
+
+Install SDL2:
+
+Run the following command in the terminal to install the SDL2 libraries.
+
+sudo apt install libsdl2-dev
+
+
+Start the app:
+
+Change directories to the directory with the executable and run it with the following.
+
+./mandelbrot
+
+
+SDL2 bug on ARM processors:
+
+When running on a device such as a Raspberry Pi or Jetson Nano, an error with the following may come up.
+
+D-Bus not build with -rdynamic...
+
+Kill the service in question with the following command.
+
+sudo killall ibus-daemon
+
+
+CONTROLS
+
+Keyboard
+
+    Pan up, left, down, right with W, A, S, D or 8, 4, 2, 6 (numpad)
+    Zoom in with '+' (numpad)
+    Zoom out with '-' (numpad)
+    Increase zoom rate with '*'
+    Decrease zoom rate with '/'
+    Increase resolution with up arrow
+    Decrease resolution with down arrow
+    Change color scheme with left and right arrow
+    End program with ESC key
+
+
+Controller (Xinput)
+
+    Pan up, left, down, right with right thumbstick
+    Zoom in and out with left thumbstick
+    Increase zoom rate with right trigger
+    Decrease zoom rate with left trigger
+    Increase resolution with D pad up
+    Decrease resolution with D pad down
+    Cycle color scheme with D pad left and right
+    End program with B button
