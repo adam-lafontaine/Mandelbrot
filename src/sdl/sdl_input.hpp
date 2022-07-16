@@ -2,6 +2,10 @@
 
 #include "../input/input.hpp"
 
+#if defined(_WIN32)
+#define SDL_MAIN_HANDLED
+#endif
+
 #include <SDL2/SDL.h>
 
 class SDLInput
