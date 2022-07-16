@@ -2,7 +2,7 @@
 
 ## Features
 * Explore the mandelbrot set using keyboard controls
-* Controller input available for Linux
+* Controller input available
 * Select color scheme
 * Color contrast maximized for the current visible section
 
@@ -19,7 +19,7 @@
 * End program with ESC key
 
 
-### Controller Controls (Xinput, Linux only)
+### Controller Controls (Xinput, SDL2)
 * Pan up, left, down, right with right thumbstick
 * Zoom in and out with left thumbstick
 * Increase zoom rate with right trigger
@@ -30,21 +30,26 @@
 * End program with B button
 
 
-### Visual Studio solution to run on Windows
-* Compile and run
+### Windows native
+* Compile and run in Visual Studio
 * No third party libraries to install
 * No controller support
 
 
+### Windows with SDL2
+ * Install SDL2 - e.g. .\vcpkg.exe install sdl2:x64-windows
+ * Compile and run in Visual Studio
+
+
 ### Ubuntu Linux with SDL2
-* install SDL2 - sudo apt-get install libsdl2-dev
+* Install SDL2 - sudo apt-get install libsdl2-dev
 * Makefile in /src/sdl/
 * Create build directory - make setup
 * Run program - make run
 
 
 ### Jetson Nano with SDL2
-* install SDL2 - sudo apt-get install libsdl2-dev
+* Install SDL2 - sudo apt-get install libsdl2-dev
 * SDL bug with ARM processors - sudo killall ibus-daemon
 * Makefile in /src/cuda_sdl/
 * Create build directory - make setup
