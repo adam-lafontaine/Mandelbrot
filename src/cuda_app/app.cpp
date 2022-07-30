@@ -226,5 +226,8 @@ namespace app
 		cuda::free(state.device_i32);
 		cuda::free(state.device_u8);
 		cuda::free(state.unified_pixel);
+
+		cuda::free(state.device);
+		cuda::free(state.unified);
 	}
 }

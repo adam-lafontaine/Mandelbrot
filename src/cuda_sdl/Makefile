@@ -358,7 +358,8 @@ object_files += $(render_o)
 
 program_exe := $(build)/$(exe_name)
 
-GPP += -O3 -DNDEBUG
+GPP += -O3
+#GPP += -DNDEBUG
 
 $(device_o): $(device_c) $(device_h) $(cuda_def_h)
 	@echo "\n $(device_o)"
