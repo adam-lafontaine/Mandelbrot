@@ -6,7 +6,7 @@
 #include <cassert>
 
 constexpr u32 SCREEN_HEIGHT_PX = 800;
-constexpr u32 SCREEN_WIDTH_PX = SCREEN_HEIGHT_PX * 10 / 8;
+constexpr u32 SCREEN_WIDTH_PX = SCREEN_HEIGHT_PX * 9 / 8;
 
 
 constexpr auto RGB_CHANNELS = 3u;

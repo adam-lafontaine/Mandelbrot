@@ -314,7 +314,8 @@ render_include_h += $(types_h)
 range_list_h := $(app)/range_list.hpp
 range_list_h += $(types_h)
 
-app_h := $(app)/app.hpp
+app_h := $(cuda_app)/app.hpp
+app_h += $(app)/app.hpp
 app_h += $(input_h)
 
 cuda_def_h := $(cuda_app)/cuda_def.cuh
