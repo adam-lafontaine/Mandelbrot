@@ -94,16 +94,16 @@ namespace app
 		state.screen_pixels.width = width;
 		state.screen_pixels.height = height;
 
-		if(!cuda::device_malloc(state.device_i32, n_id_matrices * n_pixels))
+		if(!cuda::device_malloc(state.device_i32_buffer, n_id_matrices * n_pixels))
 		{
-			print_error("device_i32");
+			print_error("device_i32_buffer");
 			return false;
 		}
 
 		for(u32 i = 0; i < n_id_matrices; ++i)
 		{
 			auto& id_matrix = device.color_ids[i];
-			id_matrix.data = cuda::push_elements(state.device_i32, n_pixels);
+			id_matrix.data = cuda::push_elements(state.device_i32_buffer, n_pixels);
 			if(!id_matrix.data)
 			{
 				print_error("color_ids");
@@ -116,27 +116,27 @@ namespace app
 
 		auto& palette = device.color_palette;	
 		
-		if(!cuda::device_malloc(state.device_u8, 3 * N_COLORS))
+		if(!cuda::device_malloc(state.device_u8_buffer, 3 * N_COLORS))
 		{
-			print_error("device_u8");
+			print_error("device_u8_buffer");
 			return false;
 		}
 
-		palette.channel1 = cuda::push_elements(state.device_u8, N_COLORS);
+		palette.channel1 = cuda::push_elements(state.device_u8_buffer, N_COLORS);
 		if(!palette.channel1)
 		{
 			print_error("channel1");
 			return false;
 		}
 
-		palette.channel2 = cuda::push_elements(state.device_u8, N_COLORS);
+		palette.channel2 = cuda::push_elements(state.device_u8_buffer, N_COLORS);
 		if(!palette.channel2)
 		{
 			print_error("channel2");
 			return false;
 		}
 
-		palette.channel3 = cuda::push_elements(state.device_u8, N_COLORS);
+		palette.channel3 = cuda::push_elements(state.device_u8_buffer, N_COLORS);
 		if(!palette.channel3)
 		{
 			print_error("channel3");
@@ -235,8 +235,8 @@ namespace app
 	{
 		auto& state = get_state(memory);
 
-		cuda::free(state.device_i32);
-		cuda::free(state.device_u8);
+		cuda::free(state.device_i32_buffer);
+		cuda::free(state.device_u8_buffer);
 		cuda::free(state.device_pixel_buffer);
 
 		cuda::free(state.device);

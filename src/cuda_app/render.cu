@@ -237,12 +237,6 @@ void render(AppState& state)
         return;
     }
 
-    if(state.app_input.render_new)
-    {
-        unified.current_id = unified.prev_id;
-        unified.prev_id = !unified.prev_id;
-    } 
-
     set_rgb_channels(unified.channel_options, state.app_input.rgb_option);
 
     bool result = cuda::no_errors("render");
@@ -250,6 +244,9 @@ void render(AppState& state)
 
     if(state.app_input.render_new)
     {	
+        unified.current_id = unified.prev_id;
+        unified.prev_id = !unified.prev_id;
+
 		auto ranges = get_ranges(make_range(width_px, height_px), state.app_input.pixel_shift);   
         
 		unified.iter_limit = state.app_input.iter_limit;

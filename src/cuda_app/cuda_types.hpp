@@ -102,8 +102,8 @@ public:
     
     MemoryBuffer<DeviceMemory> device;
 	MemoryBuffer<Pixel> device_pixel_buffer;
-	MemoryBuffer<i32> device_i32;
-	MemoryBuffer<u8> device_u8;
+	MemoryBuffer<i32> device_i32_buffer;
+	MemoryBuffer<u8> device_u8_buffer;
 
     MemoryBuffer<UnifiedMemory> unified;
 	
