@@ -1,4 +1,4 @@
-#include "../app/app.hpp"
+#include "app.hpp"
 #include "render.hpp"
 #include "../app/app_input.hpp"
 #include "../app/colors.hpp"
@@ -36,35 +36,15 @@ namespace app
 
 	static bool init_unified_memory(AppState& state, ScreenBuffer& buffer)
 	{
-		assert(sizeof(pixel_t) == buffer.bytes_per_pixel);
-
-		UnifiedMemory unified{};
-		auto& screen = unified.screen_buffer;
+		assert(sizeof(pixel_t) == buffer.bytes_per_pixel);		
 
 		auto const width = buffer.width;
 		auto const height = buffer.height;
 
-        auto const n_pixels = width * height;
+		assert(width == screen_buffer_width());
+		assert(height == screen_buffer_height());
 
-		if(!cuda::unified_malloc(state.unified_pixel, n_pixels))
-		{
-			print_error("unified_pixel");
-			return false;
-		}
-
-		assert(state.unified_pixel.data);
-
-		screen.data = cuda::push_elements(state.unified_pixel, n_pixels);
-		if(!screen.data)
-		{
-			print_error("screen data");
-			return false;
-		}
-
-		screen.width = width;
-		screen.height = height;
-
-		buffer.memory = screen.data;
+		UnifiedMemory unified{};		
 
 		if(!cuda::unified_malloc(state.unified, 1))
 		{
@@ -85,8 +65,34 @@ namespace app
         auto const width = buffer.width;
 		auto const height = buffer.height;
 
+		assert(width == screen_buffer_width());
+		assert(height == screen_buffer_height());
+
 		auto const n_id_matrices = 2;
         auto const n_pixels = width * height;
+
+		if(!cuda::device_malloc(state.device_pixel_buffer, n_pixels))
+		{
+			print_error("device pixel_buffer");
+			return false;
+		}
+
+		auto screen_data = cuda::push_elements(state.device_pixel_buffer, n_pixels);
+		if(!screen_data)
+		{
+			print_error("screen data");
+			return false;
+		}
+
+		device.screen_pixels.data = screen_data;
+		device.screen_pixels.width = width;
+		device.screen_pixels.height = height;
+
+		state.device_pixels = device.screen_pixels;
+
+		state.screen_pixels.data = (Pixel*)buffer.memory;
+		state.screen_pixels.width = width;
+		state.screen_pixels.height = height;
 
 		if(!cuda::device_malloc(state.device_i32, n_id_matrices * n_pixels))
 		{
@@ -216,6 +222,12 @@ namespace app
 
 		state.app_input.render_new = false;
 		state.app_input.draw_new = false;
+
+		auto src = state.device_pixels.data;
+        auto dst = state.screen_pixels.data;
+        auto size = state.device_pixels.width * state.device_pixels.height * sizeof(Pixel);
+
+        cuda::memcpy_to_host(src, dst, size);
 	}
 
 
@@ -225,9 +237,21 @@ namespace app
 
 		cuda::free(state.device_i32);
 		cuda::free(state.device_u8);
-		cuda::free(state.unified_pixel);
+		cuda::free(state.device_pixel_buffer);
 
 		cuda::free(state.device);
 		cuda::free(state.unified);
 	}
+
+
+	u32 screen_buffer_width()
+    {
+        return SCREEN_WIDTH_PX;
+    }
+
+	
+	u32 screen_buffer_height()
+    {
+        return SCREEN_HEIGHT_PX;
+    }
 }
