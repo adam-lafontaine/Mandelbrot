@@ -5,6 +5,10 @@
 
 #include <cassert>
 
+constexpr u32 SCREEN_HEIGHT_PX = 800;
+constexpr u32 SCREEN_WIDTH_PX = SCREEN_HEIGHT_PX * 9 / 8;
+
+
 constexpr auto RGB_CHANNELS = 3u;
 constexpr auto RGBA_CHANNELS = 4u;
 
@@ -62,13 +66,14 @@ public:
 
 	ColorPalette color_palette;
     
+	Image screen_pixels;
 };
 
 
 class UnifiedMemory
 {
 public:
-    Image screen_buffer;
+    //Image screen_buffer;
 
 	ChannelOptions channel_options;
 
@@ -91,11 +96,15 @@ class AppState
 {
 public:
 	AppInput app_input;
+
+	Image device_pixels;
+    Image screen_pixels;
     
     MemoryBuffer<DeviceMemory> device;
-	MemoryBuffer<i32> device_i32;
-	MemoryBuffer<u8> device_u8;
+	MemoryBuffer<Pixel> device_pixel_buffer;
+	MemoryBuffer<i32> device_i32_buffer;
+	MemoryBuffer<u8> device_u8_buffer;
 
     MemoryBuffer<UnifiedMemory> unified;
-	MemoryBuffer<Pixel> unified_pixel;
+	
 };

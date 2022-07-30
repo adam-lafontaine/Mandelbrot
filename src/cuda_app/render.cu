@@ -13,6 +13,9 @@ constexpr int calc_thread_blocks(u32 n_threads)
 }
 
 
+constexpr auto N_SCREEN_PIXELS = SCREEN_HEIGHT_PX * SCREEN_WIDTH_PX;
+
+
 namespace gpu
 {
 /**********/
@@ -136,7 +139,7 @@ GPU_FUNCTION
 static void draw_pixel(DeviceMemory const& device, UnifiedMemory const& unified, u32 pixel_index)
 {
     auto& src = device.color_ids[unified.current_id];
-    auto& dst = unified.screen_buffer;
+    auto& dst = device.screen_pixels;
     auto& options = unified.channel_options;
 
     auto color_id = src.data[pixel_index];
@@ -172,10 +175,10 @@ static void gpu_process_and_draw(DeviceMemory* device, UnifiedMemory* unified, u
     auto& D = *device;
     auto& U = *unified;
 
-    assert(n_threads == U.screen_buffer.width * U.screen_buffer.height);
+    assert(n_threads == N_SCREEN_PIXELS);
 
     auto pixel_id = (u32)t;
-    auto const width = U.screen_buffer.width;
+    auto const width = D.screen_pixels.width;
 
     auto y = pixel_id / width;
     auto x = pixel_id - y * width;
@@ -209,7 +212,7 @@ static void gpu_draw(DeviceMemory* device, UnifiedMemory* unified, u32 n_threads
     auto& D = *device;
     auto& U = *unified;
 
-    assert(n_threads == U.screen_buffer.width * U.screen_buffer.height);
+    assert(n_threads == N_SCREEN_PIXELS);
 
     auto pixel_id = (u32)t;
 
@@ -224,21 +227,15 @@ void render(AppState& state)
 
     auto& unified = *unified_data;
 
-    auto width = unified.screen_buffer.width;
-    auto height = unified.screen_buffer.height;
-    auto n_threads = width * height;
+    constexpr auto width_px = SCREEN_WIDTH_PX;
+    constexpr auto height_px = SCREEN_HEIGHT_PX;
+    constexpr auto n_threads = width_px * height_px;
     auto n_blocks = calc_thread_blocks(n_threads);
 
     if(!state.app_input.render_new && !state.app_input.draw_new)
     {
         return;
     }
-
-    if(state.app_input.render_new)
-    {
-        unified.current_id = unified.prev_id;
-        unified.prev_id = !unified.prev_id;
-    } 
 
     set_rgb_channels(unified.channel_options, state.app_input.rgb_option);
 
@@ -247,13 +244,16 @@ void render(AppState& state)
 
     if(state.app_input.render_new)
     {	
-		auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);   
+        unified.current_id = unified.prev_id;
+        unified.prev_id = !unified.prev_id;
+
+		auto ranges = get_ranges(make_range(width_px, height_px), state.app_input.pixel_shift);   
         
 		unified.iter_limit = state.app_input.iter_limit;
 		unified.min_mx = MBT_MIN_X + state.app_input.mbt_pos.x;
 		unified.min_my = MBT_MIN_Y + state.app_input.mbt_pos.y;
-		unified.mx_step = state.app_input.mbt_screen_width / width;
-		unified.my_step = state.app_input.mbt_screen_height / height;
+		unified.mx_step = state.app_input.mbt_screen_width / width_px;
+		unified.my_step = state.app_input.mbt_screen_height / height_px;
 
         unified.copy_src = ranges.copy_src;
         unified.copy_dst = ranges.copy_dst;
