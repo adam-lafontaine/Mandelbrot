@@ -273,14 +273,14 @@ SDL2 := `sdl2-config --cflags --libs`
 # sudo killall ibus-daemon
 # apt-get install libsdl2-dev libsdl2-dbg
 
-build    := ../../build/cuda_sdl
+build    := ../../build/sdl_cuda
 code     := ..
 app      := $(code)/app
 input    := $(code)/input
 utils    := $(code)/utils
 sdl      := $(code)/sdl
 cuda_app := $(code)/cuda_app
-cuda_sdl := $(code)/cuda_sdl
+sdl_cuda := $(code)/sdl_cuda
 
 exe_name := mandelbrot_cuda
 
@@ -331,7 +331,7 @@ render_h := $(cuda_app)/render.hpp
 render_h += $(cuda_types_h)
 
 
-main_c         := $(cuda_sdl)/cuda_sdl_main.cpp
+main_c         := $(sdl_cuda)/sdl_cuda_main.cpp
 main_o         := $(build)/main.o
 object_files   := $(main_o)
 
