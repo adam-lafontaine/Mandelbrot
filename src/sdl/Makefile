@@ -1,4 +1,4 @@
-GPP := g++-10 -std=c++17
+GPP := g++-11 -std=c++17
 SDL2 := `sdl2-config --cflags --libs`
 
 # sudo killall ibus-daemon
