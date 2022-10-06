@@ -186,9 +186,6 @@ static void draw(AppState const& state)
 }
 
 
-
-
-
 void render(AppState& state)
 {
 	auto width = state.screen_buffer.width;

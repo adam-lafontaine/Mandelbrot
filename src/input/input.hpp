@@ -498,8 +498,8 @@ typedef struct input_t
 	MouseInput mouse;
 
 	ControllerInput controllers[MAX_CONTROLLERS];
-	u32 num_controllers;
+	u32 num_controllers = 0;
 
-	r32 dt_frame;
+	r32 dt_frame = 0.0;
 
 } Input;
