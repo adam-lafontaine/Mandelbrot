@@ -42,7 +42,7 @@ public:
     SDL_Window* window;
     SDL_Surface *surface;
     SDL_Renderer* renderer;
-    SDL_Texture* texture;
+    //SDL_Texture* texture;
 
     bool surface_locked = false;
 };
@@ -239,14 +239,14 @@ static bool init_bitmap_buffer(BitmapBuffer &buffer, int width, int height)
         return false;
     }
 
-    unlock_surface(buffer);    
-
+    //unlock_surface(buffer);    
+/*
     buffer.texture = SDL_CreateTextureFromSurface(buffer.renderer, buffer.surface);
     if(!buffer.texture)
     {
         printf("SDL_CreateTextureFromSurface\n");
         return false;
-    }
+    }*/
 
     lock_surface(buffer);
 
@@ -261,11 +261,11 @@ static void destroy_bitmap_buffer(BitmapBuffer &buffer)
     }*/
 
     unlock_surface(buffer);
-
+/*
     if(buffer.texture)
     {
         SDL_DestroyTexture(buffer.texture);
-    }
+    }*/
 }
 
 
@@ -302,11 +302,15 @@ static void display_bitmap_in_screen(BitmapBuffer& buffer)
         printf("%s\n", SDL_GetError());
     }*/
 
+    // TODO: create and destroy texture
+
+    auto texture = SDL_CreateTextureFromSurface(buffer.renderer, buffer.surface);
+
     unlock_surface(buffer);
 
-    SDL_RenderCopy(buffer.renderer, buffer.texture, 0, 0);
-    
+    SDL_RenderCopy(buffer.renderer, texture, 0, 0);    
     SDL_RenderPresent(buffer.renderer);
+    SDL_DestroyTexture(texture);
 
     lock_surface(buffer);
 }
