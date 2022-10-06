@@ -11,8 +11,23 @@
 
 #endif
 */
+/*
+typedef union BufferPixel_t
+{
+    struct
+    {
+        u8 red;
+        u8 green;
+        u8 blue;
+        u8 alpha;
+    };
 
-constexpr u32 BYTES_PER_PIXEL = 4;
+    u32 value = 0;
+
+} BufferPixel;
+*/
+
+constexpr u32 BYTES_PER_PIXEL = 4; // sizeof(BufferPixel);
 
 
 class BitmapBuffer
@@ -20,16 +35,53 @@ class BitmapBuffer
 public:
     u32 bytes_per_pixel = BYTES_PER_PIXEL;
 
-    void* memory;    
+    //BufferPixel* memory;
     int width;
     int height;
 
+    SDL_Window* window;
+    SDL_Surface *surface;
     SDL_Renderer* renderer;
     SDL_Texture* texture;
+
+    bool surface_locked = false;
 };
 
 
-static void allocate_app_memory(app::AppMemory& memory)
+static void lock_surface(BitmapBuffer& buffer)
+{
+    if (!buffer.surface_locked && SDL_MUSTLOCK(buffer.surface)) 
+    {
+        SDL_LockSurface(buffer.surface);
+        buffer.surface_locked = true;
+    }
+}
+
+
+static void unlock_surface(BitmapBuffer& buffer)
+{
+    if (buffer.surface_locked && SDL_MUSTLOCK(buffer.surface)) 
+    {
+        SDL_UnlockSurface(buffer.surface);
+        buffer.surface_locked = false;
+    }
+}
+
+
+
+constexpr auto WINDOW_TITLE = app::APP_TITLE;
+constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
+constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
+
+// control the framerate of the application
+constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
+constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
+
+GlobalVariable bool g_running = false;
+
+
+
+static void allocate_app_memory(app::AppMemory &memory)
 {
     memory.permanent_storage_size = Megabytes(256);
 
@@ -38,25 +90,24 @@ static void allocate_app_memory(app::AppMemory& memory)
     memory.permanent_storage = malloc(total_size);
 }
 
-
-static void destroy_app_memory(app::AppMemory& memory)
+static void destroy_app_memory(app::AppMemory &memory)
 {
-    if(memory.permanent_storage)
+    if (memory.permanent_storage)
     {
         free(memory.permanent_storage);
-    }    
+    }
 }
 
-
-static void set_app_screen_buffer(BitmapBuffer const& back_buffer, app::ScreenBuffer& app_buffer)
+static void set_app_screen_buffer(BitmapBuffer const &back_buffer, app::ScreenBuffer &app_buffer)
 {
-    app_buffer.memory = back_buffer.memory;
+    //app_buffer.memory = back_buffer.memory;
+    app_buffer.memory = (void*)((back_buffer.surface)->pixels);
     app_buffer.width = back_buffer.width;
     app_buffer.height = back_buffer.height;
     app_buffer.bytes_per_pixel = back_buffer.bytes_per_pixel;
 }
 
-
+/*
 static void open_game_controllers(SDLInput& sdl, Input& input)
 {
     int num_joysticks = SDL_NumJoysticks();
@@ -116,10 +167,11 @@ static void close_game_controllers(SDLInput& sdl, Input const& input)
         SDL_GameControllerClose(sdl.controllers[c]);
     }
 }
+*/
 
-
+/*
 static void resize_offscreen_buffer(BitmapBuffer& buffer, int width, int height)
-{ 
+{
     if(width == buffer.width && height == buffer.height)
     {
         return;
@@ -149,56 +201,73 @@ static void resize_offscreen_buffer(BitmapBuffer& buffer, int width, int height)
     {
         free(buffer.memory);
     }
-    
-    buffer.memory = malloc(width * height * buffer.bytes_per_pixel);    
+
+    buffer.memory = malloc(width * height * buffer.bytes_per_pixel);
 }
+*/
 
-
-static bool init_bitmap_buffer(BitmapBuffer& buffer, SDL_Window* window, int width, int height)
+static bool init_bitmap_buffer(BitmapBuffer &buffer, int width, int height)
 {
-    buffer.renderer = SDL_CreateRenderer(window, -1, 0);
-    
-    if(!buffer.renderer)
-    {
-        printf("SDL_CreateRenderer failed\n%s\n", SDL_GetError());
-        return false;
-    }
+    buffer.width = width;
+    buffer.height = height;
+/*
+    buffer.memory = (BufferPixel*)malloc(width * height * buffer.bytes_per_pixel);
 
-    resize_offscreen_buffer(buffer, width, height);
-    
-    if(!buffer.memory)
+    if (!buffer.memory)
     {
         printf("Back buffer memory failed\n");
         return false;
+    }*/
+
+    auto error = SDL_CreateWindowAndRenderer(width, height, 0, &(buffer.window), &(buffer.renderer));
+    if(error)
+    {
+        printf("SDL_CreateWindowAndRenderer/n");
+        return false;
     }
+
+    buffer.surface = SDL_CreateRGBSurface(
+        0,
+        WINDOW_WIDTH,
+        WINDOW_HEIGHT,
+        BYTES_PER_PIXEL * 8,
+        0, 0, 0, 0);
+
+    if (!buffer.surface)
+    {
+        printf("SDL_CreateRGBSurface failed\n");
+        return false;
+    }
+
+    unlock_surface(buffer);    
+
+    buffer.texture = SDL_CreateTextureFromSurface(buffer.renderer, buffer.surface);
+    if(!buffer.texture)
+    {
+        printf("SDL_CreateTextureFromSurface\n");
+        return false;
+    }
+
+    lock_surface(buffer);
 
     return true;
 }
 
+static void destroy_bitmap_buffer(BitmapBuffer &buffer)
+{/*
+    if (buffer.memory)
+    {
+        free(buffer.memory);
+    }*/
 
-static void destroy_bitmap_buffer(BitmapBuffer& buffer)
-{
+    unlock_surface(buffer);
+
     if(buffer.texture)
     {
         SDL_DestroyTexture(buffer.texture);
     }
-
-    if(buffer.memory)
-    {
-        free(buffer.memory);
-    }
 }
 
-
-constexpr auto WINDOW_TITLE = app::APP_TITLE;
-constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
-constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
-
-// control the framerate of the application
-constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
-constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
-
-GlobalVariable bool g_running = false;
 
 u32 platform_to_color_32(u8 red, u8 green, u8 blue)
 {
@@ -212,33 +281,38 @@ void platform_signal_stop()
 }
 
 
-static void end_program(app::AppMemory& memory)
+static void end_program(app::AppMemory &memory)
 {
     g_running = false;
     app::end_program(memory);
 }
 
 
-static void display_error(const char* msg)
+static void display_error(const char *msg)
 {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "ERROR", msg, 0);
 }
 
 
-static void display_bitmap_in_window(BitmapBuffer const& buffer)
+static void display_bitmap_in_screen(BitmapBuffer& buffer)
 {
-    auto error = SDL_UpdateTexture(buffer.texture, 0, buffer.memory, buffer.width * buffer.bytes_per_pixel);
+    /*auto error = SDL_UpdateTexture(buffer.texture, 0, buffer.memory, buffer.width * buffer.bytes_per_pixel);
     if(error)
     {
         printf("%s\n", SDL_GetError());
-    }
+    }*/
+
+    unlock_surface(buffer);
 
     SDL_RenderCopy(buffer.renderer, buffer.texture, 0, 0);
     
     SDL_RenderPresent(buffer.renderer);
+
+    lock_surface(buffer);
 }
 
 
+/*
 static void handle_sdl_window_event(SDL_WindowEvent const& w_event)
 {
     auto window = SDL_GetWindowFromID(w_event.windowID);
@@ -248,62 +322,58 @@ static void handle_sdl_window_event(SDL_WindowEvent const& w_event)
     {
         case SDL_WINDOWEVENT_SIZE_CHANGED:
         {
-            /*int width, height;
-            SDL_GetWindowSize(window, &width, &height);
-            resize_offscreen_buffer(g_back_buffer, width, height);
-            set_app_pixel_buffer(g_back_buffer, g_app_buffer);*/
+            i//nt width, height;
+            S//DL_GetWindowSize(window, &width, &height);
+            //resize_offscreen_buffer(g_back_buffer, width, height);
+            s//et_app_pixel_buffer(g_back_buffer, g_app_buffer);
 
         }break;
         case SDL_WINDOWEVENT_EXPOSED:
         {
-            
+
         } break;
     }
 }
+*/
 
-
-static void handle_sdl_event(SDL_Event const& event)
+static void handle_sdl_event(SDL_Event const &event)
 {
-    switch(event.type)
+    switch (event.type)
     {
-        case SDL_WINDOWEVENT:
+    /*case SDL_WINDOWEVENT:
+    {
+        handle_sdl_window_event(event.window);
+    }break;*/
+    case SDL_QUIT:
+    {
+        printf("SDL_QUIT\n");
+        g_running = false;
+    }
+    break;
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+    {
+        auto key_code = event.key.keysym.sym;
+        auto alt = event.key.keysym.mod & KMOD_ALT;
+        if (key_code == SDLK_F4 && alt)
         {
-            handle_sdl_window_event(event.window);
-        }break;
-        case SDL_QUIT:
-        {
-            printf("SDL_QUIT\n");
+            printf("ALT F4\n");
             g_running = false;
-        } break;
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
+        }
+        else if (key_code == SDLK_ESCAPE)
         {
-            auto key_code = event.key.keysym.sym;
-            auto alt = event.key.keysym.mod & KMOD_ALT;
-            if(key_code == SDLK_F4 && alt)
-            {
-                printf("ALT F4\n");
-                g_running = false;
-            }
-            else if(key_code == SDLK_ESCAPE)
-            {
-                printf("ESC\n");
-                g_running = false;
-            }
-
-        } break;
-        
+            printf("ESC\n");
+            g_running = false;
+        }
+    }
+    break;
     }
 }
-
 
 static bool init_sdl()
 {
-    auto sdl_options = 
-        SDL_INIT_VIDEO | 
-        SDL_INIT_GAMECONTROLLER | 
-        SDL_INIT_HAPTIC;    
-    
+    auto sdl_options = SDL_INIT_VIDEO;
+
     if (SDL_Init(sdl_options) != 0)
     {
         printf("SDL_Init failed\n%s\n", SDL_GetError());
@@ -313,13 +383,12 @@ static bool init_sdl()
     return true;
 }
 
-
 static void close_sdl()
 {
     SDL_Quit();
 }
 
-
+/*
 SDL_Window* create_window()
 {
     auto window = SDL_CreateWindow(
@@ -339,7 +408,7 @@ SDL_Window* create_window()
 
     return window;
 }
-
+*/
 
 app::AppMemory app_memory = {};
 app::ScreenBuffer app_buffer = {};
@@ -352,13 +421,12 @@ bool in_old = 1;
 
 app::DebugInfo dbg{};
 
-
 void main_loop()
 {
     SDL_Event event;
     bool has_event = SDL_PollEvent(&event);
-    if(has_event)
-    {            
+    if (has_event)
+    {
         handle_sdl_event(event);
     }
 
@@ -366,7 +434,7 @@ void main_loop()
     input[in_current].dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
 
     // animation speed maintained but frames missed
-    //input[in_current].dt_frame = frame_ms_elapsed / 1000.0f; // TODO:
+    // input[in_current].dt_frame = frame_ms_elapsed / 1000.0f; // TODO:
 
     process_keyboard_input(has_event, event, input[in_old], input[in_current]);
 
@@ -375,54 +443,44 @@ void main_loop()
     process_mouse_input(has_event, event, input[in_old], input[in_current]);
 
     app::update_and_render(app_memory, input[in_current], dbg);
-    
-    display_bitmap_in_window(back_buffer);
+
+    display_bitmap_in_screen(back_buffer);
 
     // swap inputs
     in_current = in_old;
     in_old = !in_old;
 
-    if(!g_running)
+    if (!g_running)
     {
         emscripten_cancel_main_loop();
     }
 
-    //ms_elapsed = sw.get_time_milli();
+    // ms_elapsed = sw.get_time_milli();
 }
 
 
 int main(int argc, char *argv[])
 {
     printf("\n%s v %s\n", app::APP_TITLE, app::VERSION);
-    if(!init_sdl())
+    if (!init_sdl())
     {
         display_error("Init SDL failed");
         return EXIT_FAILURE;
     }
 
-    auto window = create_window();
-
-    
-    if(!window)
-    {
-        display_error("SDL_CreateWindow failed");
-        return EXIT_FAILURE;
-    }
-   
-
     auto const cleanup = [&]()
     {
-        close_game_controllers(sdl_input, input[0]);
+        // close_game_controllers(sdl_input, input[0]);
         close_sdl();
         destroy_bitmap_buffer(back_buffer);
         destroy_app_memory(app_memory);
     };
 
-    open_game_controllers(sdl_input, input[0]);
-    input[1].num_controllers = input[0].num_controllers;
-    printf("controllers = %d\n", input[0].num_controllers);
+    // open_game_controllers(sdl_input, input[0]);
+    input[1].num_controllers = input[0].num_controllers = 0;
+    // printf("controllers = %d\n", input[0].num_controllers);
 
-    if(!init_bitmap_buffer(back_buffer, window, WINDOW_WIDTH, WINDOW_HEIGHT))
+    if (!init_bitmap_buffer(back_buffer, WINDOW_WIDTH, WINDOW_HEIGHT))
     {
         display_error("Creating back buffer failed");
         cleanup();
@@ -431,7 +489,7 @@ int main(int argc, char *argv[])
     }
 
     set_app_screen_buffer(back_buffer, app_buffer);
-    
+
     allocate_app_memory(app_memory);
     if (!app_memory.permanent_storage)
     {
@@ -441,16 +499,13 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    g_running = app::initialize_memory(app_memory, app_buffer);    
-    
-    
-    //Stopwatch sw;
-    //r64 frame_ms_elapsed = TARGET_MS_PER_FRAME;
-    //char title_buffer[50];
-    //r64 ms_elapsed = 0.0;
-    //r64 title_refresh_ms = 500.0;
+    g_running = app::initialize_memory(app_memory, app_buffer);
 
-    
+    // Stopwatch sw;
+    // r64 frame_ms_elapsed = TARGET_MS_PER_FRAME;
+    // char title_buffer[50];
+    // r64 ms_elapsed = 0.0;
+    // r64 title_refresh_ms = 500.0;
 
     /*
     auto const wait_for_framerate = [&]()
@@ -469,23 +524,23 @@ int main(int argc, char *argv[])
 
         auto sleep_ms = (u32)(TARGET_MS_PER_FRAME - frame_ms_elapsed);
         if (frame_ms_elapsed < TARGET_MS_PER_FRAME && sleep_ms > 0)
-        { 
+        {
             std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
             while (frame_ms_elapsed < TARGET_MS_PER_FRAME)
             {
                 frame_ms_elapsed = sw.get_time_milli();
-            }        
+            }
         }
 
-        ms_elapsed += frame_ms_elapsed;        
+        ms_elapsed += frame_ms_elapsed;
 
         sw.start();
     };*/
 
-    //sw.start();
+    // sw.start();
 
     emscripten_set_main_loop(main_loop, 0, 1);
-    
+
     app::end_program(app_memory);
     cleanup();
 

@@ -8,7 +8,7 @@ namespace app
 	constexpr auto VERSION = "1.0";
 
 	// allocate memory
-	constexpr u32 BUFFER_HEIGHT = 800;
+	constexpr u32 BUFFER_HEIGHT = 400;
 	constexpr u32 BUFFER_WIDTH = BUFFER_HEIGHT * 9 / 8;
 	constexpr u32 PIXELS_PER_SECOND = (u32)(0.4 * BUFFER_HEIGHT);
 

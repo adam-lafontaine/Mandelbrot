@@ -1,4 +1,4 @@
-EPP := em++
+EPP := em++ 
 #SDL2 := `sdl2-config --cflags --libs`
 
 # sudo killall ibus-daemon
@@ -79,7 +79,7 @@ object_files += $(render_o)
 
 
 
-program_exe := $(build)/$(exe_name)
+program_exe := $(build)/$(exe_name).html
 
 #EPP += -O3 -DNDEBUG
 
@@ -105,7 +105,7 @@ $(main_o): $(main_c) $(app_h) $(stopwatch_h) $(sdl_input_h)
 
 $(program_exe): $(object_files)
 	@echo "\n $(exe_name)"
-	$(EPP) -o $@ $+
+	$(EPP) -s USE_SDL=2 -sALLOW_MEMORY_GROWTH -o $@ $+
 
 build: $(program_exe)
 
