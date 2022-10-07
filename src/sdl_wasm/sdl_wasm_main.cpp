@@ -166,7 +166,7 @@ static void display_bitmap_in_screen(BitmapBuffer& buffer)
 
 
 static void handle_sdl_event(SDL_Event const &event)
-{
+{/*
     switch (event.type)
     {
     case SDL_QUIT:
@@ -192,7 +192,7 @@ static void handle_sdl_event(SDL_Event const &event)
         }
     }
     break;
-    }
+    }*/
 }
 
 
@@ -264,6 +264,19 @@ void main_loop()
 }
 
 
+void print_controls()
+{
+    printf("\nCONTROLS:\n");
+    printf("Pan up, left, down, right with W, A, S, D or 8, 4, 2, 6 (numpad)\n");
+    printf("Zoom in with '+' (numpad)\n");
+    printf("Zoom out with '-' (numpad)\n");
+    printf("Increase zoom rate with '*'\n");
+    printf("Decrease zoom rate with '/'\n");
+    printf("Increase resolution with up arrow\n");
+    printf("Decrease resolution with down arrow\n");
+}
+
+
 int main(int argc, char *argv[])
 {
     printf("\n%s v %s\n", app::APP_TITLE, app::VERSION);
@@ -272,6 +285,8 @@ int main(int argc, char *argv[])
         display_error("Init SDL failed");
         return EXIT_FAILURE;
     }
+
+    print_controls();
 
     auto const cleanup = [&]()
     {
