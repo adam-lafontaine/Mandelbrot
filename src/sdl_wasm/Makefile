@@ -107,8 +107,14 @@ $(main_o): $(main_c) $(app_h) $(sdl_input_h)
 $(program_exe): $(object_files)
 	@echo "\n $(exe_name)"
 	$(EPP) $(EPP_FLAGS) -o $@ $+
+	
 
 build: $(program_exe)
+
+
+html:
+	@echo "\n $(html_shell)"
+	$(EPP) $(EPP_FLAGS) -o $(program_exe) $(object_files)
 
 
 clean:
