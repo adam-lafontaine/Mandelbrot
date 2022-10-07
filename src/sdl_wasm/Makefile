@@ -1,24 +1,27 @@
-GPP := g++-11 -std=c++17
-SDL2 := `sdl2-config --cflags --libs`
+EPP := em++
 
-# sudo killall ibus-daemon
 # apt-get install libsdl2-dev libsdl2-dbg
+# python3 -m http.server
 
-build := ../../build/sdl
+build := ../../build/sdl_wasm
 code  := ..
 app   := $(code)/app
 input := $(code)/input
 utils := $(code)/utils
 sdl   := $(code)/sdl
+sdl_wasm := $(code)/sdl_wasm
 
-exe_name := mandelbrot
+exe_name := mandelbrot_wasm
+html_shell := ./out_template.html
+
+EPP_FLAGS := -s USE_SDL=2
+EPP_FLAGS += -sALLOW_MEMORY_GROWTH
+EPP_FLAGS += --shell-file $(html_shell)
 
 
 defines_h := $(utils)/defines.hpp
 
 index_range_h := $(utils)/index_range.hpp
-
-stopwatch_h := $(utils)/stopwatch.hpp
 
 types_h := $(utils)/types.hpp
 types_h += $(defines_h)
@@ -55,7 +58,7 @@ render_h := $(app)/render.hpp
 render_h += $(app_types_h)
 
 
-main_c         := $(sdl)/sdl_main.cpp
+main_c         := $(sdl_wasm)/sdl_wasm_main.cpp
 main_o         := $(build)/main.o
 object_files   := $(main_o)
 
@@ -77,39 +80,42 @@ object_files += $(render_o)
 
 
 
-program_exe := $(build)/$(exe_name)
+program_exe := $(build)/$(exe_name).html
 
-GPP += -O3 -DNDEBUG
+EPP += -O2
 
 $(render_o): $(render_c) $(render_h) $(render_include_h) $(colors_h) $(index_range_h) $(range_list_h)
 	@echo "\n $(render_o)"
-	$(GPP) -o $@ -c $<
+	$(EPP) -o $@ -c $<
 
 $(app_o): $(app_c) $(app_h) $(render_h) $(app_input_h)
 	@echo "\n $(app_o)"
-	$(GPP) -o $@ -c $<
+	$(EPP) -o $@ -c $<
 
 $(app_input_o): $(app_input_c) $(app_input_h) $(app_h) $(render_include_h)
 	@echo "\n $(app_input_o)"
-	$(GPP) -o $@ -c $<
+	$(EPP) -o $@ -c $<
 
 $(sdl_input_o): $(sdl_input_c) $(sdl_input_h) $(input_state_h)
 	@echo "\n $(sdl_input_o)"
-	$(GPP) -o $@ -c $< $(SDL2)
+	$(EPP) -o $@ -c $<
 
-$(main_o): $(main_c) $(app_h) $(stopwatch_h) $(sdl_input_h)
+$(main_o): $(main_c) $(app_h) $(sdl_input_h)
 	@echo "\n $(main_o)"
-	$(GPP) -o $@ -c $< $(SDL2)
+	$(EPP) -s -o $@ -c $<
 
 $(program_exe): $(object_files)
 	@echo "\n $(exe_name)"
-	$(GPP) -o $@ $+ $(SDL2)
+	$(EPP) $(EPP_FLAGS) -o $@ $+
+	
 
 build: $(program_exe)
 
-run: build
-	$(program_exe)
-	@echo "\n"
+
+html:
+	@echo "\n $(html_shell)"
+	$(EPP) $(EPP_FLAGS) -o $(program_exe) $(object_files)
+
 
 clean:
 	rm -rfv $(build)/*
