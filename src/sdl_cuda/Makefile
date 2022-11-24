@@ -267,7 +267,7 @@ endif
 
 ################################################################################
 
-GPP := g++-10 -std=c++17
+GPP := g++-11 -std=c++17
 SDL2 := `sdl2-config --cflags --libs`
 
 # sudo killall ibus-daemon
@@ -359,8 +359,7 @@ object_files += $(render_o)
 
 program_exe := $(build)/$(exe_name)
 
-GPP += -O3
-#GPP += -DNDEBUG
+GPP += -O3 -DNDEBUG
 
 $(device_o): $(device_c) $(device_h) $(cuda_def_h)
 	@echo "\n $(device_o)"
