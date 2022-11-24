@@ -29,11 +29,8 @@ input_h += $(types_h)
 input_state_h := $(input)/input_state.hpp
 input_state += $(input_h)
 
-sdl_input_h := $(sdl)/sdl_input.hpp
-sdl_input_h += $(input_h)
-
 sdl_include := $(sdl)/sdl_include.hpp
-sdl_include += $(sdl_input_h)
+sdl_include += $(input_h)
 
 app_input_h := $(app)/app_input.hpp
 app_input_h += $(types_h)
@@ -96,7 +93,7 @@ $(app_input_o): $(app_input_c) $(app_input_h) $(app_h) $(render_include_h)
 	@echo "\n $(app_input_o)"
 	$(GPP) -o $@ -c $<
 
-$(sdl_input_o): $(sdl_input_c) $(sdl_input_h) $(input_state_h)
+$(sdl_input_o): $(sdl_input_c) $(sdl_include_h) $(input_state_h)
 	@echo "\n $(sdl_input_o)"
 	$(GPP) -o $@ -c $< $(SDL2)
 

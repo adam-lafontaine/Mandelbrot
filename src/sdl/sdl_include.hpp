@@ -22,6 +22,7 @@ public:
 };
 
 
+// sdl_input.cpp
 void process_controller_input(SDLInput const& sdl, Input const& old_input, Input& new_input);
 
 void process_keyboard_input(bool has_event, SDL_Event const& event, Input const& old_input, Input& new_input);
@@ -93,7 +94,7 @@ static void close_sdl()
 }
 
 
-void destroy_screen_memory(ScreenMemory& screen)
+static void destroy_screen_memory(ScreenMemory& screen)
 {
     if(screen.window)
     {
@@ -117,7 +118,7 @@ void destroy_screen_memory(ScreenMemory& screen)
 }
 
 
-bool create_screen_memory(ScreenMemory& screen, const char* title, int width, int height)
+static bool create_screen_memory(ScreenMemory& screen, const char* title, int width, int height)
 {
     destroy_screen_memory(screen);
 
@@ -166,6 +167,9 @@ bool create_screen_memory(ScreenMemory& screen, const char* title, int width, in
         destroy_screen_memory(screen);
         return false;
     }
+
+    screen.image_width = width;
+    screen.image_height = height;
 
     return true;
 }
