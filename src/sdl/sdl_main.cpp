@@ -5,15 +5,15 @@
 
 #include "../app/app.hpp"
 #include "../utils/stopwatch.hpp"
-#include "sdl_input.hpp"
+#include "sdl_include.hpp"
 
 #include <cstdio>
 #include <thread>
 
 
-constexpr u32 BYTES_PER_PIXEL = 4;
+//constexpr u32 BYTES_PER_PIXEL = 4;
 
-
+/*
 class BitmapBuffer
 {
 public:
@@ -26,7 +26,7 @@ public:
     SDL_Renderer* renderer;
     SDL_Texture* texture;
 };
-
+*/
 
 static void allocate_app_memory(app::AppMemory& memory)
 {
@@ -46,7 +46,7 @@ static void destroy_app_memory(app::AppMemory& memory)
     }    
 }
 
-
+/*
 static void set_app_screen_buffer(BitmapBuffer const& back_buffer, app::ScreenBuffer& app_buffer)
 {
     app_buffer.memory = back_buffer.memory;
@@ -54,69 +54,20 @@ static void set_app_screen_buffer(BitmapBuffer const& back_buffer, app::ScreenBu
     app_buffer.height = back_buffer.height;
     app_buffer.bytes_per_pixel = back_buffer.bytes_per_pixel;
 }
+*/
 
-
-static void open_game_controllers(SDLInput& sdl, Input& input)
+static void set_app_screen_buffer(ScreenMemory const& memory, app::ScreenBuffer& app_buffer)
 {
-    int num_joysticks = SDL_NumJoysticks();
-    int c = 0;
-    for(int j = 0; j < num_joysticks; ++j)
-    {
-        if (!SDL_IsGameController(j))
-        {
-            continue;
-        }
-
-        printf("found a controller\n");
-
-        sdl.controllers[c] = SDL_GameControllerOpen(j);
-        auto joystick = SDL_GameControllerGetJoystick(sdl.controllers[c]);
-        if(!joystick)
-        {
-            printf("no joystick\n");
-        }
-
-        sdl.rumbles[c] = SDL_HapticOpenFromJoystick(joystick);
-        if(!sdl.rumbles[c])
-        {
-            printf("no rumble from joystick\n");
-        }
-        else if(SDL_HapticRumbleInit(sdl.rumbles[c]))
-        {
-            printf("%s\n", SDL_GetError());
-            SDL_HapticClose(sdl.rumbles[c]);
-            sdl.rumbles[c] = 0;
-        }
-        else
-        {
-            printf("found a rumble\n");
-        }
-
-        ++c;
-
-        if (c >= MAX_CONTROLLERS)
-        {
-            break;
-        }
-    }
-
-    input.num_controllers = c;
+    app_buffer.memory = memory.image_data;
+    app_buffer.width = memory.image_width;
+    app_buffer.height = memory.image_height;
+    app_buffer.bytes_per_pixel = SCREEN_BYTES_PER_PIXEL;
 }
 
 
-static void close_game_controllers(SDLInput& sdl, Input const& input)
-{
-    for(u32 c = 0; c < input.num_controllers; ++c)
-    {
-        if(sdl.rumbles[c])
-        {
-            SDL_HapticClose(sdl.rumbles[c]);
-        }
-        SDL_GameControllerClose(sdl.controllers[c]);
-    }
-}
 
 
+/*
 static void resize_offscreen_buffer(BitmapBuffer& buffer, int width, int height)
 { 
     if(width == buffer.width && height == buffer.height)
@@ -187,7 +138,7 @@ static void destroy_bitmap_buffer(BitmapBuffer& buffer)
         free(buffer.memory);
     }
 }
-
+*/
 
 constexpr auto WINDOW_TITLE = app::APP_TITLE;
 constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
@@ -217,7 +168,7 @@ static void end_program(app::AppMemory& memory)
     app::end_program(memory);
 }
 
-
+/*
 static void display_error(const char* msg)
 {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "ERROR", msg, 0);
@@ -247,10 +198,10 @@ static void handle_sdl_window_event(SDL_WindowEvent const& w_event)
     {
         case SDL_WINDOWEVENT_SIZE_CHANGED:
         {
-            /*int width, height;
-            SDL_GetWindowSize(window, &width, &height);
-            resize_offscreen_buffer(g_back_buffer, width, height);
-            set_app_pixel_buffer(g_back_buffer, g_app_buffer);*/
+            //int width, height;
+            //SDL_GetWindowSize(window, &width, &height);
+            //resize_offscreen_buffer(g_back_buffer, width, height);
+            //set_app_pixel_buffer(g_back_buffer, g_app_buffer);
 
         }break;
         case SDL_WINDOWEVENT_EXPOSED:
@@ -259,7 +210,7 @@ static void handle_sdl_window_event(SDL_WindowEvent const& w_event)
         } break;
     }
 }
-
+*/
 
 static void handle_sdl_event(SDL_Event const& event)
 {
@@ -295,7 +246,7 @@ static void handle_sdl_event(SDL_Event const& event)
     }
 }
 
-
+/*
 static bool init_sdl()
 {
     auto sdl_options = 
@@ -338,31 +289,34 @@ SDL_Window* create_window()
 
     return window;
 }
-
+*/
 
 int main(int argc, char *argv[])
 {
     printf("\n%s v %s\n", app::APP_TITLE, app::VERSION);
     if(!init_sdl())
-    {
-        display_error("Init SDL failed");
+    {        
         return EXIT_FAILURE;
     }
-
-    auto window = create_window();
-
-    
+    /*
+    auto window = create_window();    
     if(!window)
     {
         display_error("SDL_CreateWindow failed");
         return EXIT_FAILURE;
     }
+*/  
 
+    ScreenMemory screen{};
+    if(!create_screen_memory(screen, WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT))
+    {
+        return EXIT_FAILURE;
+    }
     
 
     app::AppMemory app_memory = {};
     app::ScreenBuffer app_buffer = {};
-    BitmapBuffer back_buffer = {};
+    //BitmapBuffer back_buffer = {};
     Input input[2] = {};
     SDLInput sdl_input = {};
 
@@ -370,14 +324,15 @@ int main(int argc, char *argv[])
     {
         close_game_controllers(sdl_input, input[0]);
         close_sdl();
-        destroy_bitmap_buffer(back_buffer);
+        //destroy_bitmap_buffer(back_buffer);
+        destroy_screen_memory(screen);
         destroy_app_memory(app_memory);
     };
 
     open_game_controllers(sdl_input, input[0]);
     input[1].num_controllers = input[0].num_controllers;
     printf("controllers = %d\n", input[0].num_controllers);
-
+/*
     if(!init_bitmap_buffer(back_buffer, window, WINDOW_WIDTH, WINDOW_HEIGHT))
     {
         display_error("Creating back buffer failed");
@@ -385,8 +340,8 @@ int main(int argc, char *argv[])
 
         return EXIT_FAILURE;
     }
-
-    set_app_screen_buffer(back_buffer, app_buffer);
+*/
+    set_app_screen_buffer(screen, app_buffer);
     
     allocate_app_memory(app_memory);
     if (!app_memory.permanent_storage)
@@ -463,7 +418,8 @@ int main(int argc, char *argv[])
         app::update_and_render(app_memory, input[in_current], dbg);
 
         wait_for_framerate();
-        display_bitmap_in_window(back_buffer);
+        //display_bitmap_in_window(back_buffer);
+        render_screen(screen);
 
         // swap inputs
         in_current = in_old;

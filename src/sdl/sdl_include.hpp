@@ -8,7 +8,9 @@
 
 #include <SDL2/SDL.h>
 
-#ifndef NDEBUG
+#define PRINT_MESSAGES
+
+#ifdef PRINT_MESSAGES
 #include <cstdio>
 #endif
 
@@ -30,7 +32,7 @@ void process_mouse_input(bool has_event, SDL_Event const& event, Input const& ol
 constexpr u32 SCREEN_BYTES_PER_PIXEL = 4;
 
 
-class WindowMemory
+class ScreenMemory
 {
 public:
 
@@ -44,12 +46,27 @@ public:
 };
 
 
-void display_error(const char* msg)
+static void print_message(const char* msg)
 {
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "ERROR", msg, 0);
-#ifndef NDEBUG
+#ifdef PRINT_MESSAGES
+    printf("%s\n", msg);
+#endif
+}
+
+
+static void print_sdl_error(const char* msg)
+{
+#ifdef PRINT_MESSAGES
     printf("%s\n%s\n", msg, SDL_GetError());
 #endif
+}
+
+
+static void display_error(const char* msg)
+{
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "ERROR", msg, 0);
+
+    print_sdl_error(msg);
 }
 
 
@@ -62,7 +79,7 @@ static bool init_sdl()
     
     if (SDL_Init(sdl_options) != 0)
     {
-        //printf("SDL_Init failed\n%s\n", SDL_GetError());
+        print_sdl_error("SDL_Init failed");
         return false;
     }
 
@@ -76,35 +93,35 @@ static void close_sdl()
 }
 
 
-void destroy_window_memory(WindowMemory& memory)
+void destroy_screen_memory(ScreenMemory& screen)
 {
-    if(memory.window)
+    if(screen.window)
     {
-        SDL_DestroyWindow(memory.window);
+        SDL_DestroyWindow(screen.window);
     }
 
-    if(memory.renderer)
+    if(screen.renderer)
     {
-        SDL_DestroyRenderer(memory.renderer);
+        SDL_DestroyRenderer(screen.renderer);
     }
 
-    if(memory.texture)
+    if(screen.texture)
     {
-        SDL_DestroyTexture(memory.texture);
+        SDL_DestroyTexture(screen.texture);
     }
 
-    if(memory.image_data)
+    if(screen.image_data)
     {
-        free(memory.image_data);
+        free(screen.image_data);
     }
 }
 
 
-bool create_window_memory(WindowMemory& memory, const char* title, int width, int height)
+bool create_screen_memory(ScreenMemory& screen, const char* title, int width, int height)
 {
-    destroy_window_memory(memory);
+    destroy_screen_memory(screen);
 
-    memory.window = SDL_CreateWindow(
+    screen.window = SDL_CreateWindow(
         title,
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
@@ -112,38 +129,41 @@ bool create_window_memory(WindowMemory& memory, const char* title, int width, in
         height,
         SDL_WINDOW_RESIZABLE);
 
-    if(!memory.window)
+    if(!screen.window)
     {
         display_error("SDL_CreateWindow failed");
         return false;
     }
 
-    memory.renderer = SDL_CreateRenderer(memory.window, -1, 0);
+    screen.renderer = SDL_CreateRenderer(screen.window, -1, 0);
 
-    if(!memory.renderer)
+    if(!screen.renderer)
     {
-        display_error("");
+        display_error("SDL_CreateRenderer failed");
+        destroy_screen_memory(screen);
         return false;
     }
 
-    memory.texture =  SDL_CreateTexture(
-        memory.renderer,
+    screen.texture =  SDL_CreateTexture(
+        screen.renderer,
         SDL_PIXELFORMAT_ARGB8888,
         SDL_TEXTUREACCESS_STREAMING,
         width,
         height);
     
-    if(!memory.texture)
+    if(!screen.texture)
     {
         display_error("SDL_CreateTexture failed");
+        destroy_screen_memory(screen);
         return false;
     }
 
-    memory.image_data = malloc(SCREEN_BYTES_PER_PIXEL * width * height);
+    screen.image_data = malloc(SCREEN_BYTES_PER_PIXEL * width * height);
 
-    if(!memory.image_data)
+    if(!screen.image_data)
     {
         display_error("Allocating image memory failed");
+        destroy_screen_memory(screen);
         return false;
     }
 
@@ -151,18 +171,18 @@ bool create_window_memory(WindowMemory& memory, const char* title, int width, in
 }
 
 
-static void render_window(WindowMemory const& memory)
+static void render_screen(ScreenMemory const& screen)
 {
-    auto const pitch = memory.image_width * SCREEN_BYTES_PER_PIXEL;
-    auto error = SDL_UpdateTexture(memory.texture, 0, memory.image_data, pitch);
+    auto const pitch = screen.image_width * SCREEN_BYTES_PER_PIXEL;
+    auto error = SDL_UpdateTexture(screen.texture, 0, screen.image_data, pitch);
     if(error)
     {
-        printf("%s\n", SDL_GetError());
+        print_sdl_error("SDL_UpdateTexture failed");
     }
 
-    SDL_RenderCopy(memory.renderer, memory.texture, 0, 0);
+    SDL_RenderCopy(screen.renderer, screen.texture, 0, 0);
     
-    SDL_RenderPresent(memory.renderer);
+    SDL_RenderPresent(screen.renderer);
 }
 
 
@@ -185,36 +205,62 @@ static void handle_sdl_window_event(SDL_WindowEvent const& w_event)
 }
 
 
-static void handle_sdl_event(SDL_Event const& event)
+static void open_game_controllers(SDLInput& sdl, Input& input)
 {
-    switch(event.type)
+    int num_joysticks = SDL_NumJoysticks();
+    int c = 0;
+    for(int j = 0; j < num_joysticks; ++j)
     {
-        case SDL_WINDOWEVENT:
+        if (!SDL_IsGameController(j))
         {
-            handle_sdl_window_event(event.window);
-        }break;
-        case SDL_QUIT:
-        {
-            printf("SDL_QUIT\n");
-            g_running = false;
-        } break;
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
-        {
-            auto key_code = event.key.keysym.sym;
-            auto alt = event.key.keysym.mod & KMOD_ALT;
-            if(key_code == SDLK_F4 && alt)
-            {
-                printf("ALT F4\n");
-                g_running = false;
-            }
-            else if(key_code == SDLK_ESCAPE)
-            {
-                printf("ESC\n");
-                g_running = false;
-            }
+            continue;
+        }
 
-        } break;
-        
+        print_message("found a controller");
+
+        sdl.controllers[c] = SDL_GameControllerOpen(j);
+        auto joystick = SDL_GameControllerGetJoystick(sdl.controllers[c]);
+        if(!joystick)
+        {
+            print_message("no joystick");
+        }
+
+        sdl.rumbles[c] = SDL_HapticOpenFromJoystick(joystick);
+        if(!sdl.rumbles[c])
+        {
+            print_message("no rumble from joystick");
+        }
+        else if(SDL_HapticRumbleInit(sdl.rumbles[c]) != 0)
+        {
+            print_sdl_error("SDL_HapticRumbleInit failed");
+            SDL_HapticClose(sdl.rumbles[c]);
+            sdl.rumbles[c] = 0;
+        }
+        else
+        {
+            print_message("found a rumble");
+        }
+
+        ++c;
+
+        if (c >= MAX_CONTROLLERS)
+        {
+            break;
+        }
+    }
+
+    input.num_controllers = c;
+}
+
+
+static void close_game_controllers(SDLInput& sdl, Input const& input)
+{
+    for(u32 c = 0; c < input.num_controllers; ++c)
+    {
+        if(sdl.rumbles[c])
+        {
+            SDL_HapticClose(sdl.rumbles[c]);
+        }
+        SDL_GameControllerClose(sdl.controllers[c]);
     }
 }
