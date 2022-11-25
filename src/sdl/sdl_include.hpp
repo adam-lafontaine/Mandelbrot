@@ -71,12 +71,28 @@ static void display_error(const char* msg)
 }
 
 
-static bool init_sdl()
+static bool init_sdl(bool web_only = false)
 {
     auto sdl_options = 
         SDL_INIT_VIDEO | 
         SDL_INIT_GAMECONTROLLER | 
-        SDL_INIT_HAPTIC;    
+        SDL_INIT_HAPTIC;
+    
+    if (SDL_Init(sdl_options) != 0)
+    {
+        print_sdl_error("SDL_Init failed");
+        return false;
+    }
+
+    return true;
+}
+
+
+static bool init_sdl_web()
+{
+    auto sdl_options = 
+        SDL_INIT_VIDEO | 
+        SDL_INIT_GAMECONTROLLER;
     
     if (SDL_Init(sdl_options) != 0)
     {

@@ -1,10 +1,11 @@
 EPP := em++
 
 # apt-get install libsdl2-dev
+# source ~/Repos/emsdk/emsdk_env.sh
 # python3 -m http.server 8080
 
 build := ../../build/sdl_wasm
-web := $(build)/web
+web := ../../build/web
 code  := ..
 app   := $(code)/app
 input := $(code)/input
@@ -81,7 +82,7 @@ object_files += $(render_o)
 
 
 
-program_exe := $(build)/$(exe_name).html
+program_exe := $(web)/$(exe_name).html
 
 EPP += -O2
 
@@ -120,6 +121,7 @@ html:
 
 clean:
 	rm -rfv $(build)/*
+	rm -rfv $(web)/*
 
 setup:
 	mkdir -p $(build)
