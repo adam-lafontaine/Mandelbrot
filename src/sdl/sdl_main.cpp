@@ -11,6 +11,29 @@
 #include <thread>
 
 
+constexpr auto WINDOW_TITLE = app::APP_TITLE;
+constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
+constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
+
+// control the framerate of the application
+constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
+constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
+
+GlobalVariable bool g_running = false;
+
+
+u32 platform_to_color_32(u8 red, u8 green, u8 blue)
+{
+    return red << 16 | green << 8 | blue;
+}
+
+
+void platform_signal_stop()
+{
+    g_running = false;
+}
+
+
 static void allocate_app_memory(app::AppMemory& memory)
 {
     memory.permanent_storage_size = Megabytes(256);
@@ -36,28 +59,6 @@ static void set_app_screen_buffer(ScreenMemory const& memory, app::ScreenBuffer&
     app_buffer.width = memory.image_width;
     app_buffer.height = memory.image_height;
     app_buffer.bytes_per_pixel = SCREEN_BYTES_PER_PIXEL;
-}
-
-
-constexpr auto WINDOW_TITLE = app::APP_TITLE;
-constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
-constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
-
-// control the framerate of the application
-constexpr r32 TARGET_FRAMERATE_HZ = 60.0f;
-constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
-
-GlobalVariable bool g_running = false;
-
-u32 platform_to_color_32(u8 red, u8 green, u8 blue)
-{
-    return red << 16 | green << 8 | blue;
-}
-
-
-void platform_signal_stop()
-{
-    g_running = false;
 }
 
 

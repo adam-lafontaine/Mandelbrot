@@ -3,15 +3,15 @@
 
 #include "../cuda_app/app.hpp"
 #include "../utils/stopwatch.hpp"
-#include "../sdl/sdl_input.hpp"
+#include "../sdl/sdl_include.hpp"
 
 #include <cstdio>
 #include <thread>
 
 
 constexpr auto WINDOW_TITLE = app::APP_TITLE;
-
-constexpr u32 SCREEN_BYTES_PER_PIXEL = 4;
+constexpr auto WINDOW_WIDTH = app::BUFFER_WIDTH;
+constexpr auto WINDOW_HEIGHT = app::BUFFER_HEIGHT;
 
 constexpr size_t APP_MEMORY_SIZE = Megabytes(16);
 
@@ -22,18 +22,17 @@ constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
 GlobalVariable bool g_running = false;
 
 
-class BitmapBuffer
+void platform_signal_stop()
 {
-public:
-    u32 bytes_per_pixel = SCREEN_BYTES_PER_PIXEL;
+    g_running = false;
+}
 
-    void* memory;
-    int width;
-    int height;
 
-    SDL_Renderer* renderer;
-    SDL_Texture* texture;
-};
+static void end_program(app::AppMemory& memory)
+{
+    g_running = false;
+    app::end_program(memory);
+}
 
 
 static void allocate_app_memory(app::AppMemory& memory)
@@ -55,193 +54,12 @@ static void destroy_app_memory(app::AppMemory& memory)
 }
 
 
-static void open_game_controllers(SDLInput& sdl, Input& input)
+static void set_app_screen_buffer(ScreenMemory const& memory, app::ScreenBuffer& app_buffer)
 {
-    int num_joysticks = SDL_NumJoysticks();
-    int c = 0;
-    for(int j = 0; j < num_joysticks; ++j)
-    {
-        if (!SDL_IsGameController(j))
-        {
-            continue;
-        }
-
-        printf("found a controller\n");
-
-        sdl.controllers[c] = SDL_GameControllerOpen(j);
-        auto joystick = SDL_GameControllerGetJoystick(sdl.controllers[c]);
-        if(!joystick)
-        {
-            printf("no joystick\n");
-        }
-
-        sdl.rumbles[c] = SDL_HapticOpenFromJoystick(joystick);
-        if(!sdl.rumbles[c])
-        {
-            printf("no rumble from joystick\n");
-        }
-        else if(SDL_HapticRumbleInit(sdl.rumbles[c]))
-        {
-            printf("%s\n", SDL_GetError());
-            SDL_HapticClose(sdl.rumbles[c]);
-            sdl.rumbles[c] = 0;
-        }
-        else
-        {
-            printf("found a rumble\n");
-        }
-
-        ++c;
-
-        if (c >= MAX_CONTROLLERS)
-        {
-            break;
-        }
-    }
-
-    input.num_controllers = c;
-}
-
-
-static void close_game_controllers(SDLInput& sdl, Input const& input)
-{
-    for(int c = 0; c < input.num_controllers; ++c)
-    {
-        if(sdl.rumbles[c])
-        {
-            SDL_HapticClose(sdl.rumbles[c]);
-        }
-        SDL_GameControllerClose(sdl.controllers[c]);
-    }
-}
-
-
-static void resize_offscreen_buffer(BitmapBuffer& buffer, int width, int height)
-{ 
-    if(buffer.memory && buffer.texture && width == buffer.width && height == buffer.height)
-    {
-        return;
-    }
-
-    buffer.width = width;
-    buffer.height = height;
-
-    if(buffer.texture)
-    {
-        SDL_DestroyTexture(buffer.texture);
-    }
-
-    buffer.texture = SDL_CreateTexture(
-        buffer.renderer,
-        SDL_PIXELFORMAT_ARGB8888,
-        SDL_TEXTUREACCESS_STREAMING,
-        width,
-        height);
-
-    if(!buffer.texture)
-    {
-        printf("SDL_CreateTexture failed\n%s\n", SDL_GetError());
-    }
-
-    if(buffer.memory)
-    {
-        free(buffer.memory);
-    }
-    
-    buffer.memory = malloc(width * height * buffer.bytes_per_pixel);    
-}
-
-
-static bool init_screen_memory(SDL_Window* window, BitmapBuffer& buffer, app::ScreenBuffer& app_buffer)
-{
-    buffer.renderer = SDL_CreateRenderer(window, -1, 0);
-    
-    if(!buffer.renderer)
-    {
-        printf("SDL_CreateRenderer failed\n%s\n", SDL_GetError());
-        return false;
-    }
-
-    resize_offscreen_buffer(buffer, app::screen_buffer_width(), app::screen_buffer_height());
-    
-    if(!buffer.memory)
-    {
-        printf("Back buffer memory failed\n");
-        return false;
-    }
-
-    app_buffer.memory = buffer.memory;
-    app_buffer.width = buffer.width;
-    app_buffer.height = buffer.height;
-    app_buffer.bytes_per_pixel = buffer.bytes_per_pixel;
-
-    return true;
-}
-
-
-static void destroy_bitmap_buffer(BitmapBuffer& buffer)
-{
-    if(buffer.texture)
-    {
-        SDL_DestroyTexture(buffer.texture);
-    }
-
-    if(buffer.memory)
-    {
-        free(buffer.memory);
-    }
-}
-
-
-void platform_signal_stop()
-{
-    g_running = false;
-}
-
-
-static void end_program(app::AppMemory& memory)
-{
-    g_running = false;
-    app::end_program(memory);
-}
-
-
-static void display_error(const char* msg)
-{
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "ERROR", msg, 0);
-}
-
-
-static void display_bitmap_in_window(BitmapBuffer const& buffer)
-{
-    auto error = SDL_UpdateTexture(buffer.texture, 0, buffer.memory, buffer.width * buffer.bytes_per_pixel);
-    if(error)
-    {
-        printf("%s\n", SDL_GetError());
-    }
-
-    SDL_RenderCopy(buffer.renderer, buffer.texture, 0, 0);
-    
-    SDL_RenderPresent(buffer.renderer);
-}
-
-
-static void handle_sdl_window_event(SDL_WindowEvent const& w_event)
-{
-    auto window = SDL_GetWindowFromID(w_event.windowID);
-    //auto renderer = SDL_GetRenderer(window);
-
-    switch(w_event.event)
-    {
-        case SDL_WINDOWEVENT_SIZE_CHANGED:
-        {
-
-        }break;
-        case SDL_WINDOWEVENT_EXPOSED:
-        {
-            
-        } break;
-    }
+    app_buffer.memory = memory.image_data;
+    app_buffer.width = memory.image_width;
+    app_buffer.height = memory.image_height;
+    app_buffer.bytes_per_pixel = SCREEN_BYTES_PER_PIXEL;
 }
 
 
@@ -280,69 +98,22 @@ static void handle_sdl_event(SDL_Event const& event)
 }
 
 
-static bool init_sdl()
-{
-    auto sdl_options = 
-        SDL_INIT_VIDEO | 
-        SDL_INIT_GAMECONTROLLER | 
-        SDL_INIT_HAPTIC;    
-    
-    if (SDL_Init(sdl_options) != 0)
-    {
-        printf("SDL_Init failed\n%s\n", SDL_GetError());
-        return false;
-    }
-
-    return true;
-}
-
-
-static void close_sdl()
-{
-    SDL_Quit();
-}
-
-
-SDL_Window* create_window()
-{
-    auto window = SDL_CreateWindow(
-        WINDOW_TITLE,
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-        app::screen_buffer_width(),
-        app::screen_buffer_height(),
-        SDL_WINDOW_RESIZABLE);
-
-    if (!window)
-    {
-        return window;
-    }
-
-    SDL_SetWindowTitle(window, WINDOW_TITLE);
-
-    return window;
-}
-
-
 int main(int argc, char *argv[])
 {
-    printf("\n");
+    printf("\n%s v %s\n", app::APP_TITLE, app::VERSION);
     if(!init_sdl())
-    {
-        display_error("Init SDL failed");
+    {        
         return EXIT_FAILURE;
     }
 
-    auto window = create_window();
-    if(!window)
+    ScreenMemory screen{};
+    if(!create_screen_memory(screen, WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT))
     {
-        display_error("SDL_CreateWindow failed");
         return EXIT_FAILURE;
     }
-
+    
     app::AppMemory app_memory = {};
-    app::ScreenBuffer app_screen_buffer = {};
-    BitmapBuffer back_buffer = {};
+    app::ScreenBuffer app_buffer = {};
     Input input[2] = {};
     SDLInput sdl_input = {};
 
@@ -350,7 +121,7 @@ int main(int argc, char *argv[])
     {
         close_game_controllers(sdl_input, input[0]);
         close_sdl();
-        destroy_bitmap_buffer(back_buffer);
+        destroy_screen_memory(screen);
         destroy_app_memory(app_memory);
     };
 
@@ -358,13 +129,7 @@ int main(int argc, char *argv[])
     input[1].num_controllers = input[0].num_controllers;
     printf("controllers = %d\n", input[0].num_controllers);
 
-    if(!init_screen_memory(window, back_buffer, app_screen_buffer))
-    {
-        display_error("initializing screen memory failed");
-        cleanup();
-
-        return EXIT_FAILURE;
-    }
+    set_app_screen_buffer(screen, app_buffer);
     
     allocate_app_memory(app_memory);
     if (!app_memory.permanent_storage)
@@ -374,7 +139,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }    
 
-    if(!app::initialize_memory(app_memory, app_screen_buffer))
+    if(!app::initialize_memory(app_memory, app_buffer))
     {
         display_error("Initializing application memory failed");
         cleanup();
@@ -400,7 +165,7 @@ int main(int argc, char *argv[])
         {
             ms_elapsed = 0.0;
             snprintf(title_buffer, 50, "%s (%d)", WINDOW_TITLE, (int)frame_ms_elapsed);
-            SDL_SetWindowTitle(window, title_buffer);
+            SDL_SetWindowTitle(screen.window, title_buffer);
         }
 
         auto sleep_ms = (u32)(TARGET_MS_PER_FRAME - frame_ms_elapsed);
@@ -443,7 +208,8 @@ int main(int argc, char *argv[])
         app::update_and_render(app_memory, input[in_current], dbg);
 
         wait_for_framerate();
-        display_bitmap_in_window(back_buffer);
+
+        render_screen(screen);
 
         // swap inputs
         in_current = in_old;
