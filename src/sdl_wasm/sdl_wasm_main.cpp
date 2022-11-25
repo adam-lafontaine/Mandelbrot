@@ -1,5 +1,5 @@
 #include "../app/app.hpp"
-#include "../sdl/sdl_input.hpp"
+#include "../sdl/sdl_include.hpp"
 
 #include <cstdio>
 #include <cassert>
@@ -19,6 +19,18 @@ constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
 GlobalVariable bool g_running = false;
 
 
+u32 platform_to_color_32(u8 red, u8 green, u8 blue)
+{
+    return red << 16 | green << 8 | blue;
+}
+
+
+void platform_signal_stop()
+{
+    g_running = false;
+}
+
+/*
 class BitmapBuffer
 {
 public:
@@ -57,7 +69,7 @@ static void unlock_surface(BitmapBuffer& buffer)
         buffer.surface_locked = false;
     }
 }
-
+*/
 
 static void allocate_app_memory(app::AppMemory &memory)
 {
@@ -76,7 +88,7 @@ static void destroy_app_memory(app::AppMemory &memory)
         free(memory.permanent_storage);
     }
 }
-
+/*
 static void set_app_screen_buffer(BitmapBuffer const &back_buffer, app::ScreenBuffer &app_buffer)
 {
     // app will write directly to surface memory
@@ -125,16 +137,7 @@ static void destroy_bitmap_buffer(BitmapBuffer &buffer)
 }
 
 
-u32 platform_to_color_32(u8 red, u8 green, u8 blue)
-{
-    return red << 16 | green << 8 | blue;
-}
 
-
-void platform_signal_stop()
-{
-    g_running = false;
-}
 
 
 static void end_program(app::AppMemory &memory)
@@ -163,7 +166,7 @@ static void display_bitmap_in_screen(BitmapBuffer& buffer)
 
     lock_surface(buffer);
 }
-
+*/
 
 static void handle_sdl_event(SDL_Event const &event)
 {/*
@@ -195,7 +198,7 @@ static void handle_sdl_event(SDL_Event const &event)
     }*/
 }
 
-
+/*
 static bool init_sdl()
 {
     auto sdl_options = SDL_INIT_VIDEO;
@@ -214,7 +217,7 @@ static void close_sdl()
 {
     SDL_Quit();
 }
-
+*/
 
 app::AppMemory app_memory = {};
 app::ScreenBuffer app_buffer = {};

@@ -61,13 +61,13 @@ static void set_app_screen_buffer(ScreenMemory const& memory, app::ScreenBuffer&
     app_buffer.bytes_per_pixel = SCREEN_BYTES_PER_PIXEL;
 }
 
-
+/*
 static void end_program(app::AppMemory& memory)
 {
     g_running = false;
     app::end_program(memory);
 }
-
+*/
 
 static void handle_sdl_event(SDL_Event const& event)
 {

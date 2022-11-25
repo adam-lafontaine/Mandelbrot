@@ -29,8 +29,8 @@ input_h += $(types_h)
 input_state_h := $(input)/input_state.hpp
 input_state += $(input_h)
 
-sdl_include := $(sdl)/sdl_include.hpp
-sdl_include += $(input_h)
+sdl_include_h := $(sdl)/sdl_include.hpp
+sdl_include_h += $(input_h)
 
 app_input_h := $(app)/app_input.hpp
 app_input_h += $(types_h)
