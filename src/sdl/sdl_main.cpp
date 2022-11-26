@@ -207,10 +207,12 @@ int main(int argc, char *argv[])
     while(g_running)
     {
         SDL_Event event;
+        SDL_Event event_dump;
         bool has_event = SDL_PollEvent(&event);
         if(has_event)
         {            
             handle_sdl_event(event);
+            while(SDL_PollEvent(&event_dump)){}
         }
 
         // does not miss frames but slows animation
@@ -233,6 +235,8 @@ int main(int argc, char *argv[])
         // swap inputs
         in_current = in_old;
         in_old = !in_old;
+
+        
     }
     
     app::end_program(app_memory);

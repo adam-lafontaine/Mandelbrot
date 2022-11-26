@@ -91,8 +91,7 @@ static bool init_sdl(bool web_only = false)
 static bool init_sdl_web()
 {
     auto sdl_options = 
-        SDL_INIT_VIDEO | 
-        SDL_INIT_GAMECONTROLLER;
+        SDL_INIT_VIDEO;
     
     if (SDL_Init(sdl_options) != 0)
     {
