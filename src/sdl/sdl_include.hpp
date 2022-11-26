@@ -63,7 +63,7 @@ static void close_sdl()
     SDL_Quit();
 }
 
-#define SDL2_WASM
+//#define SDL2_WASM
 
 #ifndef SDL2_WASM
 
@@ -87,6 +87,10 @@ static bool init_sdl()
         SDL_INIT_VIDEO | 
         SDL_INIT_GAMECONTROLLER | 
         SDL_INIT_HAPTIC;
+
+    sdl_options = 
+        SDL_INIT_VIDEO | 
+        SDL_INIT_GAMECONTROLLER;
     
     if (SDL_Init(sdl_options) != 0)
     {
