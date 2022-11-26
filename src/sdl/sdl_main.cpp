@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
     bool in_old = 1;
     Stopwatch sw;
     r64 frame_ms_elapsed = TARGET_MS_PER_FRAME;
-    //char title_buffer[50];
+    char title_buffer[50];
     r64 ms_elapsed = 0.0;
     r64 title_refresh_ms = 500.0;
 
@@ -183,11 +183,10 @@ int main(int argc, char *argv[])
         if(ms_elapsed >= title_refresh_ms)
         {
             ms_elapsed = 0.0;
-            //snprintf(title_buffer, 50, "%s (%u | %.1f | %d)", WINDOW_TITLE, dbg.max_iter, dbg.zoom, (int)frame_ms_elapsed);
-            //snprintf(title_buffer, 50, "%s (%d)", WINDOW_TITLE, (int)frame_ms_elapsed);
-            //SDL_SetWindowTitle(window, title_buffer);
-
-            //printf("\r frame ms: %d", (int)frame_ms_elapsed);
+            #ifndef NDEBUG
+            snprintf(title_buffer, 50, "%s (%d)", WINDOW_TITLE, (int)frame_ms_elapsed);
+            SDL_SetWindowTitle(screen.window, title_buffer);
+            #endif
         }
 
         auto sleep_ms = (u32)(TARGET_MS_PER_FRAME - frame_ms_elapsed);

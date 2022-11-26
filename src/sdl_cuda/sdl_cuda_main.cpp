@@ -180,8 +180,10 @@ int main(int argc, char *argv[])
         if(ms_elapsed >= title_refresh_ms)
         {
             ms_elapsed = 0.0;
+            #ifndef NDEBUG
             snprintf(title_buffer, 50, "%s (%d)", WINDOW_TITLE, (int)frame_ms_elapsed);
             SDL_SetWindowTitle(screen.window, title_buffer);
+            #endif
         }
 
         auto sleep_ms = (u32)(TARGET_MS_PER_FRAME - frame_ms_elapsed);

@@ -79,7 +79,8 @@ object_files += $(render_o)
 
 program_exe := $(build)/$(exe_name)
 
-GPP += -O3 -DNDEBUG
+GPP += -O3
+GPP += -DNDEBUG
 
 $(render_o): $(render_c) $(render_h) $(render_include_h) $(colors_h) $(index_range_h) $(range_list_h)
 	@echo "\n $(render_o)"

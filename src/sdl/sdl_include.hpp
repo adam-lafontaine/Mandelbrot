@@ -14,6 +14,8 @@
 #include <cstdio>
 #endif
 
+//#define SDL2_IMPL_B
+
 class SDLControllerInput
 {
 public:
@@ -41,6 +43,16 @@ void process_mouse_input(SDLEventInfo const& evt, MouseInput const& old_mouse, M
 
 constexpr u32 SCREEN_BYTES_PER_PIXEL = 4;
 
+#ifndef SDL2_WASM
+
+constexpr auto SDL_OPTIONS = SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC;
+
+#else
+
+constexpr auto SDL_OPTIONS = SDL_INIT_VIDEO;
+
+#endif
+
 
 static void print_message(const char* msg)
 {
@@ -63,9 +75,114 @@ static void close_sdl()
     SDL_Quit();
 }
 
-//#define SDL2_WASM
 
+static void display_error(const char* msg)
+{
 #ifndef SDL2_WASM
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "ERROR", msg, 0);
+#endif
+
+    print_sdl_error(msg);
+}
+
+
+static bool init_sdl()
+{    
+    if (SDL_Init(SDL_OPTIONS) != 0)
+    {
+        print_sdl_error("SDL_Init failed");
+        return false;
+    }
+
+    return true;
+}
+
+
+static void handle_sdl_window_event(SDL_WindowEvent const& w_event)
+{
+#ifndef SDL2_WASM
+
+    auto window = SDL_GetWindowFromID(w_event.windowID);
+    //auto renderer = SDL_GetRenderer(window);
+
+    switch(w_event.event)
+    {
+        case SDL_WINDOWEVENT_SIZE_CHANGED:
+        {
+
+        }break;
+        case SDL_WINDOWEVENT_EXPOSED:
+        {
+            
+        } break;
+    }
+
+#endif
+}
+
+
+static void open_game_controllers(SDLControllerInput& sdl, Input& input)
+{
+    int num_joysticks = SDL_NumJoysticks();
+    int c = 0;
+    for(int j = 0; j < num_joysticks; ++j)
+    {
+        if (!SDL_IsGameController(j))
+        {
+            continue;
+        }
+
+        print_message("found a controller");
+
+        sdl.controllers[c] = SDL_GameControllerOpen(j);
+        auto joystick = SDL_GameControllerGetJoystick(sdl.controllers[c]);
+        if(!joystick)
+        {
+            print_message("no joystick");
+        }
+
+        sdl.rumbles[c] = SDL_HapticOpenFromJoystick(joystick);
+        if(!sdl.rumbles[c])
+        {
+            print_message("no rumble from joystick");
+        }
+        else if(SDL_HapticRumbleInit(sdl.rumbles[c]) != 0)
+        {
+            print_sdl_error("SDL_HapticRumbleInit failed");
+            SDL_HapticClose(sdl.rumbles[c]);
+            sdl.rumbles[c] = 0;
+        }
+        else
+        {
+            print_message("found a rumble");
+        }
+
+        ++c;
+
+        if (c >= MAX_CONTROLLERS)
+        {
+            break;
+        }
+    }
+
+    input.num_controllers = c;
+}
+
+
+static void close_game_controllers(SDLControllerInput& sdl, Input const& input)
+{
+    for(u32 c = 0; c < input.num_controllers; ++c)
+    {
+        if(sdl.rumbles[c])
+        {
+            SDL_HapticClose(sdl.rumbles[c]);
+        }
+        SDL_GameControllerClose(sdl.controllers[c]);
+    }
+}
+
+
+#ifndef SDL2_IMPL_B
 
 class ScreenMemory
 {
@@ -79,35 +196,6 @@ public:
     int image_width;
     int image_height;
 };
-
-
-static bool init_sdl()
-{
-    auto sdl_options = 
-        SDL_INIT_VIDEO | 
-        SDL_INIT_GAMECONTROLLER | 
-        SDL_INIT_HAPTIC;
-
-    sdl_options = 
-        SDL_INIT_VIDEO | 
-        SDL_INIT_GAMECONTROLLER;
-    
-    if (SDL_Init(sdl_options) != 0)
-    {
-        print_sdl_error("SDL_Init failed");
-        return false;
-    }
-
-    return true;
-}
-
-
-static void display_error(const char* msg)
-{
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "ERROR", msg, 0);
-
-    print_sdl_error(msg);
-}
 
 
 static void destroy_screen_memory(ScreenMemory& screen)
@@ -209,89 +297,9 @@ static void render_screen(ScreenMemory const& screen)
     SDL_RenderPresent(screen.renderer);
 }
 
-
-static void handle_sdl_window_event(SDL_WindowEvent const& w_event)
-{
-    auto window = SDL_GetWindowFromID(w_event.windowID);
-    //auto renderer = SDL_GetRenderer(window);
-
-    switch(w_event.event)
-    {
-        case SDL_WINDOWEVENT_SIZE_CHANGED:
-        {
-
-        }break;
-        case SDL_WINDOWEVENT_EXPOSED:
-        {
-            
-        } break;
-    }
-}
-
-
-static void open_game_controllers(SDLControllerInput& sdl, Input& input)
-{
-    int num_joysticks = SDL_NumJoysticks();
-    int c = 0;
-    for(int j = 0; j < num_joysticks; ++j)
-    {
-        if (!SDL_IsGameController(j))
-        {
-            continue;
-        }
-
-        print_message("found a controller");
-
-        sdl.controllers[c] = SDL_GameControllerOpen(j);
-        auto joystick = SDL_GameControllerGetJoystick(sdl.controllers[c]);
-        if(!joystick)
-        {
-            print_message("no joystick");
-        }
-
-        sdl.rumbles[c] = SDL_HapticOpenFromJoystick(joystick);
-        if(!sdl.rumbles[c])
-        {
-            print_message("no rumble from joystick");
-        }
-        else if(SDL_HapticRumbleInit(sdl.rumbles[c]) != 0)
-        {
-            print_sdl_error("SDL_HapticRumbleInit failed");
-            SDL_HapticClose(sdl.rumbles[c]);
-            sdl.rumbles[c] = 0;
-        }
-        else
-        {
-            print_message("found a rumble");
-        }
-
-        ++c;
-
-        if (c >= MAX_CONTROLLERS)
-        {
-            break;
-        }
-    }
-
-    input.num_controllers = c;
-}
-
-
-static void close_game_controllers(SDLControllerInput& sdl, Input const& input)
-{
-    for(u32 c = 0; c < input.num_controllers; ++c)
-    {
-        if(sdl.rumbles[c])
-        {
-            SDL_HapticClose(sdl.rumbles[c]);
-        }
-        SDL_GameControllerClose(sdl.controllers[c]);
-    }
-}
-
 #else
 
-#include <emscripten.h>
+
 
 class ScreenMemory
 {
@@ -332,27 +340,6 @@ static void unlock_surface(ScreenMemory& screen)
         SDL_UnlockSurface(screen.surface);
         screen.surface_locked = false;
     }
-}
-
-
-static bool init_sdl()
-{
-    auto sdl_options = 
-        SDL_INIT_VIDEO;
-    
-    if (SDL_Init(sdl_options) != 0)
-    {
-        print_sdl_error("SDL_Init failed");
-        return false;
-    }
-
-    return true;
-}
-
-
-static void display_error(const char* msg)
-{
-    print_sdl_error(msg);
 }
 
 
@@ -457,6 +444,5 @@ static void render_screen(ScreenMemory& screen)
     
     lock_surface(screen);
 }
-
 
 #endif
