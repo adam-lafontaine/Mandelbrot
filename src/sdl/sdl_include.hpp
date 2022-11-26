@@ -42,20 +42,6 @@ void process_mouse_input(SDLEventInfo const& evt, MouseInput const& old_mouse, M
 constexpr u32 SCREEN_BYTES_PER_PIXEL = 4;
 
 
-class ScreenMemory
-{
-public:
-
-    SDL_Window* window = nullptr;
-    SDL_Renderer* renderer = nullptr;
-    SDL_Texture* texture = nullptr;
-
-    void* image_data;
-    int image_width;
-    int image_height;
-};
-
-
 static void print_message(const char* msg)
 {
 #ifdef PRINT_MESSAGES
@@ -72,15 +58,30 @@ static void print_sdl_error(const char* msg)
 }
 
 
-static void display_error(const char* msg)
+static void close_sdl()
 {
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "ERROR", msg, 0);
-
-    print_sdl_error(msg);
+    SDL_Quit();
 }
 
+#define SDL2_WASM
 
-static bool init_sdl(bool web_only = false)
+#ifndef SDL2_WASM
+
+class ScreenMemory
+{
+public:
+
+    SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+    SDL_Texture* texture = nullptr;
+
+    void* image_data;
+    int image_width;
+    int image_height;
+};
+
+
+static bool init_sdl()
 {
     auto sdl_options = 
         SDL_INIT_VIDEO | 
@@ -97,24 +98,11 @@ static bool init_sdl(bool web_only = false)
 }
 
 
-static bool init_sdl_web()
+static void display_error(const char* msg)
 {
-    auto sdl_options = 
-        SDL_INIT_VIDEO;
-    
-    if (SDL_Init(sdl_options) != 0)
-    {
-        print_sdl_error("SDL_Init failed");
-        return false;
-    }
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "ERROR", msg, 0);
 
-    return true;
-}
-
-
-static void close_sdl()
-{
-    SDL_Quit();
+    print_sdl_error(msg);
 }
 
 
@@ -208,7 +196,11 @@ static void render_screen(ScreenMemory const& screen)
         print_sdl_error("SDL_UpdateTexture failed");
     }
 
-    SDL_RenderCopy(screen.renderer, screen.texture, 0, 0);
+    error = SDL_RenderCopy(screen.renderer, screen.texture, 0, 0);
+    if(error)
+    {
+        print_sdl_error("SDL_RenderCopy failed");
+    }
     
     SDL_RenderPresent(screen.renderer);
 }
@@ -292,3 +284,175 @@ static void close_game_controllers(SDLControllerInput& sdl, Input const& input)
         SDL_GameControllerClose(sdl.controllers[c]);
     }
 }
+
+#else
+
+#include <emscripten.h>
+
+class ScreenMemory
+{
+public:
+
+    SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+    SDL_Texture* texture = nullptr;
+    SDL_Surface* surface = nullptr;
+
+    void* image_data = nullptr;
+    
+    int image_width;
+    int image_height;
+
+    bool surface_locked = false;
+};
+
+
+static void lock_surface(ScreenMemory& screen)
+{
+    //assert(screen.surface);
+
+    if (!screen.surface_locked && SDL_MUSTLOCK(screen.surface)) 
+    {
+        SDL_LockSurface(screen.surface);
+        screen.surface_locked = true;
+    }
+}
+
+
+static void unlock_surface(ScreenMemory& screen)
+{
+    //assert(screen.surface);
+
+    if (screen.surface_locked && SDL_MUSTLOCK(screen.surface)) 
+    {
+        SDL_UnlockSurface(screen.surface);
+        screen.surface_locked = false;
+    }
+}
+
+
+static bool init_sdl()
+{
+    auto sdl_options = 
+        SDL_INIT_VIDEO;
+    
+    if (SDL_Init(sdl_options) != 0)
+    {
+        print_sdl_error("SDL_Init failed");
+        return false;
+    }
+
+    return true;
+}
+
+
+static void display_error(const char* msg)
+{
+    print_sdl_error(msg);
+}
+
+
+static void destroy_screen_memory(ScreenMemory& screen)
+{
+    unlock_surface(screen);
+
+    if (screen.texture)
+    {
+        SDL_DestroyTexture(screen.texture);
+    }
+
+    if (screen.renderer)
+    {
+        SDL_DestroyRenderer(screen.renderer);
+    }
+
+    if(screen.window)
+    {
+        SDL_DestroyWindow(screen.window);
+    }
+}
+
+
+static bool create_screen_memory(ScreenMemory& screen, const char* title, int width, int height)
+{
+    destroy_screen_memory(screen);
+
+    screen.window = SDL_CreateWindow(
+        title,
+        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
+        width,
+        height,
+        SDL_WINDOW_RESIZABLE);
+
+    if(!screen.window)
+    {
+        display_error("SDL_CreateWindow failed");
+        return false;
+    }
+
+    screen.renderer = SDL_CreateRenderer(screen.window, -1, 0);
+
+    if(!screen.renderer)
+    {
+        display_error("SDL_CreateRenderer failed");
+        destroy_screen_memory(screen);
+        return false;
+    }
+
+    screen.surface = SDL_CreateRGBSurface(
+        0,
+        width,
+        height,
+        SCREEN_BYTES_PER_PIXEL * 8,
+        0, 0, 0, 0);
+
+    if(!screen.surface)
+    {
+        display_error("SDL_CreateRGBSurface failed");
+        destroy_screen_memory(screen);
+        return false;
+    }
+
+    screen.texture =  SDL_CreateTextureFromSurface(screen.renderer, screen.surface);    
+    
+    if(!screen.texture)
+    {
+        display_error("SDL_CreateTextureFromSurface");
+        destroy_screen_memory(screen);
+        return false;
+    }    
+
+    screen.image_data = (void*)(screen.surface->pixels);
+
+    screen.image_width = width;
+    screen.image_height = height;
+
+    return true;
+}
+
+
+static void render_screen(ScreenMemory& screen)
+{
+    unlock_surface(screen);
+
+    auto const pitch = screen.image_width * SCREEN_BYTES_PER_PIXEL;
+    auto error = SDL_UpdateTexture(screen.texture, 0, screen.image_data, pitch);
+    if(error)
+    {
+        print_sdl_error("SDL_UpdateTexture failed");
+    }
+
+    error = SDL_RenderCopy(screen.renderer, screen.texture, 0, 0);
+    if(error)
+    {
+        print_sdl_error("SDL_RenderCopy failed");
+    }
+    
+    SDL_RenderPresent(screen.renderer);
+    
+    lock_surface(screen);
+}
+
+
+#endif

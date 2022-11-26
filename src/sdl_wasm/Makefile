@@ -85,6 +85,7 @@ object_files += $(render_o)
 program_exe := $(web)/$(exe_name).html
 
 EPP += -O2
+EPP += -DSDL2_WASM
 
 $(render_o): $(render_c) $(render_h) $(render_include_h) $(colors_h) $(index_range_h) $(range_list_h)
 	@echo "\n $(render_o)"

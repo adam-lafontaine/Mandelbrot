@@ -4,13 +4,13 @@
 #include <cstdio>
 #include <cassert>
 
-#include <emscripten.h>
-
-constexpr u32 BYTES_PER_PIXEL = 4;
-
 constexpr auto WINDOW_TITLE = app::APP_TITLE;
 constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
 constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
+
+// assume 30 FPS
+constexpr r32 TARGET_FRAMERATE_HZ = 30.0f;
+constexpr r32 TARGET_MS_PER_FRAME = 1000.0f / TARGET_FRAMERATE_HZ;
 
 GlobalVariable bool g_running = false;
 
@@ -90,7 +90,7 @@ app::AppMemory app_memory = {};
 app::ScreenBuffer app_buffer = {};
 ScreenMemory screen = {};
 Input input[2] = {};
-SDLInput sdl_input = {};
+//SDLControllerInput controller_input = {};
 
 bool in_current = 0;
 bool in_old = 1;
@@ -100,18 +100,51 @@ app::DebugInfo dbg{};
 
 void main_loop()
 {
-    SDL_Event event;
+    /*SDL_Event event;
     bool has_event = SDL_PollEvent(&event);
     if (has_event)
     {
         handle_sdl_event(event);
+    }*/
+
+    /*process_keyboard_input(has_event, event, input[in_old], input[in_current]);
+    process_controller_input(sdl_input, input[in_old], input[in_current]);
+    process_mouse_input(has_event, event, input[in_old], input[in_current]);*/
+
+
+
+    /*SDLEventInfo evt{};
+    evt.first_in_queue = true;
+    evt.has_event = SDL_PollEvent(&evt.event);
+
+    if(evt.has_event)
+    {        
+        process_keyboard_input(evt, input[in_old].keyboard, input[in_current].keyboard);
+        process_mouse_input(evt, input[in_old].mouse, input[in_current].mouse);
+    }*/
+
+    SDLEventInfo evt{};
+    evt.first_in_queue = true;
+    evt.has_event = false;
+
+    while (SDL_PollEvent(&evt.event))
+    {
+        evt.has_event = true;
+        //handle_sdl_event(evt.event);
+        process_keyboard_input(evt, input[in_old].keyboard, input[in_current].keyboard);
+        //process_mouse_input(evt, input[in_old].mouse, input[in_current].mouse);
+        evt.first_in_queue = false;
     }
 
-    process_keyboard_input(has_event, event, input[in_old], input[in_current]);
+    if (!evt.has_event)
+    {
+        process_keyboard_input(evt, input[in_old].keyboard, input[in_current].keyboard);
+        //process_mouse_input(evt, input[in_old].mouse, input[in_current].mouse);
+    }
 
-    process_controller_input(sdl_input, input[in_old], input[in_current]);
+    input[in_current].dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
 
-    process_mouse_input(has_event, event, input[in_old], input[in_current]);
+    //process_controller_input(controller_input, input[in_old], input[in_current]);
 
     app::update_and_render(app_memory, input[in_current], dbg);
     
@@ -138,14 +171,14 @@ void print_controls()
     printf("Decrease zoom rate with '/'\n");
     printf("Increase resolution with up arrow\n");
     printf("Decrease resolution with down arrow\n");
-    printf("Change colors with left and right arrows");
+    printf("Change colors with left and right arrows\n");
 }
 
 
 int main(int argc, char *argv[])
 {
     printf("\n%s v %s\n", app::APP_TITLE, app::VERSION);
-    if (!init_sdl_web())
+    if (!init_sdl())
     {
         return EXIT_FAILURE;
     }
@@ -178,7 +211,7 @@ int main(int argc, char *argv[])
     g_running = app::initialize_memory(app_memory, app_buffer);
 
     emscripten_set_main_loop(main_loop, 0, 1);
-
+    
     app::end_program(app_memory);
     cleanup();
 
