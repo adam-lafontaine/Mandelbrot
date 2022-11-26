@@ -99,7 +99,7 @@ static void handle_sdl_event(SDL_Event const& event)
 
 void print_controls()
 {
-    printf("\nCONTROLS:\n");
+    printf("\nKEYBOARD:\n");
     printf("Pan up, left, down, right with W, A, S, D or 8, 4, 2, 6 (numpad)\n");
     printf("Zoom in with '+' (numpad)\n");
     printf("Zoom out with '-' (numpad)\n");
@@ -108,6 +108,15 @@ void print_controls()
     printf("Increase resolution with up arrow\n");
     printf("Decrease resolution with down arrow\n");
     printf("Change colors with left and right arrows\n\n");
+
+    printf("\nCONTROLLER:\n");
+    printf("Pan up, left, down, right with right thumbstick\n");
+    printf("Zoom in and out with left thumbstick\n");
+    printf("Increase zoom rate with right trigger\n");
+    printf("Decrease zoom rate with left trigger\n");
+    printf("Increase resolution with D-pad up \n");
+    printf("Decrease resolution with D-pad down\n");
+    printf("Change colors with D-pad left and D-pad right\n\n");
 }
 
 
