@@ -92,7 +92,7 @@ app::AppMemory app_memory = {};
 app::ScreenBuffer app_buffer = {};
 ScreenMemory screen = {};
 Input input[2] = {};
-SDLControllerInput controller_input = {};
+//SDLControllerInput controller_input = {};
 
 bool in_current = 0;
 bool in_old = 1;
@@ -102,29 +102,6 @@ app::DebugInfo dbg{};
 
 void main_loop()
 {
-    /*SDL_Event event;
-    bool has_event = SDL_PollEvent(&event);
-    if (has_event)
-    {
-        handle_sdl_event(event);
-    }*/
-
-    /*process_keyboard_input(has_event, event, input[in_old], input[in_current]);
-    process_controller_input(sdl_input, input[in_old], input[in_current]);
-    process_mouse_input(has_event, event, input[in_old], input[in_current]);*/
-
-
-
-    /*SDLEventInfo evt{};
-    evt.first_in_queue = true;
-    evt.has_event = SDL_PollEvent(&evt.event);
-
-    if(evt.has_event)
-    {        
-        process_keyboard_input(evt, input[in_old].keyboard, input[in_current].keyboard);
-        process_mouse_input(evt, input[in_old].mouse, input[in_current].mouse);
-    }*/
-
     SDLEventInfo evt{};
     evt.first_in_queue = true;
     evt.has_event = false;
@@ -146,7 +123,7 @@ void main_loop()
 
     input[in_current].dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
 
-    process_controller_input(controller_input, input[in_old], input[in_current]);
+    //process_controller_input(controller_input, input[in_old], input[in_current]);
 
     app::update_and_render(app_memory, input[in_current], dbg);
     
