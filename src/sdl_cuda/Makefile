@@ -267,7 +267,7 @@ endif
 
 ################################################################################
 
-GPP := g++-10 -std=c++17
+GPP := g++-11 -std=c++17
 SDL2 := `sdl2-config --cflags --libs`
 
 # sudo killall ibus-daemon
@@ -298,8 +298,8 @@ input_h += $(types_h)
 input_state_h := $(input)/input_state.hpp
 input_state += $(input_h)
 
-sdl_input_h := $(sdl)/sdl_input.hpp
-sdl_input_h += $(input_h)
+sdl_include_h := $(sdl)/sdl_include.hpp
+sdl_include_h += $(input_h)
 
 app_input_h := $(app)/app_input.hpp
 app_input_h += $(types_h)
@@ -360,7 +360,7 @@ object_files += $(render_o)
 program_exe := $(build)/$(exe_name)
 
 GPP += -O3
-#GPP += -DNDEBUG
+GPP += -DNDEBUG
 
 $(device_o): $(device_c) $(device_h) $(cuda_def_h)
 	@echo "\n $(device_o)"
@@ -378,11 +378,11 @@ $(app_input_o): $(app_input_c) $(app_input_h ) $(app_h) $(render_include_h)
 	@echo "\n $(app_input_o)"
 	$(GPP) -o $@ -c $<
 
-$(sdl_input_o): $(sdl_input_c) $(sdl_input_h) $(input_state_h)
+$(sdl_input_o): $(sdl_input_c) $(sdl_include_h) $(input_state_h)
 	@echo "\n $(sdl_input_o)"
 	$(GPP) -o $@ -c $< $(SDL2)
 
-$(main_o): $(main_c) $(app_h) $(stopwatch_h) $(sdl_input_h)
+$(main_o): $(main_c) $(app_h) $(stopwatch_h) $(sdl_include_h)
 	@echo "\n $(main_o)"
 	$(GPP) -o $@ -c $< $(SDL2)
 

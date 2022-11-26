@@ -72,11 +72,11 @@
     <ClInclude Include="..\src\utils\types.hpp">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\sdl\sdl_input.hpp">
-      <Filter>Header Files\sdl</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\sdl\sdl_include.hpp">
+      <Filter>Header Files\sdl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

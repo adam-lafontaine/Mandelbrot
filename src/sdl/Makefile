@@ -29,8 +29,8 @@ input_h += $(types_h)
 input_state_h := $(input)/input_state.hpp
 input_state += $(input_h)
 
-sdl_input_h := $(sdl)/sdl_input.hpp
-sdl_input_h += $(input_h)
+sdl_include_h := $(sdl)/sdl_include.hpp
+sdl_include_h += $(input_h)
 
 app_input_h := $(app)/app_input.hpp
 app_input_h += $(types_h)
@@ -79,7 +79,8 @@ object_files += $(render_o)
 
 program_exe := $(build)/$(exe_name)
 
-GPP += -O3 -DNDEBUG
+GPP += -O3
+GPP += -DNDEBUG
 
 $(render_o): $(render_c) $(render_h) $(render_include_h) $(colors_h) $(index_range_h) $(range_list_h)
 	@echo "\n $(render_o)"
@@ -93,11 +94,11 @@ $(app_input_o): $(app_input_c) $(app_input_h) $(app_h) $(render_include_h)
 	@echo "\n $(app_input_o)"
 	$(GPP) -o $@ -c $<
 
-$(sdl_input_o): $(sdl_input_c) $(sdl_input_h) $(input_state_h)
+$(sdl_input_o): $(sdl_input_c) $(sdl_include_h) $(input_state_h)
 	@echo "\n $(sdl_input_o)"
 	$(GPP) -o $@ -c $< $(SDL2)
 
-$(main_o): $(main_c) $(app_h) $(stopwatch_h) $(sdl_input_h)
+$(main_o): $(main_c) $(app_h) $(stopwatch_h) $(sdl_include_h)
 	@echo "\n $(main_o)"
 	$(GPP) -o $@ -c $< $(SDL2)
 
