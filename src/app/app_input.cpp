@@ -5,8 +5,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include <cstdio>
-
 
 constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
 constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 1000;
