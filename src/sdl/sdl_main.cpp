@@ -144,8 +144,8 @@ int main(int argc, char *argv[])
     auto const cleanup = [&]()
     {
         close_game_controllers(controller_input, input[0]);
-        close_sdl();
         destroy_screen_memory(screen);
+        close_sdl();
         destroy_app_memory(app_memory);
     };
 
@@ -164,7 +164,14 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    g_running = app::initialize_memory(app_memory, app_buffer);    
+    if(!app::initialize_memory(app_memory, app_buffer))
+    {
+        display_error("Initializing application memory failed");
+        cleanup();
+        return EXIT_FAILURE;
+    }
+
+    g_running = true;      
     
     bool in_current = 0;
     bool in_old = 1;

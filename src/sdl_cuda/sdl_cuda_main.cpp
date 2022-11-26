@@ -108,7 +108,16 @@ void print_controls()
     printf("Decrease zoom rate with '/'\n");
     printf("Increase resolution with up arrow\n");
     printf("Decrease resolution with down arrow\n");
-    printf("Change colors with left and right arrows");
+    printf("Change colors with left and right arrows\n\n");
+
+    printf("\nCONTROLLER:\n");
+    printf("Pan up, left, down, right with right thumbstick\n");
+    printf("Zoom in and out with left thumbstick\n");
+    printf("Increase zoom rate with right trigger\n");
+    printf("Decrease zoom rate with left trigger\n");
+    printf("Increase resolution with D-pad up \n");
+    printf("Decrease resolution with D-pad down\n");
+    printf("Change colors with D-pad left and D-pad right\n\n");
 }
 
 
@@ -131,17 +140,21 @@ int main(int argc, char *argv[])
     app::AppMemory app_memory = {};
     app::ScreenBuffer app_buffer = {};
     Input input[2] = {};
-    SDLInput sdl_input = {};
+    //SDLInput sdl_input = {};
+    SDLControllerInput controller_input = {};
+
 
     auto const cleanup = [&]()
     {
-        close_game_controllers(sdl_input, input[0]);
-        close_sdl();
+        //close_game_controllers(sdl_input, input[0]);
+        close_game_controllers(controller_input, input[0]); 
         destroy_screen_memory(screen);
+        close_sdl();
         destroy_app_memory(app_memory);
     };
 
-    open_game_controllers(sdl_input, input[0]);
+    //open_game_controllers(sdl_input, input[0]);
+    open_game_controllers(controller_input, input[0]);
     input[1].num_controllers = input[0].num_controllers;
     printf("controllers = %d\n", input[0].num_controllers);
 
@@ -204,7 +217,7 @@ int main(int argc, char *argv[])
     sw.start();
     while(g_running)
     {
-        SDL_Event event;
+        /*SDL_Event event;
         bool has_event = SDL_PollEvent(&event);
         if(has_event)
         {            
@@ -221,7 +234,34 @@ int main(int argc, char *argv[])
 
         process_controller_input(sdl_input, input[in_old], input[in_current]);
 
-        process_mouse_input(has_event, event, input[in_old], input[in_current]);
+        process_mouse_input(has_event, event, input[in_old], input[in_current]);*/
+
+        SDLEventInfo evt{};
+        evt.first_in_queue = true;
+        evt.has_event = false;
+
+        while (SDL_PollEvent(&evt.event))
+        {
+            evt.has_event = true;
+            handle_sdl_event(evt.event);
+            process_keyboard_input(evt, input[in_old].keyboard, input[in_current].keyboard);
+            process_mouse_input(evt, input[in_old].mouse, input[in_current].mouse);
+            evt.first_in_queue = false;
+        }
+
+        if (!evt.has_event)
+        {
+            process_keyboard_input(evt, input[in_old].keyboard, input[in_current].keyboard);
+            process_mouse_input(evt, input[in_old].mouse, input[in_current].mouse);
+        }
+
+        process_controller_input(controller_input, input[in_old], input[in_current]);
+
+        // does not miss frames but slows animation
+        input[in_current].dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
+
+        // animation speed maintained but frames missed
+        //input[in_current].dt_frame = frame_ms_elapsed / 1000.0f; // TODO:  
 
         app::update_and_render(app_memory, input[in_current], dbg);
 
