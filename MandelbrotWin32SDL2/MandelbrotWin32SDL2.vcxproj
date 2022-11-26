@@ -112,7 +112,7 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
-      <SubSystem>Native</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -144,7 +144,7 @@
     <ClInclude Include="..\src\app\render_include.hpp" />
     <ClInclude Include="..\src\input\input.hpp" />
     <ClInclude Include="..\src\input\input_state.hpp" />
-    <ClInclude Include="..\src\sdl\sdl_input.hpp" />
+    <ClInclude Include="..\src\sdl\sdl_include.hpp" />
     <ClInclude Include="..\src\utils\defines.hpp" />
     <ClInclude Include="..\src\utils\index_range.hpp" />
     <ClInclude Include="..\src\utils\stopwatch.hpp" />

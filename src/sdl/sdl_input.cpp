@@ -115,7 +115,7 @@ static void record_controller_input(SDL_GameController* sdl, ControllerInput con
 }
 
 
-void process_controller_input(SDLInput const& sdl, Input const& old_input, Input& new_input)
+void process_controller_input(SDLControllerInput const& sdl, Input const& old_input, Input& new_input)
 {
     for(u32 c = 0; c < new_input.num_controllers; ++c)
     {
@@ -428,32 +428,35 @@ static void record_keyboard_input(SDL_Keycode key_code, KeyboardInput const& old
 }
 
 
-
-
-
-void process_keyboard_input(bool has_event, SDL_Event const& event, Input const& old_input, Input& new_input)
+void process_keyboard_input(SDLEventInfo const& evt, KeyboardInput const& old_keyboard, KeyboardInput& new_keyboard)
 {
-	copy_keyboard_state(old_input.keyboard, new_input.keyboard);
-	if(!has_event)
+	if (evt.first_in_queue)
+	{
+		copy_keyboard_state(old_keyboard, new_keyboard);
+	}
+
+	if (!evt.has_event)
 	{
 		return;
 	}
 
-	switch(event.type)
+	auto event = evt.event;
+
+	switch (event.type)
 	{
-		case SDL_KEYDOWN:
-        case SDL_KEYUP:
-        {
-			if(event.key.repeat)
-			{
-				return;
-			}
+	case SDL_KEYDOWN:
+	case SDL_KEYUP:
+	{
+		if (event.key.repeat)
+		{
+			return;
+		}
 
-			bool is_down = event.key.state == SDL_PRESSED;
+		bool is_down = event.key.state == SDL_PRESSED;
 
-            auto key_code = event.key.keysym.sym;
-			record_keyboard_input(key_code, old_input.keyboard, new_input.keyboard, is_down);
-        } break;
+		auto key_code = event.key.keysym.sym;
+		record_keyboard_input(key_code, old_keyboard, new_keyboard, is_down);
+	} break;
 	}
 }
 
@@ -496,38 +499,43 @@ static void record_mouse_button_input(Uint8 button_code, MouseInput const& old_i
 }
 
 
-void process_mouse_input(bool has_event, SDL_Event const& event, Input const& old_input, Input& new_input)
+void process_mouse_input(SDLEventInfo const& evt, MouseInput const& old_mouse, MouseInput& new_mouse)
 {
+	if (evt.first_in_queue)
+	{
+		copy_mouse_state(old_mouse, new_mouse);
+	}
 
-	copy_mouse_state(old_input.mouse, new_input.mouse);
-	if(!has_event)
+	if (!evt.has_event)
 	{
 		return;
 	}
 
-	auto& mouse = new_input.mouse;
+	auto event = evt.event;
 
-	switch(event.type)
+	auto& mouse = new_mouse;
+
+	switch (event.type)
 	{
-		case SDL_MOUSEBUTTONDOWN:
-		case SDL_MOUSEBUTTONUP:
-		{
-			bool is_down = event.type == SDL_MOUSEBUTTONDOWN;
-			auto button = event.button.button;
+	case SDL_MOUSEBUTTONDOWN:
+	case SDL_MOUSEBUTTONUP:
+	{
+		bool is_down = event.type == SDL_MOUSEBUTTONDOWN;
+		auto button = event.button.button;
 
-			record_mouse_button_input(button, old_input.mouse, mouse, is_down);
-		} break;
-		case SDL_MOUSEMOTION:
-		{
-			auto& motion = event.motion;
+		record_mouse_button_input(button, old_mouse, mouse, is_down);
+	} break;
+	case SDL_MOUSEMOTION:
+	{
+		auto& motion = event.motion;
 
-			mouse.win_pos.x = motion.x;
-			mouse.win_pos.y = motion.y;
+		mouse.win_pos.x = motion.x;
+		mouse.win_pos.y = motion.y;
 
-		} break;
-		case SDL_MOUSEWHEEL:
-		{
+	} break;
+	case SDL_MOUSEWHEEL:
+	{
 
-		} break;
+	} break;
 	}
 }

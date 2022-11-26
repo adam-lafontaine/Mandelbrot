@@ -61,13 +61,6 @@ static void set_app_screen_buffer(ScreenMemory const& memory, app::ScreenBuffer&
     app_buffer.bytes_per_pixel = SCREEN_BYTES_PER_PIXEL;
 }
 
-/*
-static void end_program(app::AppMemory& memory)
-{
-    g_running = false;
-    app::end_program(memory);
-}
-*/
 
 static void handle_sdl_event(SDL_Event const& event)
 {
@@ -76,7 +69,7 @@ static void handle_sdl_event(SDL_Event const& event)
         case SDL_WINDOWEVENT:
         {
             handle_sdl_window_event(event.window);
-        }break;
+        } break;
         case SDL_QUIT:
         {
             printf("SDL_QUIT\n");
@@ -114,7 +107,7 @@ void print_controls()
     printf("Decrease zoom rate with '/'\n");
     printf("Increase resolution with up arrow\n");
     printf("Decrease resolution with down arrow\n");
-    printf("Change colors with left and right arrows");
+    printf("Change colors with left and right arrows\n\n");
 }
 
 
@@ -137,17 +130,17 @@ int main(int argc, char *argv[])
     app::AppMemory app_memory = {};
     app::ScreenBuffer app_buffer = {};
     Input input[2] = {};
-    SDLInput sdl_input = {};
+    SDLControllerInput controller_input = {};
 
     auto const cleanup = [&]()
     {
-        close_game_controllers(sdl_input, input[0]);
+        close_game_controllers(controller_input, input[0]);
         close_sdl();
         destroy_screen_memory(screen);
         destroy_app_memory(app_memory);
     };
 
-    open_game_controllers(sdl_input, input[0]);
+    open_game_controllers(controller_input, input[0]);
     input[1].num_controllers = input[0].num_controllers;
     printf("controllers = %d\n", input[0].num_controllers);
 
@@ -206,26 +199,32 @@ int main(int argc, char *argv[])
     sw.start();
     while(g_running)
     {
-        SDL_Event event;
-        SDL_Event event_dump;
-        bool has_event = SDL_PollEvent(&event);
-        if(has_event)
-        {            
-            handle_sdl_event(event);
-            while(SDL_PollEvent(&event_dump)){}
+        SDLEventInfo evt{};
+        evt.first_in_queue = true;
+        evt.has_event = false;
+
+        while (SDL_PollEvent(&evt.event))
+        {
+            evt.has_event = true;
+            handle_sdl_event(evt.event);
+            process_keyboard_input(evt, input[in_old].keyboard, input[in_current].keyboard);
+            process_mouse_input(evt, input[in_old].mouse, input[in_current].mouse);
+            evt.first_in_queue = false;
         }
+
+        if (!evt.has_event)
+        {
+            process_keyboard_input(evt, input[in_old].keyboard, input[in_current].keyboard);
+            process_mouse_input(evt, input[in_old].mouse, input[in_current].mouse);
+        }
+
+        process_controller_input(controller_input, input[in_old], input[in_current]);
 
         // does not miss frames but slows animation
         input[in_current].dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
 
         // animation speed maintained but frames missed
-        //input[in_current].dt_frame = frame_ms_elapsed / 1000.0f; // TODO:
-
-        process_keyboard_input(has_event, event, input[in_old], input[in_current]);
-
-        process_controller_input(sdl_input, input[in_old], input[in_current]);
-
-        process_mouse_input(has_event, event, input[in_old], input[in_current]);
+        //input[in_current].dt_frame = frame_ms_elapsed / 1000.0f; // TODO:        
 
         app::update_and_render(app_memory, input[in_current], dbg);
 
@@ -234,9 +233,7 @@ int main(int argc, char *argv[])
 
         // swap inputs
         in_current = in_old;
-        in_old = !in_old;
-
-        
+        in_old = !in_old;        
     }
     
     app::end_program(app_memory);

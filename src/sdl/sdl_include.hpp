@@ -14,7 +14,7 @@
 #include <cstdio>
 #endif
 
-class SDLInput
+class SDLControllerInput
 {
 public:
     SDL_GameController* controllers[MAX_CONTROLLERS];
@@ -22,12 +22,21 @@ public:
 };
 
 
+class SDLEventInfo
+{
+public:
+    SDL_Event event;
+    bool first_in_queue = true;
+    bool has_event = false;
+};
+
+
 // sdl_input.cpp
-void process_controller_input(SDLInput const& sdl, Input const& old_input, Input& new_input);
+void process_controller_input(SDLControllerInput const& sdl, Input const& old_input, Input& new_input);
 
-void process_keyboard_input(bool has_event, SDL_Event const& event, Input const& old_input, Input& new_input);
+void process_keyboard_input(SDLEventInfo const& evt, KeyboardInput const& old_keyboard, KeyboardInput& new_keyboard);
 
-void process_mouse_input(bool has_event, SDL_Event const& event, Input const& old_input, Input& new_input);
+void process_mouse_input(SDLEventInfo const& evt, MouseInput const& old_mouse, MouseInput& new_mouse);
 
 
 constexpr u32 SCREEN_BYTES_PER_PIXEL = 4;
@@ -111,24 +120,24 @@ static void close_sdl()
 
 static void destroy_screen_memory(ScreenMemory& screen)
 {
-    if(screen.window)
+    if (screen.image_data)
     {
-        SDL_DestroyWindow(screen.window);
+        free(screen.image_data);
     }
 
-    if(screen.renderer)
-    {
-        SDL_DestroyRenderer(screen.renderer);
-    }
-
-    if(screen.texture)
+    if (screen.texture)
     {
         SDL_DestroyTexture(screen.texture);
     }
 
-    if(screen.image_data)
+    if (screen.renderer)
     {
-        free(screen.image_data);
+        SDL_DestroyRenderer(screen.renderer);
+    }
+
+    if(screen.window)
+    {
+        SDL_DestroyWindow(screen.window);
     }
 }
 
@@ -224,7 +233,7 @@ static void handle_sdl_window_event(SDL_WindowEvent const& w_event)
 }
 
 
-static void open_game_controllers(SDLInput& sdl, Input& input)
+static void open_game_controllers(SDLControllerInput& sdl, Input& input)
 {
     int num_joysticks = SDL_NumJoysticks();
     int c = 0;
@@ -272,7 +281,7 @@ static void open_game_controllers(SDLInput& sdl, Input& input)
 }
 
 
-static void close_game_controllers(SDLInput& sdl, Input const& input)
+static void close_game_controllers(SDLControllerInput& sdl, Input const& input)
 {
     for(u32 c = 0; c < input.num_controllers; ++c)
     {
