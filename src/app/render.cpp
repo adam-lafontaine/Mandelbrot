@@ -1,7 +1,6 @@
 #include "render.hpp"
 #include "render_include.hpp"
 #include "colors.hpp"
-#include "../utils/index_range.hpp"
 #include "range_list.hpp"
 
 #include <cassert>
@@ -9,24 +8,84 @@
 #include <functional>
 #include <cmath>
 
-#ifdef NO_CPP17
+#ifndef NO_CPP17
 
-static void for_each(UnsignedRange const& ids, std::function<void(u32)> const& func)
+#include <execution>
+// -ltbb
+
+
+template <class LIST_T, class FUNC_T>
+static void do_for_each(LIST_T const& list, FUNC_T const& func)
 {
-	std::for_each(ids.begin(), ids.end(), func);
+	std::for_each(std::execution::par, list.begin(), list.end(), func);
 }
 
 #else
 
-#include <execution>
-
-static void for_each(UnsignedRange const& ids, std::function<void(u32)> const& func)
+template <class LIST_T, class FUNC_T>
+static void do_for_each(LIST_T const& list, FUNC_T const& func)
 {
-	std::for_each(std::execution::par, ids.begin(), ids.end(), func);
+	std::for_each(list.begin(), list.end(), func);
+}
+
+#endif // !NO_CPP17
+
+
+constexpr u32 N_THREADS = 16;
+
+
+using id_func_t = std::function<void(u32)>;
+
+
+class ThreadProcess
+{
+public:
+	u32 thread_id = 0;
+	id_func_t process;
+};
+
+
+using ProcList = std::array<ThreadProcess, N_THREADS>;
+
+
+static ProcList make_proc_list(id_func_t const& id_func)
+{
+	ProcList list = { 0 };
+
+	for (u32 i = 0; i < N_THREADS; ++i)
+	{
+		list[i] = { i, id_func };
+	}
+
+	return list;
 }
 
 
-#endif // NO_CPP17
+static void execute_procs(ProcList const& list)
+{
+	auto const func = [](ThreadProcess const& t) { t.process(t.thread_id); };
+
+	do_for_each(list, func);
+}
+
+
+static void process_rows(u32 height, id_func_t const& row_func)
+{
+	auto const rows_per_thread = height / N_THREADS;
+
+	auto const thread_proc = [&](u32 id)
+	{
+		auto y_begin = id * rows_per_thread;
+		auto y_end = (id == N_THREADS - 1 ? height : (id + 1) * rows_per_thread);
+
+		for (u32 y = y_begin; y < y_end; ++y)
+		{
+			row_func(y);
+		}
+	};
+
+	execute_procs(make_proc_list(thread_proc));
+}
 
 
 static Pixel to_pixel(u8 r, u8 g, u8 b)
@@ -163,8 +222,7 @@ static void process_and_draw(AppState const& state)
 		}
 	};
 
-	UnsignedRange rows(0u, ids.height);
-	for_each(rows, mbt_row);
+	process_rows(ids.height, mbt_row);
 }
 
 
@@ -181,8 +239,7 @@ static void draw(AppState const& state)
 		}
 	};
 
-	UnsignedRange rows(0u, pixels.height);
-	for_each(rows, draw_row);
+	process_rows(pixels.height, draw_row);
 }
 
 
