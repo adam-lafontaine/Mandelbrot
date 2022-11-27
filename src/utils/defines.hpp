@@ -3,12 +3,6 @@
 #include <cstdint>
 #include <cstddef>
 
-#if !_HAS_CXX17
-
-#define NO_CPP17
-
-#endif
-
 //#define NO_CPP17
 
 
