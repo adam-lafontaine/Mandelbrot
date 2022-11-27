@@ -23,8 +23,6 @@ EPP_FLAGS += --shell-file $(html_shell)
 
 defines_h := $(utils)/defines.hpp
 
-index_range_h := $(utils)/index_range.hpp
-
 types_h := $(utils)/types.hpp
 types_h += $(defines_h)
 
@@ -83,11 +81,11 @@ object_files += $(render_o)
 
 program_exe := $(web)/$(exe_name).html
 
-EPP += -O2 -DSDL2_WASM
+EPP += -O2 -DSDL2_WASM -DNO_CPP17
 EPP += -DNDEBUG
 
 
-$(render_o): $(render_c) $(render_h) $(render_include_h) $(colors_h) $(index_range_h) $(range_list_h)
+$(render_o): $(render_c) $(render_h) $(render_include_h) $(colors_h) $(range_list_h)
 	@echo "\n $(render_o)"
 	$(EPP) -o $@ -c $<
 
