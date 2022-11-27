@@ -16,8 +16,6 @@ exe_name := mandelbrot
 
 defines_h := $(utils)/defines.hpp
 
-index_range_h := $(utils)/index_range.hpp
-
 stopwatch_h := $(utils)/stopwatch.hpp
 
 types_h := $(utils)/types.hpp
@@ -81,8 +79,9 @@ program_exe := $(build)/$(exe_name)
 
 GPP += -O3
 GPP += -DNDEBUG
+#GPP += -DNO_CPP17
 
-$(render_o): $(render_c) $(render_h) $(render_include_h) $(colors_h) $(index_range_h) $(range_list_h)
+$(render_o): $(render_c) $(render_h) $(render_include_h) $(colors_h) $(range_list_h)
 	@echo "\n $(render_o)"
 	$(GPP) -o $@ -c $<
 
