@@ -99,23 +99,26 @@ static void handle_sdl_event(SDL_Event const& event)
 void print_controls()
 {
     printf("\nKEYBOARD:\n");
-    printf("Pan up, left, down, right with W, A, S, D or 8, 4, 2, 6 (numpad)\n");
-    printf("Zoom in with '+' (numpad)\n");
-    printf("Zoom out with '-' (numpad)\n");
-    printf("Increase zoom rate with '*'\n");
-    printf("Decrease zoom rate with '/'\n");
-    printf("Increase resolution with up arrow\n");
-    printf("Decrease resolution with down arrow\n");
-    printf("Change colors with left and right arrows\n\n");
+    printf("          W, A, S, D : Pan up, left, down, right\n");
+    printf(" 8, 4, 2, 6 (numpad) : Pan up, left, down, right\n");
+    printf("        '+' (numpad) : Zoom in\n");
+    printf("        '-' (numpad) : Zoom out\n");
+    printf("        '*' (numpad) : Increase zoom speed\n");
+    printf("        '/' (numpad) : Decrease zoom speed\n");
+    printf("            Arrow up : Increase resolution\n");
+    printf("          Arrow Down : Decrease resolution\n");
+    printf("Arrow left and right : Change colors\n");
+    printf("                 Esc : Close program\n\n");
 
     printf("\nCONTROLLER:\n");
-    printf("Pan up, left, down, right with right thumbstick\n");
-    printf("Zoom in and out with left thumbstick\n");
-    printf("Increase zoom rate with right trigger\n");
-    printf("Decrease zoom rate with left trigger\n");
-    printf("Increase resolution with D-pad up \n");
-    printf("Decrease resolution with D-pad down\n");
-    printf("Change colors with D-pad left and D-pad right\n\n");
+    printf("    Right thumbstick : Pan up, left, down, right\n");
+    printf("     Left thumbstick : Zoom in and out\n");
+    printf("       Right trigger : Increase zoom rate\n");
+    printf("        Left trigger : Decrease zoom rate\n");
+    printf("            D-pad up : Increase resolution\n");
+    printf("          D-pad down : Decrease resolution\n");
+    printf("D-pad left and right : Change colors\n");
+    printf("           B buttton : Close program\n\n");
 }
 
 
