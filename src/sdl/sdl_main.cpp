@@ -11,7 +11,6 @@
 #include <thread>
 
 
-constexpr auto WINDOW_TITLE = app::APP_TITLE;
 constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
 constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
 
@@ -122,7 +121,10 @@ void print_controls()
 
 int main(int argc, char *argv[])
 {
-    printf("\n%s v %s\n", app::APP_TITLE, app::VERSION);
+    char WINDOW_TITLE[50] = { 0 };
+    snprintf(WINDOW_TITLE, 50, "%s v%s", app::APP_TITLE, app::VERSION);
+
+    printf("\n%s\n", WINDOW_TITLE);
     if(!init_sdl())
     {        
         return EXIT_FAILURE;
@@ -177,7 +179,7 @@ int main(int argc, char *argv[])
     bool in_old = 1;
     Stopwatch sw;
     r64 frame_ms_elapsed = TARGET_MS_PER_FRAME;
-    char title_buffer[50];
+    char dbg_title[50] = { 0 };
     r64 ms_elapsed = 0.0;
     r64 title_refresh_ms = 500.0;
 
@@ -191,8 +193,8 @@ int main(int argc, char *argv[])
         {
             ms_elapsed = 0.0;
             #ifndef NDEBUG
-            snprintf(title_buffer, 50, "%s (%d)", WINDOW_TITLE, (int)frame_ms_elapsed);
-            SDL_SetWindowTitle(screen.window, title_buffer);
+            snprintf(dbg_title, 50, "%s (%d)", WINDOW_TITLE, (int)frame_ms_elapsed);
+            SDL_SetWindowTitle(screen.window, dbg_title);
             #endif
         }
 

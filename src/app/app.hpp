@@ -5,7 +5,7 @@
 namespace app
 {
 	constexpr auto APP_TITLE = "Mandelbrot";
-	constexpr auto VERSION = "1.0";
+	constexpr auto VERSION = "1.1";
 
 	// allocate memory
 	constexpr u32 BUFFER_HEIGHT = 800;
