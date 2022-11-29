@@ -142,15 +142,17 @@ void main_loop()
 
 void print_controls()
 {
-    printf("\nCONTROLS:\n");
-    printf("Pan up, left, down, right with W, A, S, D or 8, 4, 2, 6 (numpad)\n");
-    printf("Zoom in with '+' (numpad)\n");
-    printf("Zoom out with '-' (numpad)\n");
-    printf("Increase zoom rate with '*'\n");
-    printf("Decrease zoom rate with '/'\n");
-    printf("Increase resolution with up arrow\n");
-    printf("Decrease resolution with down arrow\n");
-    printf("Change colors with left and right arrows\n");
+    printf("\nKEYBOARD:\n");
+    printf("          W, A, S, D : Pan up, left, down, right\n");
+    printf(" 8, 4, 2, 6 (numpad) : Pan up, left, down, right\n");
+    printf("        '+' (numpad) : Zoom in\n");
+    printf("        '-' (numpad) : Zoom out\n");
+    printf("        '*' (numpad) : Increase zoom speed\n");
+    printf("        '/' (numpad) : Decrease zoom speed\n");
+    printf("            Arrow up : Increase resolution\n");
+    printf("          Arrow Down : Decrease resolution\n");
+    printf("Arrow left and right : Change colors\n");
+    printf("                 Esc : End program\n\n");
 }
 
 
