@@ -11,7 +11,6 @@
 #include <thread>
 
 
-constexpr auto WINDOW_TITLE = app::APP_TITLE;
 constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
 constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
 
@@ -100,29 +99,62 @@ static void handle_sdl_event(SDL_Event const& event)
 void print_controls()
 {
     printf("\nKEYBOARD:\n");
-    printf("Pan up, left, down, right with W, A, S, D or 8, 4, 2, 6 (numpad)\n");
-    printf("Zoom in with '+' (numpad)\n");
-    printf("Zoom out with '-' (numpad)\n");
-    printf("Increase zoom rate with '*'\n");
-    printf("Decrease zoom rate with '/'\n");
-    printf("Increase resolution with up arrow\n");
-    printf("Decrease resolution with down arrow\n");
-    printf("Change colors with left and right arrows\n\n");
+    printf("          W, A, S, D : Pan up, left, down, right\n");
+    printf(" 8, 4, 2, 6 (numpad) : Pan up, left, down, right\n");
+    printf("        '+' (numpad) : Zoom in\n");
+    printf("        '-' (numpad) : Zoom out\n");
+    printf("        '*' (numpad) : Increase zoom speed\n");
+    printf("        '/' (numpad) : Decrease zoom speed\n");
+    printf("            Arrow up : Increase resolution\n");
+    printf("          Arrow Down : Decrease resolution\n");
+    printf("Arrow left and right : Change colors\n");
+    printf("                 Esc : Close program\n\n");
 
     printf("\nCONTROLLER:\n");
-    printf("Pan up, left, down, right with right thumbstick\n");
-    printf("Zoom in and out with left thumbstick\n");
-    printf("Increase zoom rate with right trigger\n");
-    printf("Decrease zoom rate with left trigger\n");
-    printf("Increase resolution with D-pad up \n");
-    printf("Decrease resolution with D-pad down\n");
-    printf("Change colors with D-pad left and D-pad right\n\n");
+    printf("    Right thumbstick : Pan up, left, down, right\n");
+    printf("     Left thumbstick : Zoom in and out\n");
+    printf("       Right trigger : Increase zoom rate\n");
+    printf("        Left trigger : Decrease zoom rate\n");
+    printf("            D-pad up : Increase resolution\n");
+    printf("          D-pad down : Decrease resolution\n");
+    printf("D-pad left and right : Change colors\n");
+    printf("           B buttton : Close program\n\n");
 }
+
+/*
+
+KEYBOARD:
+          W, A, S, D : Pan up, left, down, right
+ 8, 4, 2, 6 (numpad) : Pan up, left, down, right
+        '+' (numpad) : Zoom in
+        '-' (numpad) : Zoom out
+        '*' (numpad) : Increase zoom speed
+        '/' (numpad) : Decrease zoom speed
+            Arrow up : Increase resolution
+          Arrow Down : Decrease resolution
+Arrow left and right : Change colors
+                 Esc : Close program
+
+CONTROLLER:
+    Right thumbstick : Pan up, left, down, right
+     Left thumbstick : Zoom in and out
+       Right trigger : Increase zoom rate
+        Left trigger : Decrease zoom rate
+            D-pad up : Increase resolution
+          D-pad down : Decrease resolution
+D-pad left and right : Change colors
+           B buttton : Close program
+
+
+*/
 
 
 int main(int argc, char *argv[])
 {
-    printf("\n%s v %s\n", app::APP_TITLE, app::VERSION);
+    char WINDOW_TITLE[50] = { 0 };
+    snprintf(WINDOW_TITLE, 50, "%s v%s", app::APP_TITLE, app::VERSION);
+
+    printf("\n%s\n", WINDOW_TITLE);
     if(!init_sdl())
     {        
         return EXIT_FAILURE;
@@ -177,7 +209,7 @@ int main(int argc, char *argv[])
     bool in_old = 1;
     Stopwatch sw;
     r64 frame_ms_elapsed = TARGET_MS_PER_FRAME;
-    char title_buffer[50];
+    char dbg_title[50] = { 0 };
     r64 ms_elapsed = 0.0;
     r64 title_refresh_ms = 500.0;
 
@@ -191,8 +223,8 @@ int main(int argc, char *argv[])
         {
             ms_elapsed = 0.0;
             #ifndef NDEBUG
-            snprintf(title_buffer, 50, "%s (%d)", WINDOW_TITLE, (int)frame_ms_elapsed);
-            SDL_SetWindowTitle(screen.window, title_buffer);
+            snprintf(dbg_title, 50, "%s (%d)", WINDOW_TITLE, (int)frame_ms_elapsed);
+            SDL_SetWindowTitle(screen.window, dbg_title);
             #endif
         }
 

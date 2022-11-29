@@ -100,24 +100,27 @@ static void handle_sdl_event(SDL_Event const& event)
 
 void print_controls()
 {
-    printf("\nCONTROLS:\n");
-    printf("Pan up, left, down, right with W, A, S, D or 8, 4, 2, 6 (numpad)\n");
-    printf("Zoom in with '+' (numpad)\n");
-    printf("Zoom out with '-' (numpad)\n");
-    printf("Increase zoom rate with '*'\n");
-    printf("Decrease zoom rate with '/'\n");
-    printf("Increase resolution with up arrow\n");
-    printf("Decrease resolution with down arrow\n");
-    printf("Change colors with left and right arrows\n\n");
+    printf("\nKEYBOARD:\n");
+    printf("          W, A, S, D : Pan up, left, down, right\n");
+    printf(" 8, 4, 2, 6 (numpad) : Pan up, left, down, right\n");
+    printf("        '+' (numpad) : Zoom in\n");
+    printf("        '-' (numpad) : Zoom out\n");
+    printf("        '*' (numpad) : Increase zoom speed\n");
+    printf("        '/' (numpad) : Decrease zoom speed\n");
+    printf("            Arrow up : Increase resolution\n");
+    printf("          Arrow Down : Decrease resolution\n");
+    printf("Arrow left and right : Change colors\n");
+    printf("                 Esc : Close program\n\n");
 
     printf("\nCONTROLLER:\n");
-    printf("Pan up, left, down, right with right thumbstick\n");
-    printf("Zoom in and out with left thumbstick\n");
-    printf("Increase zoom rate with right trigger\n");
-    printf("Decrease zoom rate with left trigger\n");
-    printf("Increase resolution with D-pad up \n");
-    printf("Decrease resolution with D-pad down\n");
-    printf("Change colors with D-pad left and D-pad right\n\n");
+    printf("    Right thumbstick : Pan up, left, down, right\n");
+    printf("     Left thumbstick : Zoom in and out\n");
+    printf("       Right trigger : Increase zoom rate\n");
+    printf("        Left trigger : Decrease zoom rate\n");
+    printf("            D-pad up : Increase resolution\n");
+    printf("          D-pad down : Decrease resolution\n");
+    printf("D-pad left and right : Change colors\n");
+    printf("           B buttton : Close program\n\n");
 }
 
 
@@ -140,20 +143,17 @@ int main(int argc, char *argv[])
     app::AppMemory app_memory = {};
     app::ScreenBuffer app_buffer = {};
     Input input[2] = {};
-    //SDLInput sdl_input = {};
     SDLControllerInput controller_input = {};
 
 
     auto const cleanup = [&]()
     {
-        //close_game_controllers(sdl_input, input[0]);
         close_game_controllers(controller_input, input[0]); 
         destroy_screen_memory(screen);
         close_sdl();
         destroy_app_memory(app_memory);
     };
-
-    //open_game_controllers(sdl_input, input[0]);
+    
     open_game_controllers(controller_input, input[0]);
     input[1].num_controllers = input[0].num_controllers;
     printf("controllers = %d\n", input[0].num_controllers);
@@ -217,25 +217,6 @@ int main(int argc, char *argv[])
     sw.start();
     while(g_running)
     {
-        /*SDL_Event event;
-        bool has_event = SDL_PollEvent(&event);
-        if(has_event)
-        {            
-            handle_sdl_event(event);
-        }
-
-        // does not miss frames but slows animation
-        input[in_current].dt_frame = TARGET_MS_PER_FRAME / 1000.0f;
-
-        // animation speed maintained but frames missed
-        //input[in_current].dt_frame = frame_ms_elapsed / 1000.0f; // TODO:
-
-        process_keyboard_input(has_event, event, input[in_old], input[in_current]);
-
-        process_controller_input(sdl_input, input[in_old], input[in_current]);
-
-        process_mouse_input(has_event, event, input[in_old], input[in_current]);*/
-
         SDLEventInfo evt{};
         evt.first_in_queue = true;
         evt.has_event = false;
