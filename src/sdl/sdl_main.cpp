@@ -121,6 +121,33 @@ void print_controls()
     printf("           B buttton : Close program\n\n");
 }
 
+/*
+
+KEYBOARD:
+          W, A, S, D : Pan up, left, down, right
+ 8, 4, 2, 6 (numpad) : Pan up, left, down, right
+        '+' (numpad) : Zoom in
+        '-' (numpad) : Zoom out
+        '*' (numpad) : Increase zoom speed
+        '/' (numpad) : Decrease zoom speed
+            Arrow up : Increase resolution
+          Arrow Down : Decrease resolution
+Arrow left and right : Change colors
+                 Esc : Close program
+
+CONTROLLER:
+    Right thumbstick : Pan up, left, down, right
+     Left thumbstick : Zoom in and out
+       Right trigger : Increase zoom rate
+        Left trigger : Decrease zoom rate
+            D-pad up : Increase resolution
+          D-pad down : Decrease resolution
+D-pad left and right : Change colors
+           B buttton : Close program
+
+
+*/
+
 
 int main(int argc, char *argv[])
 {
