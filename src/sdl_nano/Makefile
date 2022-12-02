@@ -359,7 +359,7 @@ object_files += $(render_o)
 
 program_exe := $(build)/$(exe_name)
 
-GPP += -O3
+GPP += -O3 -DNANO
 GPP += -DNDEBUG
 
 $(device_o): $(device_c) $(device_h) $(cuda_def_h)

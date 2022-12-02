@@ -4,6 +4,7 @@
 #include <cstddef>
 
 //#define NO_CPP17
+//#define NANO
 
 
 using u8 = uint8_t;
