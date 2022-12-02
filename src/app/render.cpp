@@ -231,7 +231,7 @@ static void process_and_draw(AppState const& state)
 
 	auto const mbt_row = [&](u32 y) 
 	{
-		auto ids_row = row_begin(ids, y);
+		auto ids_row = mat::row_begin(ids, y);
 		r64 cy = std::fma((r64)y, state.my_step, state.min_my); // state.min_my + y * state.my_step;
 
 		for(u32 x = 0; x < ids.width; ++x)

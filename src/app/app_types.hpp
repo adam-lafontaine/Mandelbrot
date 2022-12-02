@@ -34,25 +34,9 @@ public:
 	T* data;
 };
 
-
-template <typename T>
-T* row_begin(Matrix<T> const& mat, u32 y)
-{
-	assert(y < mat.height);
-
-	auto offset = y * mat.width;
-
-	auto ptr = mat.data + (u64)(offset);
-	assert(ptr);
-
-	return ptr;
-}
-
-
 using Mat2Du32 = Matrix<u32>;
 using Mat2Di32 = Matrix<i32>;
 using Image = Matrix<Pixel>;
-
 
 
 class AppState
@@ -77,3 +61,63 @@ public:
 	r64 mx_step;
 	r64 my_step;	
 };
+
+
+namespace mat
+{	
+	template <typename T>
+	T* row_begin(Matrix<T> const& mat, u32 y)
+	{
+		assert(y < mat.height);
+
+		auto offset = y * mat.width;
+
+		auto ptr = mat.data + (u64)(offset);
+		assert(ptr);
+
+		return ptr;
+	}
+
+
+	template <typename T>
+	class View
+	{
+	public:
+
+		T* matrix_data = nullptr;
+		u32 matrix_width = 0;
+
+		u32 x_begin = 0;
+		u32 x_end = 0;
+		u32 y_begin = 0;
+		u32 y_end = 0;
+
+		u32 width = 0;
+		u32 height = 0;
+	};
+
+
+	template <typename T>
+	View<T> sub_view(Matrix<T> const& matrix, Range2Du32 const& range)
+	{
+		assert(matrix.width);
+		assert(matrix.height);
+		assert(matrix.data);
+
+		View<T> sub_view{};
+
+		sub_view.matrix_data = matrix.data;
+		sub_view.matrix_width = matrix.width;
+		sub_view.x_begin = range.x_begin;
+		sub_view.y_begin = range.y_begin;
+		sub_view.x_end = range.x_end;
+		sub_view.y_end = range.y_end;
+		sub_view.width = range.x_end - range.x_begin;
+		sub_view.height = range.y_end - range.y_begin;
+
+		assert(sub_view.width);
+		assert(sub_view.height);
+
+		return sub_view;
+	}
+}
