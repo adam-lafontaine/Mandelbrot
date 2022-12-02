@@ -125,6 +125,42 @@ namespace mat
 
 
 	template <typename T>
+	static T* row_begin(View<T> const& view, u32 y)
+	{
+		assert(y < view.height);
+
+		auto offset = (view.y_begin + y) * view.matrix_width + view.x_begin;
+
+		auto ptr = view.matrix_data + (u64)(offset);
+		assert(ptr);
+
+		return ptr;
+	}
+
+
+	template <typename T>
+	static View<T> make_view(Matrix<T> const& matrix)
+	{
+		assert(matrix.width);
+		assert(matrix.height);
+		assert(matrix.data);
+
+		View<T> view{};
+
+		view.matrix_data = matrix.data;
+		view.matrix_width = matrix.width;
+		view.x_begin = 0;
+		view.y_begin = 0;
+		view.x_end = matrix.width;
+		view.y_end = matrix.height;
+		view.width = matrix.width;
+		view.height = matrix.height;
+
+		return view;
+	}
+
+
+	template <typename T>
 	static View<T> sub_view(Matrix<T> const& matrix, Range2Du32 const& range)
 	{
 		assert(matrix.width);
@@ -235,10 +271,7 @@ static u32 mandelbrot_iter(r64 cx, r64 cy, u32 iter_limit)
 
 static i32 color_index(u32 iter, u32 iter_limit)
 {
-	if (iter >= iter_limit)
-	{
-		return -1;
-	}	
+	assert(iter <= iter_limit);
 
 	u32 min = 0;
 	u32 max = 0;
@@ -261,7 +294,19 @@ static i32 color_index(u32 iter, u32 iter_limit)
 	return (iter - min) % N_COLORS;
 }
 
+static Pixel to_iter_color(u32 iter, u32 iter_limit, ChannelOptions const& options)
+{
+	if (iter >= iter_limit)
+	{
+		return to_pixel(0, 0, 0);
+	}
 
+	auto color_id = color_index(iter, iter_limit);
+
+	u8 color_map[] = { palettes[0][color_id], palettes[1][color_id], palettes[2][color_id] };
+
+	return to_pixel(color_map[options.channel1], color_map[options.channel2], color_map[options.channel3]);
+}
 
 
 /*
@@ -292,23 +337,7 @@ static void mbt_range()
 
 }
 */
-/*
-static void draw_xy(Mat2Di32 const& src, Image const& dst, ChannelOptions const& options, u32 x, u32 y)
-{
-	auto pixel_index = y * dst.width + x;
-	auto color_id = src.data[pixel_index];
 
-	if(color_id < 0)
-    {
-        dst.data[pixel_index] = to_pixel(0, 0, 0); // TODO: platform pixel
-    }
-    else
-    {
-        u8 color_map[] = { palettes[0][color_id], palettes[1][color_id], palettes[2][color_id] };
-        dst.data[pixel_index] = to_pixel(color_map[options.channel1], color_map[options.channel2], color_map[options.channel3]);
-    }
-}
-*/
 
 static void draw_xy(Mat2Du32 const& iter_src, Image const& dst, ChannelOptions const& options, u32 iter_limit, u32 x, u32 y)
 {
@@ -367,18 +396,19 @@ static void process_and_draw(AppState const& state)
 }
 
 
-static void draw(AppState const& state)
+static void draw(mat::View<u32> const& iters, mat::View<Pixel> const& pixels, u32 iter_limit, ChannelOptions const& options)
 {
-	auto& iters = state.iterations[state.current_id];
-	auto& pixels = state.screen_buffer;
-	auto& options = state.channel_options;
-	auto iter_limit = state.app_input.iter_limit;
-
+	assert(iters.matrix_data);
+	assert(pixels.matrix_data);
+	assert(iters.width == pixels.width);
+	assert(iters.height == pixels.height);
 	auto const draw_row = [&](u32 y)
 	{
+		auto s = mat::row_begin(iters, y);
+		auto d = mat::row_begin(pixels, y);
 		for(u32 x = 0; x < pixels.width; ++x)
 		{
-			draw_xy(iters, pixels, options, iter_limit, x, y);
+			d[x] = to_iter_color(s[x], iter_limit, options);
 		}
 	};
 
@@ -404,14 +434,14 @@ void render(AppState& state)
 		state.prev_id = !state.prev_id;
 		
 		auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
+
+		state.copy_src = ranges.copy_src;
+        state.copy_dst = ranges.copy_dst;
 		
 		state.min_mx = MBT_MIN_X + state.app_input.mbt_pos.x;
 		state.min_my = MBT_MIN_Y + state.app_input.mbt_pos.y;
 		state.mx_step = state.app_input.mbt_screen_width / width;
-		state.my_step = state.app_input.mbt_screen_height / height;
-
-		state.copy_src = ranges.copy_src;
-        state.copy_dst = ranges.copy_dst;
+		state.my_step = state.app_input.mbt_screen_height / height;		
 
 		process_and_draw(state);
 
@@ -419,8 +449,10 @@ void render(AppState& state)
 	}
     
     if(state.app_input.draw_new)
-    {       
-		draw(state);
+    {    
+		auto src = mat::make_view(state.iterations[state.current_id]);
+		auto dst = mat::make_view(state.screen_buffer);   
+		draw(src, dst, state.app_input.iter_limit, state.channel_options);
     }
 }
 
