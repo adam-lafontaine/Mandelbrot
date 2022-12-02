@@ -31,9 +31,9 @@ namespace app
 		auto const height = buffer.height;
 
 		auto const state_sz = sizeof(AppState);
-		auto const color_sz = sizeof(i32) * width * height;
+		auto const iter_sz = sizeof(u32) * width * height;
 
-		auto const required_sz = state_sz + 2 *color_sz;
+		auto const required_sz = state_sz + 2 * iter_sz;
 
 		assert(required_sz <= memory.permanent_storage_size);
 
@@ -42,15 +42,14 @@ namespace app
 		auto begin = (u8*)(&state);
 		size_t offset = state_sz;
 
-		state.color_ids[0].width = width;
-		state.color_ids[0].height = height;
-		state.color_ids[0].data = (i32*)(begin + offset);
+		for(u32 i = 0; i < 2; ++i)
+		{
+			state.iterations[i].width = width;
+			state.iterations[i].height = height;
 
-		offset += color_sz;
-
-		state.color_ids[1].width = width;
-		state.color_ids[1].height = height;
-		state.color_ids[1].data = (i32*)(begin + offset);
+			state.iterations[i].data = (u32*)(begin + offset);
+			offset += iter_sz;
+		}
 
 		state.screen_buffer = make_buffer_image(buffer);
 
