@@ -59,7 +59,7 @@ public:
 };
 
 
-class DeviceMemory
+class DeviceState
 {
 public:
     Mat2Di32 color_ids[2];
@@ -70,7 +70,7 @@ public:
 };
 
 
-class UnifiedMemory
+class UnifiedState
 {
 public:
     //Image screen_buffer;
@@ -100,11 +100,11 @@ public:
 	Image device_pixels;
     Image screen_pixels;
     
-    MemoryBuffer<DeviceMemory> device;
+    MemoryBuffer<DeviceState> device;
 	MemoryBuffer<Pixel> device_pixel_buffer;
 	MemoryBuffer<i32> device_i32_buffer;
 	MemoryBuffer<u8> device_u8_buffer;
 
-    MemoryBuffer<UnifiedMemory> unified;
+    MemoryBuffer<UnifiedState> unified;
 	
 };

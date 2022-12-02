@@ -62,6 +62,144 @@ namespace cuda
     bool launch_success(cstr label);
 
 
+    enum class Malloc : int
+    {
+        Device,
+        Unified
+    };
+
+
+    template <typename T>
+    class DeviceBuffer
+    {
+    private:
+        T* data_ = nullptr;
+        size_t capacity_ = 0;
+        size_t size_ = 0;
+
+        Malloc m_;
+
+    public:
+        DeviceBuffer(size_t n_elements, Malloc m)
+        {
+            m_ = m;
+            auto const n_bytes = sizeof(T) * n_elements;
+
+            ByteBuffer b{};
+
+            bool result = false;
+
+            switch(m_)
+            {
+                case Malloc::Device:
+                    result = device_malloc(b, n_bytes);
+                    break;
+                case Malloc::Unified:
+                    result = unified_malloc(b, n_bytes);
+                    break;
+            }
+
+            assert(result);
+
+            if(result)
+            {
+                data_ = (T*)b.data;
+                capacity_ = n_elements;
+                size_ = 0;
+            }
+        }
+
+
+        T* push(size_t n_elements)
+        {
+            assert(data_);
+            assert(capacity_);
+            assert(size_ < capacity_);
+
+            auto is_valid =
+                data_ &&
+                capacity_ &&
+                size_ < capacity_;
+
+            auto elements_available = (capacity_ - size_) >= n_elements;
+            assert(elements_available);
+
+            if (!is_valid || !elements_available)
+            {
+                return nullptr;
+            }
+
+            auto data = data_ + size_;
+
+            size_ += n_elements;
+
+            return data;
+        }
+
+
+        bool pop(size_t n_elements)
+        {
+            assert(data_);
+            assert(capacity_);
+            assert(size_ <= capacity_);
+            assert(n_elements <= capacity_);
+            assert(n_elements <= size_);
+
+            auto is_valid = 
+                data_ &&
+                capacity_ &&
+                size_ <= capacity_ &&
+                n_elements <= capacity_ &&
+                n_elements <= size_;
+
+            if (is_valid)
+            {
+                size_ -= n_elements;
+                return true;
+            }
+
+            return false;
+        }
+
+
+        void reset()
+        {
+            size_ = 0;
+        }
+
+
+        void free()
+        {          
+            capacity_ = 0;
+            size_ = 0;
+
+            if(!data_)
+            {
+                return;
+            }
+
+            ByteBuffer b{};
+            b.data = (u8*)data_;
+
+            switch(m_)
+            {
+                case Malloc::Device:
+                    cuda::free(b);
+                    break;
+                case Malloc::Unified:
+                    cuda::free(b);
+                    break;
+            }
+        }
+
+
+        size_t avail()
+        {
+            return capacity_ - size_;
+        }
+    };
+
+
     template<typename T>
     bool device_malloc(MemoryBuffer<T>& buffer, size_t n_elements)
     {

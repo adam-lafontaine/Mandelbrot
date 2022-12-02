@@ -120,7 +120,7 @@ static i32 color_index(u32 iter, u32 iter_limit, u32 total_colors)
 
 
 GPU_FUNCTION
-static void mandelbrot_xy(DeviceMemory const& device, UnifiedMemory const& unified, u32 x, u32 y)
+static void mandelbrot_xy(DeviceState const& device, UnifiedState const& unified, u32 x, u32 y)
 {
     auto& dst = device.color_ids[unified.current_id];
 
@@ -136,7 +136,7 @@ static void mandelbrot_xy(DeviceMemory const& device, UnifiedMemory const& unifi
 
 
 GPU_FUNCTION
-static void draw_pixel(DeviceMemory const& device, UnifiedMemory const& unified, u32 pixel_index)
+static void draw_pixel(DeviceState const& device, UnifiedState const& unified, u32 pixel_index)
 {
     auto& src = device.color_ids[unified.current_id];
     auto& dst = device.screen_pixels;
@@ -164,7 +164,7 @@ static void draw_pixel(DeviceMemory const& device, UnifiedMemory const& unified,
 
 
 GPU_KERNAL
-static void gpu_process_and_draw(DeviceMemory* device, UnifiedMemory* unified, u32 n_threads)
+static void gpu_process_and_draw(DeviceState* device, UnifiedState* unified, u32 n_threads)
 {
     int t = blockDim.x * blockIdx.x + threadIdx.x;
     if (t >= n_threads)
@@ -201,7 +201,7 @@ static void gpu_process_and_draw(DeviceMemory* device, UnifiedMemory* unified, u
 
 
 GPU_KERNAL
-static void gpu_draw(DeviceMemory* device, UnifiedMemory* unified, u32 n_threads)
+static void gpu_draw(DeviceState* device, UnifiedState* unified, u32 n_threads)
 {
     int t = blockDim.x * blockIdx.x + threadIdx.x;
     if (t >= n_threads)

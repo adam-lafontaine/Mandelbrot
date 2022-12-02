@@ -44,7 +44,7 @@ namespace app
 		assert(width == screen_buffer_width());
 		assert(height == screen_buffer_height());
 
-		UnifiedMemory unified{};		
+		UnifiedState unified{};		
 
 		if(!cuda::unified_malloc(state.unified, 1))
 		{
@@ -60,7 +60,7 @@ namespace app
 
     static bool init_device_memory(AppState& state, ScreenBuffer const& buffer)
     {
-		DeviceMemory device{};
+		DeviceState device{};
 
         auto const width = buffer.width;
 		auto const height = buffer.height;
@@ -171,7 +171,7 @@ namespace app
 			return false;
 		}
 
-		if(!cuda::memcpy_to_device(&device, state.device.data, sizeof(DeviceMemory)))
+		if(!cuda::memcpy_to_device(&device, state.device.data, sizeof(DeviceState)))
 		{
 			print_error("memcpy device");
 			return false;

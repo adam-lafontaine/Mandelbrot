@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <cassert>
 
 //#define NO_CPP17
 //#define NANO
