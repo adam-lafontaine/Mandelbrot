@@ -32,24 +32,21 @@ public:
 	u32 height;
 
 	T* data;
-
-	T* row_begin(u64 y) const
-	{
-		assert(y < height);
-
-		auto offset = y * width;
-
-		auto ptr = data + (u64)(offset);
-		assert(ptr);
-
-		return ptr;
-	}
-
-	T* begin() { return data; }
-	T* end() { return data + (u64)(width) * (u64)(height); }
-	T* begin() const { return data; }
-	T* end() const { return data + (u64)(width) * (u64)(height); }
 };
+
+
+template <typename T>
+T* row_begin(Matrix<T> const& mat, u32 y)
+{
+	assert(y < mat.height);
+
+	auto offset = y * mat.width;
+
+	auto ptr = mat.data + (u64)(offset);
+	assert(ptr);
+
+	return ptr;
+}
 
 
 using Mat2Du32 = Matrix<u32>;

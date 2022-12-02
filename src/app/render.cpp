@@ -177,6 +177,34 @@ static void copy_xy(Mat2Di32 const& src, Mat2Di32 const& dst, Range2Du32 const& 
     dst.data[dst_i] = src.data[src_i];
 }
 
+/*
+static void copy_range(Mat2Di32 const& src, Mat2Di32 const& dst, Range2Du32 const& r_src, Range2Du32 const & r_dst)
+{
+	auto const r_width = r_src.x_end - r_src.x_begin;
+	auto const r_height = r_src.y_end - r_src.y_begin;
+
+	auto src_begin = src.data + r_src.y_begin * src.width + r_src.x_begin;
+	auto dst_begin = dst.data + r_dst.y_begin * dst.width + r_dst.x_begin;
+
+	auto const copy_row = [&](u32 y)
+	{
+		auto s = src_begin + y * src.width;
+		auto d = dst_begin + y * dst.width;
+		for(u32 x = 0; x < r_width; ++x)
+		{
+			d[x] = s[x];
+		}
+	};
+
+	process_rows(r_height, copy_row);
+}
+
+
+static void mbt_range()
+{
+
+}
+*/
 
 static void draw_xy(Mat2Di32 const& src, Image const& dst, ChannelOptions const& options, u32 x, u32 y)
 {
@@ -203,7 +231,7 @@ static void process_and_draw(AppState const& state)
 
 	auto const mbt_row = [&](u32 y) 
 	{
-		auto ids_row = ids.row_begin(y);
+		auto ids_row = row_begin(ids, y);
 		r64 cy = std::fma((r64)y, state.my_step, state.min_my); // state.min_my + y * state.my_step;
 
 		for(u32 x = 0; x < ids.width; ++x)
