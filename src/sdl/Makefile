@@ -1,5 +1,9 @@
 GPP := g++-11 -std=c++17
+
 SDL2 := `sdl2-config --cflags --libs`
+TBB := -ltbb
+
+ALL_LFLAGS := $(SDL2) $(TBB)
 
 # sudo killall ibus-daemon
 # apt-get install libsdl2-dev libsdl2-dbg
@@ -79,11 +83,10 @@ program_exe := $(build)/$(exe_name)
 
 GPP += -O3
 GPP += -DNDEBUG
-#GPP += -DNO_CPP17
 
 $(render_o): $(render_c) $(render_h) $(render_include_h) $(colors_h) $(range_list_h)
 	@echo "\n $(render_o)"
-	$(GPP) -o $@ -c $<
+	$(GPP) -o $@ -c $< $(TBB)
 
 $(app_o): $(app_c) $(app_h) $(render_h) $(app_input_h)
 	@echo "\n $(app_o)"
@@ -103,7 +106,7 @@ $(main_o): $(main_c) $(app_h) $(stopwatch_h) $(sdl_include_h)
 
 $(program_exe): $(object_files)
 	@echo "\n $(exe_name)"
-	$(GPP) -o $@ $+ $(SDL2)
+	$(GPP) -o $@ $+ $(ALL_LFLAGS)
 
 build: $(program_exe)
 

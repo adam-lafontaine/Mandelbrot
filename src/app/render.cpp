@@ -12,6 +12,7 @@
 
 #include <execution>
 // -ltbb
+// sudo apt install libtbb-dev
 
 
 template <class LIST_T, class FUNC_T>
