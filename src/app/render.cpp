@@ -214,22 +214,6 @@ namespace mat
 
 		process_rows(src.height, row_func);
 	}
-
-
-	template <typename T>
-	static void copy_xy(Matrix<T> const& src, Matrix<T> const& dst, Range2Du32 const& r_src, Range2Du32 const & r_dst, u32 dst_x, u32 dst_y)
-	{
-		auto x_offset = dst_x - r_dst.x_begin;
-		auto y_offset = dst_y - r_dst.y_begin;
-
-		auto src_x = r_src.x_begin + x_offset;
-		auto src_y = r_src.y_begin + y_offset;
-
-		auto src_i = src_y * src.width + src_x;
-		auto dst_i = dst_y * src.width + dst_x;    
-
-		dst.data[dst_i] = src.data[src_i];
-	}
 }
 
 
@@ -318,63 +302,6 @@ static Pixel to_iter_color(u32 iter, u32 iter_limit, ChannelOptions const& optio
 }
 
 
-static void draw_xy(Mat2Du32 const& iter_src, Image const& dst, ChannelOptions const& options, u32 iter_limit, u32 x, u32 y)
-{
-	auto iter = mat::row_begin(iter_src, y)[x];
-	auto d = mat::row_begin(dst, y);
-
-	if (iter >= iter_limit)
-	{
-		d[x] = to_pixel(0, 0, 0);
-	}
-	else
-	{
-		auto color_id = color_index(iter, iter_limit);
-		u8 color_map[] = { palettes[0][color_id], palettes[1][color_id], palettes[2][color_id] };
-		d[x] = to_pixel(color_map[options.channel1], color_map[options.channel2], color_map[options.channel3]);
-	}
-}
-
-
-static void process_and_draw(AppState const& state)
-{
-	auto& iters = state.iterations[state.current_id];
-	auto& pixels = state.screen_buffer;
-	auto& options = state.channel_options;
-	auto iter_limit = state.app_input.iter_limit;
-	
-	auto& prev_iters = state.iterations[state.prev_id];
-
-	auto width = pixels.width;
-	auto height = pixels.height;
-
-	auto const mbt_row = [&](u32 y) 
-	{
-		auto iter_row = mat::row_begin(iters, y);
-		r64 cy = std::fma((r64)y, state.my_step, state.min_my); // state.min_my + y * state.my_step;
-
-		for(u32 x = 0; x < width; ++x)
-		{
-			if(in_range(x, y, state.copy_dst))
-			{
-				mat::copy_xy(prev_iters, iters, state.copy_src, state.copy_dst, x, y);
-			}
-			else
-			{
-				r64 cx = std::fma((r64)x, state.mx_step, state.min_mx); // state.min_mx + x * state.mx_step;
-				auto iter = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
-
-				iter_row[x] = iter;
-			}
-
-			draw_xy(iters, pixels, options, iter_limit, x, y);
-		}
-	};
-
-	process_rows(height, mbt_row);
-}
-
-
 static void process_mbt(AppState const& state, mat::View<u32> const& iters)
 {
 	if (!iters.width || !iters.height)
@@ -444,17 +371,16 @@ void render(AppState& state)
 		state.mx_step = state.app_input.mbt_screen_width / width;
 		state.my_step = state.app_input.mbt_screen_height / height;
 
-		/*auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
-		state.copy_src = ranges.copy_src;
-		state.copy_dst = ranges.copy_dst;
-		process_and_draw(state);
-		state.app_input.draw_new = false;*/
-
 		auto& curr = state.iterations[state.current_id];
 		auto direction = state.app_input.pixel_shift;
 
-		if (direction.x != 0 || direction.y != 0)
-		{			
+		if (direction.x == 0 && direction.y == 0)
+		{
+			auto iters = mat::make_view(curr);
+			process_mbt(state, iters);
+		}
+		else
+		{
 			auto& prev = state.iterations[state.prev_id];
 			auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
 
@@ -477,21 +403,16 @@ void render(AppState& state)
 				process_mbt(state, mbt_v);
 			};
 			
+			// TODO: add to state
 			std::array<std::function<void()>, 3> funcs = 
 			{
 				copy_f, mbt_h_f, mbt_v_f
 			};
 
-			execute(funcs);
+			execute(funcs);			
+		}
 
-			state.app_input.draw_new = true;
-		}
-		else
-		{
-			auto iters = mat::make_view(curr);
-			process_mbt(state, iters);
-			state.app_input.draw_new = true;
-		}
+		state.app_input.draw_new = true;
 	}
     
     if(state.app_input.draw_new)

@@ -49,14 +49,12 @@ public:
 
 	Mat2Du32 iterations[2];
 
-	//Mat2Di32 color_ids[2];
-
 	Image screen_buffer;
 
 	ChannelOptions channel_options;
 
-	Range2Du32 copy_src;
-    Range2Du32 copy_dst;
+	//Range2Du32 copy_src;
+    //Range2Du32 copy_dst;
 
 	r64 min_mx;
 	r64 min_my;
