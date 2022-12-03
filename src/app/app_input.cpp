@@ -5,10 +5,6 @@
 #include <algorithm>
 #include <cmath>
 
-
-constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
-constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
-
 #ifdef NANO
 
 constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
@@ -20,6 +16,9 @@ constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 100;
 constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = INT32_MAX;
 
 #endif
+
+constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
+constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
 
 
 static bool pan_right(Input const& input)
@@ -205,7 +204,7 @@ void process_input(Input const& input, AppInput& state)
 	i32 const pixel_shift = (i32)(std::round(app::PIXELS_PER_SECOND * input.dt_frame));
 
 	r64 const zoom_per_second = 0.5;
-	auto const zoom = [&]() { return state.zoom_speed * (1.0 + zoom_per_second * input.dt_frame); };
+	
 
 	auto direction = false;
     
@@ -260,14 +259,16 @@ void process_input(Input const& input, AppInput& state)
 		state.zoom_speed = std::max(state.zoom_speed / zoom_speed_factor, ZOOM_SPEED_LOWER_LIMIT);
 
 		state.render_new = true;
-	}    
+	}
+
+	auto const zoom = state.zoom_speed * (1.0 + zoom_per_second * input.dt_frame);
 
 	if (zoom_in(input) && !direction)
 	{
 		auto old_w = state.mbt_screen_width;
 		auto old_h = state.mbt_screen_height;
 
-		state.zoom_level *= zoom();
+		state.zoom_level *= zoom;
 
 		state.mbt_screen_width = mbt_screen_width(state.zoom_level);
 		state.mbt_screen_height = mbt_screen_height(state.zoom_level);
@@ -282,7 +283,7 @@ void process_input(Input const& input, AppInput& state)
 		auto old_w = state.mbt_screen_width;
 		auto old_h = state.mbt_screen_height;
 
-		state.zoom_level /= zoom();
+		state.zoom_level /= zoom;
 
 		state.mbt_screen_width = mbt_screen_width(state.zoom_level);
 		state.mbt_screen_height = mbt_screen_height(state.zoom_level);

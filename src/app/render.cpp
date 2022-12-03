@@ -120,13 +120,13 @@ namespace mat
 
 
 	template <typename T>
-	static T* row_begin(Matrix<T> const& mat, u32 y)
+	static T* row_begin(Matrix<T> const& matrix, u32 y)
 	{
-		assert(y < mat.height);
+		assert(y < matrix.height);
 
-		auto offset = y * mat.width;
+		auto offset = y * matrix.width;
 
-		auto ptr = mat.data + (u64)(offset);
+		auto ptr = matrix.data + (u64)(offset);
 		assert(ptr);
 
 		return ptr;
@@ -312,19 +312,83 @@ static void process_mbt(AppState const& state, mat::View<u32> const& iters)
 	auto const mbt_row = [&](u32 y)
 	{
 		r64 cy = state.min_my + (iters.y_begin + y) * state.my_step;
-		r64 cx = state.min_mx + iters.x_begin * state.mx_step;
+		
 
 		auto d = mat::row_begin(iters, y);
 
 		for (u32 x = 0; x < iters.width; ++x)
 		{
+			r64 cx = state.min_mx + (iters.x_begin + x) * state.mx_step;
 			d[x] = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
-			cx += state.mx_step;
 		}
 	};
 
 	process_rows(iters.height, mbt_row);
 }
+
+
+static void process_mbt(AppState const& state, Mat2Du32 const& iters)
+{
+	if (!iters.width || !iters.height)
+	{
+		return;
+	}
+
+	auto const mbt_row = [&](u32 y)
+	{
+		r64 cy = state.min_my + y * state.my_step;
+		
+
+		auto d = mat::row_begin(iters, y);
+
+		for (u32 x = 0; x < iters.width; ++x)
+		{
+			r64 cx = state.min_mx + x * state.mx_step;
+			d[x] = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
+		}
+	};
+
+	process_rows(iters.height, mbt_row);
+}
+
+
+/*static void process_mbt(AppState const& state, RangeList const& ranges)
+{
+	auto& iters = state.iterations[state.current_id];
+	auto& prev = state.iterations[state.prev_id];
+
+
+
+	auto const width = iters.width;
+	auto const height = iters.height;
+
+	auto const row_func = [&](u32 y)
+	{
+		r64 cy = state.min_my + y * state.my_step;
+		r64 cx = state.min_mx;
+
+		auto d = mat::row_begin(iters, y);
+
+
+
+
+		for (u32 x = 0; x < width; ++x)
+		{
+			if (in_range(x, y, ranges.copy_dst))
+			{
+
+			}
+			else
+			{
+				d[x] = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
+			}
+			
+			cx += state.mx_step;
+		}
+	};
+
+	process_rows(height, row_func);
+}*/
 
 
 static void draw(Mat2Du32 const& iters, Image const& pixels, u32 iter_limit, ChannelOptions const& options)
@@ -362,22 +426,22 @@ void render(AppState& state)
 	auto height = pixels.height;
 
 	if(state.app_input.render_new)
-	{		
-		state.current_id = state.prev_id;
-		state.prev_id = !state.prev_id;
-
+	{	
 		state.min_mx = MBT_MIN_X + state.app_input.mbt_pos.x;
 		state.min_my = MBT_MIN_Y + state.app_input.mbt_pos.y;
 		state.mx_step = state.app_input.mbt_screen_width / width;
 		state.my_step = state.app_input.mbt_screen_height / height;
+
+		state.current_id = state.prev_id;
+		state.prev_id = !state.prev_id;
 
 		auto& curr = state.iterations[state.current_id];
 		auto direction = state.app_input.pixel_shift;
 
 		if (direction.x == 0 && direction.y == 0)
 		{
-			auto iters = mat::make_view(curr);
-			process_mbt(state, iters);
+			//auto iters = mat::make_view(curr);
+			process_mbt(state, curr);
 		}
 		else
 		{
@@ -412,7 +476,9 @@ void render(AppState& state)
 			execute(funcs);			
 		}
 
-		state.app_input.draw_new = true;
+		draw(curr, pixels, state.app_input.iter_limit, state.channel_options);		
+		
+		state.app_input.draw_new = false;
 	}
     
     if(state.app_input.draw_new)
