@@ -3,24 +3,12 @@
 #include "defines.hpp"
 
 
-/*class Vec2Di32
+class Vec2Di32
 {
 public:
     i32 x;
     i32 y;
 };
-*/
-
-typedef union Vec2Di32_t
-{
-	struct
-	{
-		i32 x;
-		i32 y;
-	};
-
-	u64 is_non_zero;	
-} Vec2Di32;
 
 
 class Vec2Dr32

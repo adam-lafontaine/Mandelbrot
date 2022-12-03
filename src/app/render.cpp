@@ -17,15 +17,24 @@
 
 
 template <class LIST_T, class FUNC_T>
-static void do_for_each(LIST_T const& list, FUNC_T const& func)
+static void execute(LIST_T const& list, FUNC_T const& func)
 {
 	std::for_each(std::execution::par, list.begin(), list.end(), func);
 }
 
+
+template <class FUNC_LIST_T>
+static void execute(FUNC_LIST_T const& list)
+{
+	auto const func = [](auto const& func) { func(); };
+	execute(list, func);
+}
+
+
 #else
 
 template <class LIST_T, class FUNC_T>
-static void do_for_each(LIST_T const& list, FUNC_T const& func)
+static void execute(LIST_T const& list, FUNC_T const& func)
 {
 	std::for_each(list.begin(), list.end(), func);
 }
@@ -67,7 +76,7 @@ static void execute_procs(ProcList const& list)
 {
 	auto const func = [](ThreadProcess const& t) { t.process(t.thread_id); };
 
-	do_for_each(list, func);
+	execute(list, func);
 }
 
 
@@ -178,8 +187,8 @@ namespace mat
 		sub_view.width = range.x_end - range.x_begin;
 		sub_view.height = range.y_end - range.y_begin;
 
-		assert(sub_view.width);
-		assert(sub_view.height);
+		//assert(sub_view.width);
+		//assert(sub_view.height);
 
 		return sub_view;
 	}
@@ -435,28 +444,45 @@ void render(AppState& state)
 		state.mx_step = state.app_input.mbt_screen_width / width;
 		state.my_step = state.app_input.mbt_screen_height / height;
 
-		auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
+		/*auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
 		state.copy_src = ranges.copy_src;
 		state.copy_dst = ranges.copy_dst;
 		process_and_draw(state);
-		state.app_input.draw_new = false;
+		state.app_input.draw_new = false;*/
 
-		/*auto& curr = state.iterations[state.current_id];
-		auto& prev = state.iterations[state.prev_id];
+		auto& curr = state.iterations[state.current_id];
+		auto direction = state.app_input.pixel_shift;
 
-		if(state.app_input.pixel_shift.is_non_zero)
-		{
+		if (direction.x != 0 || direction.y != 0)
+		{			
+			auto& prev = state.iterations[state.prev_id];
 			auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
 
-			auto copy_src = mat::sub_view(prev, ranges.copy_src);
-			auto copy_dst = mat::sub_view(curr, ranges.copy_dst);
-			mat::copy(copy_src, copy_dst);
+			auto const copy_f = [&]()
+			{
+				auto copy_src = mat::sub_view(prev, ranges.copy_src);
+				auto copy_dst = mat::sub_view(curr, ranges.copy_dst);
+				mat::copy(copy_src, copy_dst);
+			};
 
-			auto mbt_h = mat::sub_view(curr, ranges.mbt_h);
-			auto mbt_v = mat::sub_view(curr, ranges.mbt_v);
+			auto const mbt_h_f = [&]()
+			{
+				auto mbt_h = mat::sub_view(curr, ranges.mbt_h);
+				process_mbt(state, mbt_h);
+			};
 
-			process_mbt(state, mbt_h);
-			process_mbt(state, mbt_v);
+			auto const mbt_v_f = [&]()
+			{
+				auto mbt_v = mat::sub_view(curr, ranges.mbt_v);
+				process_mbt(state, mbt_v);
+			};
+			
+			std::array<std::function<void()>, 3> funcs = 
+			{
+				copy_f, mbt_h_f, mbt_v_f
+			};
+
+			execute(funcs);
 
 			state.app_input.draw_new = true;
 		}
@@ -464,9 +490,8 @@ void render(AppState& state)
 		{
 			auto iters = mat::make_view(curr);
 			process_mbt(state, iters);
-			//process_and_draw(state);
 			state.app_input.draw_new = true;
-		}*/
+		}
 	}
     
     if(state.app_input.draw_new)
