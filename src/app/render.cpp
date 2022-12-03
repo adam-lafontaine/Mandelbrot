@@ -318,12 +318,19 @@ static void process_mbt(AppState const& state, mat::View<u32> const& iters)
 
 		for (u32 x = 0; x < iters.width; ++x)
 		{
+			
 			r64 cx = state.min_mx + (iters.x_begin + x) * state.mx_step;
 			d[x] = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
 		}
 	};
 
 	process_rows(iters.height, mbt_row);
+}
+
+
+static void mandelbrot_xy()
+{
+	
 }
 
 
@@ -336,14 +343,16 @@ static void process_mbt(AppState const& state, Mat2Du32 const& iters)
 
 	auto const mbt_row = [&](u32 y)
 	{
-		r64 cy = state.min_my + y * state.my_step;
+		//r64 cy = state.min_my + y * state.my_step;
+		r64 cy = std::fma((r64)y, state.my_step, state.min_my);
 		
 
 		auto d = mat::row_begin(iters, y);
 
 		for (u32 x = 0; x < iters.width; ++x)
 		{
-			r64 cx = state.min_mx + x * state.mx_step;
+			r64 cx = std::fma((r64)x, state.mx_step, state.min_mx);
+			//r64 cx = state.min_mx + x * state.mx_step;
 			d[x] = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
 		}
 	};
@@ -352,7 +361,22 @@ static void process_mbt(AppState const& state, Mat2Du32 const& iters)
 }
 
 
-/*static void process_mbt(AppState const& state, RangeList const& ranges)
+static void copy_xy(Mat2Du32 const& src, Mat2Du32 const& dst, Range2Du32 const& r_src, Range2Du32 const & r_dst, u32 dst_x, u32 dst_y)
+{
+    auto x_offset = dst_x - r_dst.x_begin;
+    auto y_offset = dst_y - r_dst.y_begin;
+
+    auto src_x = r_src.x_begin + x_offset;
+    auto src_y = r_src.y_begin + y_offset;
+
+    auto src_i = src_y * src.width + src_x;
+    auto dst_i = dst_y * src.width + dst_x;    
+
+    dst.data[dst_i] = src.data[src_i];
+}
+
+
+static void process_mbt(AppState const& state, RangeList const& ranges)
 {
 	auto& iters = state.iterations[state.current_id];
 	auto& prev = state.iterations[state.prev_id];
@@ -364,31 +388,30 @@ static void process_mbt(AppState const& state, Mat2Du32 const& iters)
 
 	auto const row_func = [&](u32 y)
 	{
-		r64 cy = state.min_my + y * state.my_step;
-		r64 cx = state.min_mx;
+		//r64 cy = state.min_my + y * state.my_step;
+		r64 cy = std::fma((r64)y, state.my_step, state.min_my);
+		//r64 cx = state.min_mx;
 
 		auto d = mat::row_begin(iters, y);
-
-
-
 
 		for (u32 x = 0; x < width; ++x)
 		{
 			if (in_range(x, y, ranges.copy_dst))
 			{
-
+				copy_xy(iters, prev, ranges.copy_src, ranges.copy_dst, x, y);
 			}
 			else
 			{
+				r64 cx = std::fma((r64)x, state.mx_step, state.min_mx);
 				d[x] = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
 			}
 			
-			cx += state.mx_step;
+			//cx += state.mx_step;
 		}
 	};
 
 	process_rows(height, row_func);
-}*/
+}
 
 
 static void draw(Mat2Du32 const& iters, Image const& pixels, u32 iter_limit, ChannelOptions const& options)
@@ -448,7 +471,7 @@ void render(AppState& state)
 			auto& prev = state.iterations[state.prev_id];
 			auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
 
-			auto const copy_f = [&]()
+			/*auto const copy_f = [&]()
 			{
 				auto copy_src = mat::sub_view(prev, ranges.copy_src);
 				auto copy_dst = mat::sub_view(curr, ranges.copy_dst);
@@ -473,7 +496,7 @@ void render(AppState& state)
 				copy_f, mbt_h_f, mbt_v_f
 			};
 
-			execute(funcs);			
+			execute(funcs);		*/	
 		}
 
 		draw(curr, pixels, state.app_input.iter_limit, state.channel_options);		
