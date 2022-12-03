@@ -6,17 +6,17 @@
 #include <cmath>
 
 
-constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
-
 constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
 constexpr r64 ZOOM_SPEED_LOWER_LIMIT = 1.0;
 
 #ifdef NANO
 
+constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
 constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 1000;
 
 #else
 
+constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 100;
 constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = INT32_MAX;
 
 #endif
