@@ -309,36 +309,6 @@ static Pixel to_iter_color(u32 iter, u32 iter_limit, ChannelOptions const& optio
 }
 
 
-/*
-static void copy_range(Mat2Di32 const& src, Mat2Di32 const& dst, Range2Du32 const& r_src, Range2Du32 const & r_dst)
-{
-	auto const r_width = r_src.x_end - r_src.x_begin;
-	auto const r_height = r_src.y_end - r_src.y_begin;
-
-	auto src_begin = src.data + r_src.y_begin * src.width + r_src.x_begin;
-	auto dst_begin = dst.data + r_dst.y_begin * dst.width + r_dst.x_begin;
-
-	auto const copy_row = [&](u32 y)
-	{
-		auto s = src_begin + y * src.width;
-		auto d = dst_begin + y * dst.width;
-		for(u32 x = 0; x < r_width; ++x)
-		{
-			d[x] = s[x];
-		}
-	};
-
-	process_rows(r_height, copy_row);
-}
-
-
-static void mbt_range()
-{
-
-}
-*/
-
-
 static void draw_xy(Mat2Du32 const& iter_src, Image const& dst, ChannelOptions const& options, u32 iter_limit, u32 x, u32 y)
 {
 	auto iter = mat::row_begin(iter_src, y)[x];
@@ -396,12 +366,38 @@ static void process_and_draw(AppState const& state)
 }
 
 
-static void draw(mat::View<u32> const& iters, mat::View<Pixel> const& pixels, u32 iter_limit, ChannelOptions const& options)
+static void process_mbt(AppState const& state, mat::View<u32> const& iters)
 {
-	assert(iters.matrix_data);
-	assert(pixels.matrix_data);
+	if (!iters.width || !iters.height)
+	{
+		return;
+	}
+
+	auto const mbt_row = [&](u32 y)
+	{
+		r64 cy = state.min_my + (iters.y_begin + y) * state.my_step;
+		r64 cx = state.min_mx + iters.x_begin * state.mx_step;
+
+		auto d = mat::row_begin(iters, y);
+
+		for (u32 x = 0; x < iters.width; ++x)
+		{
+			d[x] = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
+			cx += state.mx_step;
+		}
+	};
+
+	process_rows(iters.height, mbt_row);
+}
+
+
+static void draw(Mat2Du32 const& iters, Image const& pixels, u32 iter_limit, ChannelOptions const& options)
+{
+	assert(iters.data);
+	assert(pixels.data);
 	assert(iters.width == pixels.width);
 	assert(iters.height == pixels.height);
+
 	auto const draw_row = [&](u32 y)
 	{
 		auto s = mat::row_begin(iters, y);
@@ -418,9 +414,6 @@ static void draw(mat::View<u32> const& iters, mat::View<Pixel> const& pixels, u3
 
 void render(AppState& state)
 {
-	auto width = state.screen_buffer.width;
-	auto height = state.screen_buffer.height;
-
 	if(!state.app_input.render_new && !state.app_input.draw_new)
     {
         return;
@@ -428,31 +421,58 @@ void render(AppState& state)
 
     set_rgb_channels(state.channel_options, state.app_input.rgb_option);
 
+	auto& pixels = state.screen_buffer;
+	auto width = pixels.width;
+	auto height = pixels.height;
+
 	if(state.app_input.render_new)
-	{
+	{		
 		state.current_id = state.prev_id;
 		state.prev_id = !state.prev_id;
-		
-		auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
 
-		state.copy_src = ranges.copy_src;
-        state.copy_dst = ranges.copy_dst;
-		
 		state.min_mx = MBT_MIN_X + state.app_input.mbt_pos.x;
 		state.min_my = MBT_MIN_Y + state.app_input.mbt_pos.y;
 		state.mx_step = state.app_input.mbt_screen_width / width;
-		state.my_step = state.app_input.mbt_screen_height / height;		
+		state.my_step = state.app_input.mbt_screen_height / height;
 
+		auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
+		state.copy_src = ranges.copy_src;
+		state.copy_dst = ranges.copy_dst;
 		process_and_draw(state);
-
 		state.app_input.draw_new = false;
+
+		/*auto& curr = state.iterations[state.current_id];
+		auto& prev = state.iterations[state.prev_id];
+
+		if(state.app_input.pixel_shift.is_non_zero)
+		{
+			auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
+
+			auto copy_src = mat::sub_view(prev, ranges.copy_src);
+			auto copy_dst = mat::sub_view(curr, ranges.copy_dst);
+			mat::copy(copy_src, copy_dst);
+
+			auto mbt_h = mat::sub_view(curr, ranges.mbt_h);
+			auto mbt_v = mat::sub_view(curr, ranges.mbt_v);
+
+			process_mbt(state, mbt_h);
+			process_mbt(state, mbt_v);
+
+			state.app_input.draw_new = true;
+		}
+		else
+		{
+			auto iters = mat::make_view(curr);
+			process_mbt(state, iters);
+			//process_and_draw(state);
+			state.app_input.draw_new = true;
+		}*/
 	}
     
     if(state.app_input.draw_new)
-    {    
-		auto src = mat::make_view(state.iterations[state.current_id]);
-		auto dst = mat::make_view(state.screen_buffer);   
-		draw(src, dst, state.app_input.iter_limit, state.channel_options);
+    { 
+		auto& iters = state.iterations[state.current_id];
+		draw(iters, pixels, state.app_input.iter_limit, state.channel_options);
     }
 }
 
