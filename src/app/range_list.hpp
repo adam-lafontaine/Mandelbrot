@@ -12,8 +12,8 @@ class RangeList
 public:
 	Range2Du32 copy_src = ZERO_RANGE;
 	Range2Du32 copy_dst = ZERO_RANGE;
-	Range2Du32 mbt_h = ZERO_RANGE;
-	Range2Du32 mbt_v = ZERO_RANGE;
+	//Range2Du32 mbt_h = ZERO_RANGE;
+	//Range2Du32 mbt_v = ZERO_RANGE;
 };
 
 
@@ -51,16 +51,16 @@ static inline RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const&
 
 	list.copy_src = full_range;
 	list.copy_dst = full_range;
-	list.mbt_h = full_range;
-	list.mbt_v = full_range;
+	//list.mbt_h = full_range;
+	//list.mbt_v = full_range;
 
 	if (d_up)
 	{
 		list.copy_src.y_begin = n_rows;
 		list.copy_dst.y_end -= n_rows;
 
-		list.mbt_h.y_begin = list.copy_dst.y_end;
-		list.mbt_v = ZERO_RANGE;
+		//list.mbt_h.y_begin = list.copy_dst.y_end;
+		//list.mbt_v = ZERO_RANGE;
 	}
 	else if (d_up_right)
 	{
@@ -69,16 +69,16 @@ static inline RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const&
 		list.copy_dst.x_begin = n_cols;
 		list.copy_src.x_end -= n_cols;
 
-		list.mbt_h.y_begin = list.copy_dst.y_end;
-		list.mbt_v.x_end = list.copy_dst.x_begin;
+		//list.mbt_h.y_begin = list.copy_dst.y_end;
+		//list.mbt_v.x_end = list.copy_dst.x_begin;
 	}
 	else if (d_right)
 	{
 		list.copy_dst.x_begin = n_cols;
 		list.copy_src.x_end -= n_cols;
 
-		list.mbt_h = ZERO_RANGE;
-		list.mbt_v.x_end = list.copy_dst.x_begin;		
+		//list.mbt_h = ZERO_RANGE;
+		//list.mbt_v.x_end = list.copy_dst.x_begin;		
 	}
 	else if (d_down_right)
 	{
@@ -87,8 +87,8 @@ static inline RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const&
 		list.copy_dst.y_begin = n_rows;
 		list.copy_src.y_end -= n_rows;
 
-		list.mbt_v.x_end = list.copy_dst.x_begin;
-		list.mbt_h.y_end = list.copy_dst.y_begin;
+		//list.mbt_v.x_end = list.copy_dst.x_begin;
+		//list.mbt_h.y_end = list.copy_dst.y_begin;
 
 	}
 	else if (d_down)
@@ -96,8 +96,8 @@ static inline RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const&
 		list.copy_dst.y_begin = n_rows;
 		list.copy_src.y_end -= n_rows;
 
-		list.mbt_h.y_end = list.copy_dst.y_begin;
-		list.mbt_v = ZERO_RANGE;
+		//list.mbt_h.y_end = list.copy_dst.y_begin;
+		//list.mbt_v = ZERO_RANGE;
 	}
 	else if (d_down_left)
 	{
@@ -106,16 +106,16 @@ static inline RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const&
 		list.copy_src.x_begin = n_cols;
 		list.copy_dst.x_end -= n_cols;
 
-		list.mbt_h.y_end = list.copy_dst.y_begin;
-		list.mbt_v.x_begin = list.copy_dst.x_end;
+		//list.mbt_h.y_end = list.copy_dst.y_begin;
+		//list.mbt_v.x_begin = list.copy_dst.x_end;
 	}
 	else if (d_left)
 	{
 		list.copy_src.x_begin = n_cols;
 		list.copy_dst.x_end -= n_cols;
 
-		list.mbt_h = ZERO_RANGE;
-		list.mbt_v.x_begin = list.copy_dst.x_end;
+		//list.mbt_h = ZERO_RANGE;
+		//list.mbt_v.x_begin = list.copy_dst.x_end;
 	}
 	else if (d_up_left)
 	{
@@ -124,8 +124,8 @@ static inline RangeList get_ranges(Range2Du32 const& full_range, Vec2Di32 const&
 		list.copy_src.x_begin = n_cols;
 		list.copy_dst.x_end -= n_cols;
 
-		list.mbt_h.y_begin = list.copy_dst.y_end;
-		list.mbt_v.x_begin = list.copy_dst.x_end;
+		//list.mbt_h.y_begin = list.copy_dst.y_end;
+		//list.mbt_v.x_begin = list.copy_dst.x_end;
 	}
 
 	return list;

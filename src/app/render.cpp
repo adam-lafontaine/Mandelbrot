@@ -330,7 +330,7 @@ static void process_mbt(AppState const& state, mat::View<u32> const& iters)
 
 static void mandelbrot_xy()
 {
-	
+
 }
 
 
@@ -381,24 +381,19 @@ static void process_mbt(AppState const& state, RangeList const& ranges)
 	auto& iters = state.iterations[state.current_id];
 	auto& prev = state.iterations[state.prev_id];
 
-
-
 	auto const width = iters.width;
 	auto const height = iters.height;
 
 	auto const row_func = [&](u32 y)
 	{
-		//r64 cy = state.min_my + y * state.my_step;
 		r64 cy = std::fma((r64)y, state.my_step, state.min_my);
-		//r64 cx = state.min_mx;
-
 		auto d = mat::row_begin(iters, y);
 
 		for (u32 x = 0; x < width; ++x)
 		{
 			if (in_range(x, y, ranges.copy_dst))
 			{
-				copy_xy(iters, prev, ranges.copy_src, ranges.copy_dst, x, y);
+				copy_xy(prev, iters, ranges.copy_src, ranges.copy_dst, x, y);
 			}
 			else
 			{
@@ -446,7 +441,7 @@ void render(AppState& state)
 
 	auto& pixels = state.screen_buffer;
 	auto width = pixels.width;
-	auto height = pixels.height;
+	auto height = pixels.height;	
 
 	if(state.app_input.render_new)
 	{	
@@ -458,8 +453,20 @@ void render(AppState& state)
 		state.current_id = state.prev_id;
 		state.prev_id = !state.prev_id;
 
+		
+		//auto& prev = state.iterations[state.prev_id];
+
+		auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
+
+		process_mbt(state, ranges);
+
 		auto& curr = state.iterations[state.current_id];
-		auto direction = state.app_input.pixel_shift;
+
+		draw(curr, pixels, state.app_input.iter_limit, state.channel_options);		
+		
+		state.app_input.draw_new = false;
+
+		/*auto direction = state.app_input.pixel_shift;
 
 		if (direction.x == 0 && direction.y == 0)
 		{
@@ -471,7 +478,9 @@ void render(AppState& state)
 			auto& prev = state.iterations[state.prev_id];
 			auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
 
-			/*auto const copy_f = [&]()
+			process_mbt(state, ranges);
+
+			auto const copy_f = [&]()
 			{
 				auto copy_src = mat::sub_view(prev, ranges.copy_src);
 				auto copy_dst = mat::sub_view(curr, ranges.copy_dst);
@@ -496,12 +505,12 @@ void render(AppState& state)
 				copy_f, mbt_h_f, mbt_v_f
 			};
 
-			execute(funcs);		*/	
+			execute(funcs);		
 		}
 
 		draw(curr, pixels, state.app_input.iter_limit, state.channel_options);		
 		
-		state.app_input.draw_new = false;
+		state.app_input.draw_new = false;*/
 	}
     
     if(state.app_input.draw_new)
@@ -509,6 +518,9 @@ void render(AppState& state)
 		auto& iters = state.iterations[state.current_id];
 		draw(iters, pixels, state.app_input.iter_limit, state.channel_options);
     }
+
+	state.app_input.render_new = false;
+	state.app_input.draw_new = false;
 }
 
 
