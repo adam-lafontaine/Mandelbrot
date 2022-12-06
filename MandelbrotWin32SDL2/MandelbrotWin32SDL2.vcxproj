@@ -158,12 +158,6 @@
     <ClCompile Include="..\src\sdl\sdl_input.cpp" />
     <ClCompile Include="..\src\sdl\sdl_main.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="MandelbrotWin32SDL2.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="..\src\resources\icon.ico" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
