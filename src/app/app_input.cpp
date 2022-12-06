@@ -204,7 +204,7 @@ void process_input(Input const& input, AppInput& state)
 	i32 const pixel_shift = (i32)(std::round(app::PIXELS_PER_SECOND * input.dt_frame));
 
 	r64 const zoom_per_second = 0.5;
-	
+	auto const zoom = [&]() { return state.zoom_speed * (1.0 + zoom_per_second * input.dt_frame); };	
 
 	auto direction = false;
     
@@ -261,14 +261,12 @@ void process_input(Input const& input, AppInput& state)
 		state.render_new = true;
 	}
 
-	auto const zoom = state.zoom_speed * (1.0 + zoom_per_second * input.dt_frame);
-
 	if (zoom_in(input) && !direction)
 	{
 		auto old_w = state.mbt_screen_width;
 		auto old_h = state.mbt_screen_height;
 
-		state.zoom_level *= zoom;
+		state.zoom_level *= zoom();
 
 		state.mbt_screen_width = mbt_screen_width(state.zoom_level);
 		state.mbt_screen_height = mbt_screen_height(state.zoom_level);
@@ -283,7 +281,7 @@ void process_input(Input const& input, AppInput& state)
 		auto old_w = state.mbt_screen_width;
 		auto old_h = state.mbt_screen_height;
 
-		state.zoom_level /= zoom;
+		state.zoom_level /= zoom();
 
 		state.mbt_screen_width = mbt_screen_width(state.zoom_level);
 		state.mbt_screen_height = mbt_screen_height(state.zoom_level);

@@ -336,23 +336,15 @@ static void mandelbrot_xy()
 
 static void process_mbt(AppState const& state, Mat2Du32 const& iters)
 {
-	if (!iters.width || !iters.height)
-	{
-		return;
-	}
-
 	auto const mbt_row = [&](u32 y)
 	{
-		//r64 cy = state.min_my + y * state.my_step;
-		r64 cy = std::fma((r64)y, state.my_step, state.min_my);
-		
+		r64 cy = std::fma((r64)y, state.my_step, state.min_my);		
 
 		auto d = mat::row_begin(iters, y);
 
 		for (u32 x = 0; x < iters.width; ++x)
 		{
 			r64 cx = std::fma((r64)x, state.mx_step, state.min_mx);
-			//r64 cx = state.min_mx + x * state.mx_step;
 			d[x] = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
 		}
 	};
@@ -391,7 +383,7 @@ static void process_mbt(AppState const& state, RangeList const& ranges)
 
 		for (u32 x = 0; x < width; ++x)
 		{
-			if (in_range(x, y, ranges.copy_dst))
+			/*if (in_range(x, y, ranges.copy_dst))
 			{
 				copy_xy(prev, iters, ranges.copy_src, ranges.copy_dst, x, y);
 			}
@@ -399,6 +391,46 @@ static void process_mbt(AppState const& state, RangeList const& ranges)
 			{
 				r64 cx = std::fma((r64)x, state.mx_step, state.min_mx);
 				d[x] = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
+			}*/
+
+			r64 cx = std::fma((r64)x, state.mx_step, state.min_mx);
+			d[x] = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
+			
+			//cx += state.mx_step;
+		}
+	};
+
+	process_rows(height, row_func);
+}
+
+
+static void process_and_draw(AppState const& state, RangeList const& ranges)
+{
+	auto& iters = state.iterations[state.current_id];
+	auto& prev = state.iterations[state.prev_id];
+
+	auto const width = iters.width;
+	auto const height = iters.height;
+
+	auto copy_src = mat::sub_view(prev, ranges.copy_src);
+	//auto copy_dst = mat::sub_view(iters, ranges.copy_dst);
+
+	auto const row_func = [&](u32 y)
+	{
+		r64 cy = std::fma((r64)y, state.my_step, state.min_my);
+		auto iter = mat::row_begin(iters, y);
+		auto d = mat::row_begin(state.screen_buffer, y);
+
+		for (u32 x = 0; x < width; ++x)
+		{
+			if (in_range(x, y, ranges.copy_dst))
+			{
+				copy_xy(prev, iters, ranges.copy_src, ranges.copy_dst, x, y);
+			}
+			else
+			{
+				r64 cx = std::fma((r64)x, state.mx_step, state.min_mx);
+				iter[x] = mandelbrot_iter(cx, cy, state.app_input.iter_limit);
 			}
 			
 			//cx += state.mx_step;
