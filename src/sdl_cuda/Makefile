@@ -297,7 +297,7 @@ sdl      := $(code)/sdl
 cuda_app := $(code)/cuda_app
 sdl_cuda := $(code)/sdl_cuda
 
-exe_name := mandelbrot_cuda
+exe_name := mandelbrot_nvidia
 
 
 defines_h := $(utils)/defines.hpp
@@ -374,7 +374,7 @@ object_files += $(render_o)
 
 program_exe := $(build)/$(exe_name)
 
-GPP += -O3 -DNANO
+GPP += -O3
 GPP += -DNDEBUG
 
 $(device_o): $(device_c) $(device_h) $(cuda_def_h)

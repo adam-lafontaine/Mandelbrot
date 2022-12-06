@@ -273,7 +273,7 @@ SDL2 := `sdl2-config --cflags --libs`
 # sudo killall ibus-daemon
 # apt-get install libsdl2-dev libsdl2-dbg
 
-build    := ../../build/sdl_cuda
+build    := ../../build/sdl_nano
 code     := ..
 app      := $(code)/app
 input    := $(code)/input
