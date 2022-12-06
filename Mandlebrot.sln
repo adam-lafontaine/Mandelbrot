@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MandelbrotWin32", "Mandelbr
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MandelbrotWin32SDL2", "MandelbrotWin32SDL2\MandelbrotWin32SDL2.vcxproj", "{06A937F0-470F-46D1-8409-DFD7CA481C2D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MandelbrotCudaWin32SDL2", "MandelbrotCudaWin32SDL2\MandelbrotCudaWin32SDL2.vcxproj", "{02FC4D30-5DAB-41CD-8FB9-D1A92111AC84}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{06A937F0-470F-46D1-8409-DFD7CA481C2D}.Release|x64.Build.0 = Release|x64
 		{06A937F0-470F-46D1-8409-DFD7CA481C2D}.Release|x86.ActiveCfg = Release|Win32
 		{06A937F0-470F-46D1-8409-DFD7CA481C2D}.Release|x86.Build.0 = Release|Win32
+		{02FC4D30-5DAB-41CD-8FB9-D1A92111AC84}.Debug|x64.ActiveCfg = Debug|x64
+		{02FC4D30-5DAB-41CD-8FB9-D1A92111AC84}.Debug|x64.Build.0 = Debug|x64
+		{02FC4D30-5DAB-41CD-8FB9-D1A92111AC84}.Debug|x86.ActiveCfg = Debug|x64
+		{02FC4D30-5DAB-41CD-8FB9-D1A92111AC84}.Debug|x86.Build.0 = Debug|x64
+		{02FC4D30-5DAB-41CD-8FB9-D1A92111AC84}.Release|x64.ActiveCfg = Release|x64
+		{02FC4D30-5DAB-41CD-8FB9-D1A92111AC84}.Release|x64.Build.0 = Release|x64
+		{02FC4D30-5DAB-41CD-8FB9-D1A92111AC84}.Release|x86.ActiveCfg = Release|x64
+		{02FC4D30-5DAB-41CD-8FB9-D1A92111AC84}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

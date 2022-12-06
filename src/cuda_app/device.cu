@@ -41,9 +41,9 @@ namespace cuda
     bool device_malloc(ByteBuffer& buffer, size_t n_bytes)
     {
         assert(n_bytes);
-        assert(!buffer.data);
+        assert(buffer.data == nullptr);
 
-        if(!n_bytes || buffer.data)
+        if(!n_bytes || buffer.data != nullptr)
         {
             return false;
         }
@@ -66,9 +66,9 @@ namespace cuda
     bool unified_malloc(ByteBuffer& buffer, size_t n_bytes)
     {
         assert(n_bytes);
-        assert(!buffer.data);
+        assert(buffer.data == nullptr);
 
-        if(!n_bytes || buffer.data)
+        if(!n_bytes || buffer.data != nullptr)
         {
             return false;
         }
@@ -93,7 +93,7 @@ namespace cuda
         buffer.capacity = 0;
         buffer.size = 0;
 
-        if(buffer.data)
+        if(buffer.data != nullptr)
         {
             cudaError_t err = cudaFree(buffer.data);
             check_error(err, "free");
@@ -109,7 +109,7 @@ namespace cuda
 
     u8* push_bytes(ByteBuffer& buffer, size_t n_bytes)
     {
-        assert(buffer.data);
+        assert(buffer.data != nullptr);
         assert(buffer.capacity);
         assert(buffer.size < buffer.capacity);
 
@@ -136,7 +136,7 @@ namespace cuda
 
     bool pop_bytes(ByteBuffer& buffer, size_t n_bytes)
     {
-        assert(buffer.data);
+        assert(buffer.data != nullptr);
         assert(buffer.capacity);
         assert(buffer.size <= buffer.capacity);
         assert(n_bytes <= buffer.capacity);

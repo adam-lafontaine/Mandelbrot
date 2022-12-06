@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{49a5fac1-fbbb-4cf4-a427-3e58ad552f8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{57b97e07-bcb7-40f7-8714-ffc3ddebde04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\utils">
+      <UniqueIdentifier>{68fcd6e6-3c04-40ce-9019-ee75104baae2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sdl">
+      <UniqueIdentifier>{cf05fc7b-a297-47cc-9e67-8ae34115f029}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\app">
+      <UniqueIdentifier>{d0f9f993-4378-4aaf-a9de-23808502a231}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\input">
+      <UniqueIdentifier>{9392485e-1360-4a38-91da-405f42b58813}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\sdl">
+      <UniqueIdentifier>{ee2f2fa4-630e-498f-92f4-b64cb8c7a2af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\app">
+      <UniqueIdentifier>{cbd38a7e-d214-4e39-837f-5d15e094795e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\sdl_cuda">
+      <UniqueIdentifier>{7a7604ec-08ed-420f-9b19-77779cfc46c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\cuda_app">
+      <UniqueIdentifier>{9a1c4f64-23f5-491b-9167-62fce05285ca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\cuda_app">
+      <UniqueIdentifier>{af2a2adf-0e2e-4be0-9af5-3cbf169f3654}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\utils\defines.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\stopwatch.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\types.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\sdl\sdl_include.hpp">
+      <Filter>Header Files\sdl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\input\input.hpp">
+      <Filter>Header Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\input\input_state.hpp">
+      <Filter>Header Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\cuda_app\app.hpp">
+      <Filter>Header Files\cuda_app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\cuda_app\cuda_def.cuh">
+      <Filter>Header Files\cuda_app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\cuda_app\cuda_types.hpp">
+      <Filter>Header Files\cuda_app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\cuda_app\device.hpp">
+      <Filter>Header Files\cuda_app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\cuda_app\render.hpp">
+      <Filter>Header Files\cuda_app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\app\app.hpp">
+      <Filter>Header Files\app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\app\app_input.hpp">
+      <Filter>Header Files\app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\app\colors.hpp">
+      <Filter>Header Files\app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\app\range_list.hpp">
+      <Filter>Header Files\app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\app\render_include.hpp">
+      <Filter>Header Files\app</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\sdl\sdl_input.cpp">
+      <Filter>Source Files\sdl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sdl_cuda\sdl_cuda_main.cpp">
+      <Filter>Source Files\sdl_cuda</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\cuda_app\app.cpp">
+      <Filter>Source Files\cuda_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\app\app_input.cpp">
+      <Filter>Source Files\app</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\src\cuda_app\device.cu">
+      <Filter>Source Files\cuda_app</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\src\cuda_app\render.cu">
+      <Filter>Source Files\cuda_app</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>

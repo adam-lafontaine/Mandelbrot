@@ -263,7 +263,7 @@ static bool create_screen_memory(ScreenMemory& screen, const char* title, int wi
         return false;
     }
 
-    screen.image_data = malloc(SCREEN_BYTES_PER_PIXEL * width * height);
+    screen.image_data = malloc((size_t)SCREEN_BYTES_PER_PIXEL * width * height);
 
     if(!screen.image_data)
     {

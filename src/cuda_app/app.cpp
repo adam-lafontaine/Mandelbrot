@@ -185,6 +185,8 @@ namespace app
 	{
 		auto& state = get_state(memory);
 
+		state = {};
+
 		if(!init_unified_memory(state, buffer))
 		{
 			print_error("unified memory");
