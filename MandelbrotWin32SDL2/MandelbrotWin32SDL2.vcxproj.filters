@@ -30,6 +30,9 @@
     <Filter Include="Header Files\resources">
       <UniqueIdentifier>{9663c556-cefb-4fda-822f-28734d07a94a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\resources">
+      <UniqueIdentifier>{67d938f5-3fd6-414d-b641-a418e6806bf9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\app\app.hpp">
@@ -74,7 +77,7 @@
     <ClInclude Include="..\src\sdl\sdl_include.hpp">
       <Filter>Header Files\sdl</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\resources\icon.h">
+    <ClInclude Include="..\src\resources\icon_64.h">
       <Filter>Header Files\resources</Filter>
     </ClInclude>
   </ItemGroup>
@@ -94,5 +97,8 @@
     <ClCompile Include="..\src\sdl\sdl_main.cpp">
       <Filter>Source Files\sdl</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MandelbrotWin32SDL2.rc" />
   </ItemGroup>
 </Project>
