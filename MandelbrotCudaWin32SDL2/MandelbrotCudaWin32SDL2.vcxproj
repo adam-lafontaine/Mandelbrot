@@ -38,6 +38,9 @@
     <CudaCompile Include="..\src\cuda_app\device.cu" />
     <CudaCompile Include="..\src\cuda_app\render.cu" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MandelbrotCudaWin32SDL2.rc" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{02FC4D30-5DAB-41CD-8FB9-D1A92111AC84}</ProjectGuid>
     <RootNamespace>MandelbrotCudaWin32SDL2</RootNamespace>
@@ -94,6 +97,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

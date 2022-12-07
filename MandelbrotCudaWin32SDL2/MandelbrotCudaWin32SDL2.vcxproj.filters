@@ -107,4 +107,7 @@
       <Filter>Source Files\cuda_app</Filter>
     </CudaCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MandelbrotCudaWin32SDL2.rc" />
+  </ItemGroup>
 </Project>

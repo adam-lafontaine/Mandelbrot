@@ -30,9 +30,6 @@
     <Filter Include="Header Files\resources">
       <UniqueIdentifier>{9663c556-cefb-4fda-822f-28734d07a94a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\resources">
-      <UniqueIdentifier>{67d938f5-3fd6-414d-b641-a418e6806bf9}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\app\app.hpp">
