@@ -144,12 +144,12 @@
     <ClInclude Include="..\src\app\render_include.hpp" />
     <ClInclude Include="..\src\input\input.hpp" />
     <ClInclude Include="..\src\input\input_state.hpp" />
+    <ClInclude Include="..\src\resources\icon.h" />
     <ClInclude Include="..\src\sdl\sdl_include.hpp" />
     <ClInclude Include="..\src\utils\defines.hpp" />
     <ClInclude Include="..\src\utils\index_range.hpp" />
     <ClInclude Include="..\src\utils\stopwatch.hpp" />
     <ClInclude Include="..\src\utils\types.hpp" />
-    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\app\app.cpp" />

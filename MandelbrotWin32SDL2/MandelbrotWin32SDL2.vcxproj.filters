@@ -27,6 +27,9 @@
     <Filter Include="Source Files\sdl">
       <UniqueIdentifier>{5b245529-3059-4a3e-93be-5876ed81e3de}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\resources">
+      <UniqueIdentifier>{9663c556-cefb-4fda-822f-28734d07a94a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\app\app.hpp">
@@ -68,11 +71,11 @@
     <ClInclude Include="..\src\utils\types.hpp">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\sdl\sdl_include.hpp">
       <Filter>Header Files\sdl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\resources\icon.h">
+      <Filter>Header Files\resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

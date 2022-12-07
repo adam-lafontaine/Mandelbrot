@@ -2,6 +2,7 @@
 
 #include "../input/input.hpp"
 
+
 #if defined(_WIN32)
 #define SDL_MAIN_HANDLED
 #endif
@@ -182,6 +183,41 @@ static void close_game_controllers(SDLControllerInput& sdl, Input const& input)
 }
 
 
+static void set_window_icon(SDL_Window* window)
+{
+    // this will "paste" the struct my_icon into this function
+#include "../resources/icon.h"
+
+// these masks are needed to tell SDL_CreateRGBSurface(From)
+// to assume the data it gets is byte-wise RGB(A) data
+    Uint32 rmask, gmask, bmask, amask;
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+    int shift = (app_icon.bytes_per_pixel == 3) ? 8 : 0;
+    rmask = 0xff000000 >> shift;
+    gmask = 0x00ff0000 >> shift;
+    bmask = 0x0000ff00 >> shift;
+    amask = 0x000000ff >> shift;
+#else // little endian, like x86
+    rmask = 0x000000ff;
+    gmask = 0x0000ff00;
+    bmask = 0x00ff0000;
+    amask = (app_icon.bytes_per_pixel == 3) ? 0 : 0xff000000;
+#endif
+
+    SDL_Surface* icon = SDL_CreateRGBSurfaceFrom(
+        (void*)app_icon.pixel_data,
+        app_icon.width, 
+        app_icon.height, 
+        app_icon.bytes_per_pixel * 8,
+        app_icon.bytes_per_pixel * app_icon.width, 
+        rmask, gmask, bmask, amask);
+
+    SDL_SetWindowIcon(window, icon);
+
+    SDL_FreeSurface(icon);
+}
+
+
 #ifndef SDL2_IMPL_B
 
 class ScreenMemory
@@ -239,6 +275,8 @@ static bool create_screen_memory(ScreenMemory& screen, const char* title, int wi
         display_error("SDL_CreateWindow failed");
         return false;
     }
+
+    set_window_icon(screen.window);
 
     screen.renderer = SDL_CreateRenderer(screen.window, -1, 0);
 
@@ -381,6 +419,8 @@ static bool create_screen_memory(ScreenMemory& screen, const char* title, int wi
         display_error("SDL_CreateWindow failed");
         return false;
     }
+
+    set_window_icon(screen.window);
 
     screen.renderer = SDL_CreateRenderer(screen.window, -1, 0);
 
