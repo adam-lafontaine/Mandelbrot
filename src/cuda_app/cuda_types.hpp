@@ -106,5 +106,10 @@ public:
 	MemoryBuffer<u8> device_u8_buffer;
 
     MemoryBuffer<UnifiedMemory> unified;
-	
 };
+
+
+//inline void init_app_state(AppState& state)
+//{
+//	
+//}

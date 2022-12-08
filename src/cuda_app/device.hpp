@@ -20,7 +20,7 @@ class MemoryBuffer
 public:
     T* data = nullptr;
     size_t capacity = 0;
-    size_t size = 0;    
+    size_t size = 0;
 };
 
 

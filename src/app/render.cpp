@@ -257,8 +257,8 @@ void render(AppState& state)
 
 	if(state.app_input.render_new)
 	{
-		state.current_id = state.prev_id;
-		state.prev_id = !state.prev_id;
+		state.current_id = state.current_id ? 0 : 1;
+		state.prev_id = state.current_id ? 0 : 1;
 		
 		auto ranges = get_ranges(make_range(width, height), state.app_input.pixel_shift);
 		
