@@ -271,7 +271,7 @@ GPP := g++-11 -std=c++17
 SDL2 := `sdl2-config --cflags --libs`
 
 # sudo killall ibus-daemon
-# apt-get install libsdl2-dev libsdl2-dbg
+# apt-get install libsdl2-dev
 
 build    := ../../build/sdl_nano
 code     := ..
