@@ -185,8 +185,6 @@ static void close_game_controllers(SDLControllerInput& sdl, Input const& input)
 
 static void set_window_icon(SDL_Window* window)
 {
-#if _WIN32
-
     // this will "paste" the struct my_icon into this function
 #include "../resources/icon_64.h"
 
@@ -217,8 +215,6 @@ static void set_window_icon(SDL_Window* window)
     SDL_SetWindowIcon(window, icon);
 
     SDL_FreeSurface(icon);
-
-#endif // _WIN32
 }
 
 
