@@ -48,9 +48,25 @@
 * Run program - make run
 
 
+### Windows with SDL2 and CUDA
+ * Install SDL2 - e.g. .\vcpkg.exe install sdl2:x64-windows
+ * Install CUDA Toolkit - https://developer.nvidia.com/cuda-downloads
+ * Compile and run in Visual Studio
+
+
+### Ubuntu Linux with SDL2 and CUDA
+* Install SDL2 - sudo apt-get install libsdl2-dev
+* Install CUDA Toolkit - https://developer.nvidia.com/cuda-downloads
+* Makefile in /src/sdl_cuda/
+    * Update the CUDA_PATH variable at the top of the file
+* Create build directory - make setup
+* Run program - make run
+
+
 ### Jetson Nano with SDL2
 * Install SDL2 - sudo apt-get install libsdl2-dev
 * SDL bug with ARM processors - sudo killall ibus-daemon
-* Makefile in /src/cuda_sdl/
+* Makefile in /src/sdl_nano/
+    * Update the CUDA_PATH variable at the top of the file
 * Create build directory - make setup
 * Run program - make run
