@@ -1,6 +1,3 @@
-// D-Bus not build with -rdynamic...
-// sudo killall ibus-daemon
-
 #include "../cuda_app/app.hpp"
 #include "../utils/stopwatch.hpp"
 #include "../sdl/sdl_include.hpp"
