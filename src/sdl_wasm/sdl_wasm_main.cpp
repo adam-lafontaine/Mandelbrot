@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
 
     g_running = app::initialize_memory(app_memory, app_buffer);
 
-    emscripten_set_main_loop(main_loop, 0, 1);
+    emscripten_set_main_loop(main_loop, 30, 1);
     
     app::end_program(app_memory);
     cleanup();
