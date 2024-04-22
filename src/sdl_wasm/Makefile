@@ -18,7 +18,7 @@ utils := $(code)/utils
 sdl   := $(code)/sdl
 sdl_wasm := $(code)/sdl_wasm
 
-exe_name := mandelbrot_wasm
+exe_name := mandelbrot
 html_shell := ./out_template.html
 
 EPP_FLAGS := -s USE_SDL=2
