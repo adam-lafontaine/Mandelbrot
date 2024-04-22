@@ -5,12 +5,12 @@
 namespace app
 {
 	constexpr auto APP_TITLE = "Mandelbrot";
-	constexpr auto VERSION = "1.1";
+	constexpr auto VERSION = "1.1.1";
 
 	// allocate memory
 	constexpr u32 BUFFER_HEIGHT = 800;
 	constexpr u32 BUFFER_WIDTH = BUFFER_HEIGHT * 9 / 8;
-	constexpr u32 PIXELS_PER_SECOND = (u32)(0.4 * BUFFER_HEIGHT);
+	constexpr u32 PIXELS_PER_SECOND = (u32)(0.1 * BUFFER_HEIGHT);
 
 
 	class AppMemory
