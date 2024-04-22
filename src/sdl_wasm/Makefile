@@ -4,8 +4,13 @@ EPP := em++
 # source ~/Repos/emsdk/emsdk_env.sh
 # python3 -m http.server 8080
 
+EPP += -DSDL2_WASM -DNO_CPP17
+
+EPP += -O3 
+EPP += -DNDEBUG
+
 build := ../../build/sdl_wasm
-web := ../../build/web
+web   := $(build)/web
 code  := ..
 app   := $(code)/app
 input := $(code)/input
@@ -81,9 +86,6 @@ object_files += $(render_o)
 
 program_exe := $(web)/$(exe_name).html
 
-EPP += -O2 -DSDL2_WASM -DNO_CPP17
-EPP += -DNDEBUG
-
 
 $(render_o): $(render_c) $(render_h) $(render_include_h) $(colors_h) $(range_list_h)
 	@echo "\n $(render_o)"
@@ -103,7 +105,7 @@ $(sdl_input_o): $(sdl_input_c) $(sdl_include_h) $(input_state_h)
 
 $(main_o): $(main_c) $(app_h) $(sdl_include_h)
 	@echo "\n $(main_o)"
-	$(EPP) -s -o $@ -c $<
+	$(EPP) -o $@ -c $<
 
 $(program_exe): $(object_files)
 	@echo "\n $(exe_name)"
@@ -119,8 +121,8 @@ html:
 
 
 clean:
-	rm -rfv $(build)/*
 	rm -rfv $(web)/*
+	rm -v $(build)/*
 
 setup:
 	mkdir -p $(build)
