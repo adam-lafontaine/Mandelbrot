@@ -108,9 +108,9 @@ static void end_program()
 
 
 static void cleanup()
-{
-    close_sdl();
+{    
     destroy_screen_memory(screen);
+    close_sdl();
     destroy_app_memory(app_memory);
 }
 
@@ -149,9 +149,9 @@ void main_loop()
     in_old = !in_old;
 
     if (!g_running)
-    {
-        cleanup();
+    {        
         emscripten_cancel_main_loop();
+        cleanup();
     }
 }
 
@@ -186,11 +186,6 @@ int main(int argc, char *argv[])
     }
 
     print_controls();
-
-    auto const cleanup = [&]()
-    {
-        
-    };
     
     set_app_screen_buffer(screen, app_buffer);
 
@@ -206,9 +201,6 @@ int main(int argc, char *argv[])
     g_running = app::initialize_memory(app_memory, app_buffer);
 
     emscripten_set_main_loop(main_loop, 30, 1);
-    
-    
-    cleanup();
 
     return EXIT_SUCCESS;
 }
