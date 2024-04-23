@@ -100,6 +100,21 @@ bool in_old = 1;
 app::DebugInfo dbg{};
 
 
+static void end_program()
+{
+    g_running = false;
+    app::end_program(app_memory);
+}
+
+
+static void cleanup()
+{
+    close_sdl();
+    destroy_screen_memory(screen);
+    destroy_app_memory(app_memory);
+}
+
+
 void main_loop()
 {
     SDLEventInfo evt{};
@@ -135,6 +150,7 @@ void main_loop()
 
     if (!g_running)
     {
+        cleanup();
         emscripten_cancel_main_loop();
     }
 }
@@ -173,9 +189,7 @@ int main(int argc, char *argv[])
 
     auto const cleanup = [&]()
     {
-        close_sdl();
-        destroy_screen_memory(screen);
-        destroy_app_memory(app_memory);
+        
     };
     
     set_app_screen_buffer(screen, app_buffer);
@@ -193,8 +207,18 @@ int main(int argc, char *argv[])
 
     emscripten_set_main_loop(main_loop, 30, 1);
     
-    app::end_program(app_memory);
+    
     cleanup();
 
     return EXIT_SUCCESS;
+}
+
+
+extern "C"
+{
+    EMSCRIPTEN_KEEPALIVE
+    void kill()
+    {
+        end_program();
+    }
 }
