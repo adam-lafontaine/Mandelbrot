@@ -3,12 +3,20 @@
 
 #include <cstdio>
 #include <cassert>
+#include <cstdlib>
 
 #include <emscripten.h>
 
+using f32 = float;
+
+static f32 min(f32 a, f32 b)
+{
+    return a < b ? a : b;
+}
+
 constexpr auto WINDOW_TITLE = app::APP_TITLE;
-constexpr int WINDOW_WIDTH = app::BUFFER_WIDTH;
-constexpr int WINDOW_HEIGHT = app::BUFFER_HEIGHT;
+constexpr int WINDOW_WIDTH = 640; // app::BUFFER_WIDTH;
+constexpr int WINDOW_HEIGHT = WINDOW_WIDTH * app::BUFFER_HEIGHT / app::BUFFER_WIDTH;
 
 // assume 30 FPS
 constexpr r32 TARGET_FRAMERATE_HZ = 30.0f;
@@ -180,7 +188,27 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    if(!create_screen_memory(screen, WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT))
+    u32 max_width = 0;
+    u32 max_height = 0;
+    if (argc >= 3)
+    {
+        auto w = std::atoi(argv[1]);
+        auto h = std::atoi(argv[2]);
+
+        max_width = w > 0 ? (u32)w : 0;
+        max_height = h > 0 ? (u32)h : 0;
+    }
+
+    f32 window_scale = 1.0f;
+    if (max_width && max_height)
+    {
+        window_scale = min((f32)max_width / WINDOW_WIDTH, (f32)max_height / WINDOW_HEIGHT);
+    }
+
+    int window_width = (int)(window_scale * WINDOW_WIDTH);
+    int window_height = (int)(window_scale * WINDOW_HEIGHT);
+
+    if(!create_screen_memory(screen, WINDOW_TITLE, window_width, window_height))
     {
         return EXIT_FAILURE;
     }
