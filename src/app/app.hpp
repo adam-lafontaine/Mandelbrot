@@ -5,7 +5,7 @@
 namespace app
 {
 	constexpr auto APP_TITLE = "Mandelbrot";
-	constexpr auto VERSION = "1.1.1";
+	constexpr auto VERSION = "1.1.2";
 
 	#ifdef SDL2_WASM
 

@@ -158,7 +158,7 @@ void main_loop()
 
 void print_controls()
 {
-    printf("\nKEYBOARD:\n");
+    printf("\nKEYBOARD (desktop):\n");
     printf("          W, A, S, D : Pan up, left, down, right\n");
     printf(" 8, 4, 2, 6 (numpad) : Pan up, left, down, right\n");
     printf("        '+' (numpad) : Zoom in\n");
@@ -206,11 +206,58 @@ int main(int argc, char *argv[])
 }
 
 
+union EmState
+{
+    u32 state = 0;
+
+    struct
+    {
+        u32 has_console:1;
+        u32 has_gamepad:1;
+        u32 has_btn_up:1;
+        u32 has_btn_down:1;
+        u32 has_btn_left:1;
+        u32 has_btn_right:1;
+        u32 has_btn_a:1;
+        u32 has_btn_b:1;
+        u32 has_btn_x:1;
+        u32 has_btn_y:1;
+    };
+};
+
+
 extern "C"
 {
     EMSCRIPTEN_KEEPALIVE
     void kill()
     {
         end_program();
+    }
+
+
+    EMSCRIPTEN_KEEPALIVE
+    int gamepad_button(char btn, int is_down)
+    {
+        return -1; // not supported
+    }
+
+
+    EMSCRIPTEN_KEEPALIVE
+    u32 get_state()
+    {
+        EmState state{};
+
+        state.has_console = 1;
+        state.has_gamepad = 0;
+        state.has_btn_up = 0;
+        state.has_btn_down = 0;
+        state.has_btn_left = 0;
+        state.has_btn_right = 0;
+        state.has_btn_a = 0;
+        state.has_btn_b = 0;
+        state.has_btn_x = 0;
+        state.has_btn_y = 0;
+
+        return state.state;
     }
 }
