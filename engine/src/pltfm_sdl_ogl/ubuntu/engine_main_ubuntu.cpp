@@ -7,6 +7,7 @@
 
 namespace img = image;
 namespace iot = game_io_test;
+namespace gs = game_state;
 
 
 enum class RunState : int
@@ -26,12 +27,15 @@ namespace
 
     EngineState state{};
 
-    constexpr u32 N_TEXTURES = 1;
+    constexpr u32 N_TEXTURES = 2;
     ogl_imgui::TextureList<N_TEXTURES> textures;
 
-    img::Image io_test_screen{};
+    img::Image io_test_screen;
     iot::AppState io_test_state;    
     constexpr ogl_imgui::TextureId io_test_texture_id = ogl_imgui::to_texture_id(0);
+
+    img::Image game_screen;
+    constexpr ogl_imgui::TextureId game_texture_id = ogl_imgui::to_texture_id(1);
 }
 
 
@@ -118,6 +122,7 @@ static void process_user_input()
 static void render_textures()
 {
     ogl_imgui::render_texture(textures.get_ogl_texture(io_test_texture_id));
+    ogl_imgui::render_texture(textures.get_ogl_texture(game_texture_id));
 }
 
 
@@ -134,11 +139,16 @@ static void render_imgui_frame()
     auto h = io_test_screen.height;
     ui::io_test_window(t, w, h, state);
 
+    t = textures.get_imgui_texture(game_texture_id);
+    w = game_screen.width;
+    h = game_screen.height;
+    ui::game_window("GAME", t, w, h, state);
+
     ui_imgui::render(ui_state);
 }
 
 
-static bool init_io_test()
+static bool io_test_init()
 {
     auto result = iot::init(io_test_state);
     if (!result.success)
@@ -165,6 +175,33 @@ static bool init_io_test()
 }
 
 
+static bool game_state_init()
+{
+    Vec2Du32 dims = { 0 };
+    if (!gs::init(dims))
+    {
+        return false;
+    }
+
+    auto w = dims.x;
+    auto h = dims.y;
+    if (!w ||! h)
+    {
+        return false;
+    }
+
+    if (!img::create_image(game_screen, w, h))
+    {
+        return false;
+    }
+
+    auto& texture = textures.get_ogl_texture(game_texture_id);
+    ogl_imgui::init_texture(game_screen.data_, (int)w, (int)h, texture);
+
+    return gs::set_screen_memory(img::make_view(game_screen));
+}
+
+
 static bool main_init()
 {
     ui_state.window_title = "Mandelbrot Engine";
@@ -183,7 +220,12 @@ static bool main_init()
 
     textures = ogl_imgui::create_textures<N_TEXTURES>();
 
-    if (!init_io_test())
+    if (!io_test_init())
+    {
+        return false;
+    }
+
+    if (!game_state_init())
     {
         return false;
     }
@@ -209,6 +251,7 @@ static void main_loop()
         auto& input = inputs.cur();
 
         iot::update(io_test_state, input);
+        gs::update(input);
 
         render_textures();
 
