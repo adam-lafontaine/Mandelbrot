@@ -144,6 +144,10 @@ static void render_imgui_frame()
     h = game_screen.height;
     ui::game_window("GAME", t, w, h, state);
 
+    ui::diagnostics_window();
+    ui::input_frames_window(state);
+    ui::game_control_window(state);
+
     ui_imgui::render(ui_state);
 }
 
@@ -205,8 +209,8 @@ static bool game_state_init()
 static bool main_init()
 {
     ui_state.window_title = "Mandelbrot Engine";
-    ui_state.window_width = 500;
-    ui_state.window_height = 500;
+    ui_state.window_width = 1200;
+    ui_state.window_height = 800;
 
     if (!ui_imgui::init(ui_state))
     {
