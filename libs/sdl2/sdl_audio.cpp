@@ -305,6 +305,11 @@ namespace audio
 
     bool init_audio()
     {
+        if (is_initialized())
+        {
+            return true;
+        }
+
         SDL_Init(SDL_INIT_AUDIO);
         Mix_Init(MIX_INIT_MP3 | MIX_INIT_OGG);
 
@@ -338,6 +343,11 @@ namespace audio
 
     void close_audio()
     {
+        if (!is_initialized())
+        {
+            return;
+        }
+        
         stop_audio();
         Mix_CloseAudio();
         Mix_Quit();

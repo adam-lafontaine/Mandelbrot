@@ -197,13 +197,35 @@ sdl_audio_c := $(sdl2)/sdl_audio.cpp
 #************
 
 
+#*** io_test ********
+
+io_test := $(src)/io_test
+
+io_test_app := $(io_test)/app
+io_test_res := $(io_test)/res
+
+io_test_h := $(io_test_app)/app.hpp
+
+io_test_c := $(io_test_app)/app.cpp
+io_test_c += $(io_test_h)
+io_test_c += $(numeric_h)
+io_test_c += $(ascii_image_h)
+
+# assets.cpp
+io_test_c += $(io_test_app)/assets.cpp
+io_test_c += $(audio_h)
+io_test_c += $(io_test_res)/asset_sizes.cpp
+
+#************
+
+
 #*** game_mbt ***
 
 game_mbt := $(root)/game_mbt
 
 game_mbt_h := 
 
-game_mbt_dep := 
+game_mbt_c := 
 
 #*************
 
@@ -216,9 +238,7 @@ game_state_h := $(game_state)/game_state.hpp
 game_state_h += $(input_h)
 game_state_h += $(image_h)
 
-game_state_dep := $(game_state)/game_state.cpp
-game_state_dep += $(game_state_h)
-game_state_dep += $(game_mbt_dep)
+game_state_c := $(game_state)/game_state.cpp
 
 #***************
 
@@ -259,10 +279,20 @@ main_o := $(build)/main.o
 obj    := $(main_o)
 
 main_dep := $(imgui_include_h)
+main_dep += $(ui_h)
+main_dep += $(io_test_h)
+
 main_dep += $(pltfm)/main_o.cpp
-#main_dep += $(input_display_h)
-#main_dep += $(ui_h)
-#main_dep += $(game_state_dep)
+main_dep += $(game_state_c)
+main_dep += $(io_test_c)
+main_dep += $(alloc_type_c)
+main_dep += $(span_c)
+main_dep += $(image_c)
+main_dep += $(stb_libs_c)
+main_dep += $(ascii_image_c)
+main_dep += $(sdl_input_c)
+main_dep += $(sdl_window_c)
+main_dep += $(sdl_audio_c)
 
 #************
 

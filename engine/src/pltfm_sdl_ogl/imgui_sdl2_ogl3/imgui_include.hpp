@@ -14,7 +14,7 @@
 #endif
 
 
-namespace ui
+namespace ui_imgui
 {
     class UIState
     {
@@ -234,7 +234,7 @@ namespace ui
 
 /* demo window */
 
-namespace ui
+namespace ui_imgui
 {
 
 #ifdef SHOW_IMGUI_DEMO
@@ -288,12 +288,15 @@ namespace ui
 
 /* opengl texture */
 
-namespace ogl
+namespace ogl_imgui
 {
 
     // https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
 
     struct TextureId { int value = -1; };
+
+
+    constexpr TextureId to_texture_id(int value) { return { value }; };
 
     class Texture
     {

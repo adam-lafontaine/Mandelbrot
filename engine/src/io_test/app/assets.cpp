@@ -1,7 +1,7 @@
 #pragma once
 
 #include "app.hpp"
-#include "../../../libs/output/audio.hpp"
+#include "../../../../libs/output/audio.hpp"
 
 //#define __EMSCRIPTEN__ 1
 
@@ -28,7 +28,7 @@ namespace game_io_test
 
 namespace assets
 {
-    constexpr auto BIN_DATA_FALLBACK = "/home/adam/Repos/SDL3Game/game_io_test/src/res/io_test_data.bin";
+    constexpr auto BIN_DATA_FALLBACK = "/home/adam/Repos/Mandelbrot/engine/src/io_test/res/io_test_data.bin";
     constexpr auto BIN_DATA_PATH = "./io_test_data.bin";
 
     static cstr get_file_name(cstr full_path)

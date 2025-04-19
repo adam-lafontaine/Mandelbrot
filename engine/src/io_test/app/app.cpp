@@ -1,7 +1,7 @@
 #include "app.hpp"
-#include "../../../libs/util/numeric.hpp"
-#include "../../../libs/ascii_image/ascii_image.hpp"
-#include "../../../libs/stb_libs/qsprintf.hpp"
+#include "../../../../libs/util/numeric.hpp"
+#include "../../../../libs/ascii_image/ascii_image.hpp"
+#include "../../../../libs/stb_libs/qsprintf.hpp"
 
 #include "assets.cpp"
 

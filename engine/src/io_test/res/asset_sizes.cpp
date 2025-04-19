@@ -1,4 +1,5 @@
 // asset_sizes.cpp
+// io_test_data.bin
 
 const struct {
 

@@ -1,6 +1,12 @@
 #include "../imgui_sdl2_ogl3/imgui_include.hpp"
 #include "../../ui/ui.hpp"
+#include "../../io_test/app/app.hpp"
+#include "../../game_state/game_state.hpp"
 
+
+
+namespace img = image;
+namespace iot = game_io_test;
 
 
 enum class RunState : int
@@ -13,8 +19,19 @@ enum class RunState : int
 
 namespace
 {
-    ui::UIState ui_state{};
+    ui_imgui::UIState ui_state{};
     RunState run_state = RunState::Begin;
+
+    input::InputArray inputs;
+
+    EngineState state{};
+
+    constexpr u32 N_TEXTURES = 1;
+    ogl_imgui::TextureList<N_TEXTURES> textures;
+
+    img::Image io_test_screen{};
+    iot::AppState io_test_state;    
+    constexpr ogl_imgui::TextureId io_test_texture_id = ogl_imgui::to_texture_id(0);
 }
 
 
@@ -84,30 +101,67 @@ static void handle_window_event(SDL_Event const& event, SDL_Window* window)
 }
 
 
+static void handle_imgui_sdl_event(void* event_ptr)
+{
+    auto event = (SDL_Event*)event_ptr;
+    handle_window_event(*event, ui_state.window);
+    ImGui_ImplSDL2_ProcessEvent(event);
+}
+
+
 static void process_user_input()
 {
-    SDL_Event event;
+    input::record_input(inputs, handle_imgui_sdl_event);
+}
 
-    // Poll and handle events (inputs, window resize, etc.)
-    while (SDL_PollEvent(&event))
-    {
-        handle_window_event(event, ui_state.window);
-        ImGui_ImplSDL2_ProcessEvent(&event);
-    }
+
+static void render_textures()
+{
+    ogl_imgui::render_texture(textures.get_ogl_texture(io_test_texture_id));
 }
 
 
 static void render_imgui_frame()
 {
-    ui::new_frame();
+    ui_imgui::new_frame();
 
 #ifdef SHOW_IMGUI_DEMO
-    ui::show_imgui_demo(ui_state);
+    ui_imgui::show_imgui_demo(ui_state);
 #endif
 
-    //dsp::show_window(dsp_state);
+    auto t = textures.get_imgui_texture(io_test_texture_id);
+    auto w = io_test_screen.width;
+    auto h = io_test_screen.height;
+    ui::io_test_window(t, w, h, state);
 
-    ui::render(ui_state);
+    ui_imgui::render(ui_state);
+}
+
+
+static bool init_io_test()
+{
+    auto result = iot::init(io_test_state);
+    if (!result.success)
+    {
+        return false;
+    }
+
+    auto w = result.screen_dimensions.x;
+    auto h = result.screen_dimensions.y;
+    if (!w ||! h)
+    {
+        return false;
+    }
+
+    if (!img::create_image(io_test_screen, w, h))
+    {
+        return false;
+    }
+
+    auto& texture = textures.get_ogl_texture(io_test_texture_id);
+    ogl_imgui::init_texture(io_test_screen.data_, (int)w, (int)h, texture);
+
+    return iot::set_screen_memory(io_test_state, img::make_view(io_test_screen));
 }
 
 
@@ -117,15 +171,22 @@ static bool main_init()
     ui_state.window_width = 500;
     ui_state.window_height = 500;
 
-    if (!ui::init(ui_state))
+    if (!ui_imgui::init(ui_state))
     {
         return false;
     }
 
-    /*if (!dsp::open(dsp_state))
+    if (!input::init(inputs))
     {
         return false;
-    }*/
+    }
+
+    textures = ogl_imgui::create_textures<N_TEXTURES>();
+
+    if (!init_io_test())
+    {
+        return false;
+    }
 
     return true;
 }
@@ -133,8 +194,10 @@ static bool main_init()
 
 static void main_close()
 {
-    //dsp::close(dsp_state);
-    ui::close(ui_state);
+    iot::close(io_test_state);
+    img::destroy_image(io_test_screen);
+
+    ui_imgui::close(ui_state);
 }
 
 
@@ -143,10 +206,15 @@ static void main_loop()
     while(is_running())
     {
         process_user_input();
+        auto& input = inputs.cur();
 
-        //render_textures();
+        iot::update(io_test_state, input);
+
+        render_textures();
 
         render_imgui_frame();
+
+        inputs.swap();
     }
 }
 

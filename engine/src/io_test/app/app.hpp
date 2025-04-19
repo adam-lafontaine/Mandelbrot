@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../../libs/input/input.hpp"
-#include "../../../libs/image/image.hpp"
+#include "../../../../libs/input/input.hpp"
+#include "../../../../libs/image/image.hpp"
 
 
 namespace game_io_test

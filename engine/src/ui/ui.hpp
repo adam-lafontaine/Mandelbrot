@@ -147,7 +147,7 @@ namespace ui
     }
 
 
-    static void input_display_window(ImTextureID image_texture, u32 width, u32 height, EngineState const& state)
+    static void io_test_window(ImTextureID image_texture, u32 width, u32 height, EngineState const& state)
     {
         ImGui::Begin("Input");
 
