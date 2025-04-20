@@ -4,7 +4,6 @@
 #include "../../game_state/game_state.hpp"
 
 
-
 namespace img = image;
 namespace iot = game_io_test;
 namespace gs = game_state;
@@ -49,6 +48,15 @@ static bool is_running()
 {
     return run_state != RunState::End;
 }
+
+
+static void set_window_icon(SDL_Window* window)
+{
+#include "../../../res/icon_64.c"
+
+    ui_imgui::set_window_icon(window, icon_64);
+}
+
 
 
 static void handle_window_event(SDL_Event const& event, SDL_Window* window)
@@ -216,6 +224,8 @@ static bool main_init()
     {
         return false;
     }
+
+    set_window_icon(ui_state.window);
 
     if (!input::init(inputs))
     {
