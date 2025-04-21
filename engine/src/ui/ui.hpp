@@ -138,7 +138,7 @@ namespace ui
         {
             auto const game_ms = (f32)(state.game_nano / MICRO);
             auto const thread_ms = (f32)(state.thread_nano / MICRO);
-            ImGui::Text("size = %u x %u | scale = %.1f | frame = %f/%f ms", width, height, state.game_window_scale, game_ms, thread_ms);
+            ImGui::Text("size = %u x %u | scale = %.1f | frame = %.1f/%.1f ms", width, height, state.game_window_scale, game_ms, thread_ms);
         }
 
         auto w = width * state.game_window_scale;
@@ -197,12 +197,12 @@ namespace ui
         auto const data_count = (int)state.frame_times.max_times;
         auto const data_offset = (int)state.frame_times.begin;
         constexpr auto plot_min = 0.0f;
-        constexpr auto plot_max = 17.0f;
-        constexpr auto plot_size = ImVec2(0, 80.0f);
+        constexpr auto plot_max = 1.0f;
+        constexpr auto plot_size = ImVec2(0, 120.0f);
         constexpr auto data_stride = sizeof(f32);
 
         char overlay[32] = { 0 };
-        stb::qsnprintf(overlay, 32, "frame avg: %3.1f ms", state.frame_times.current_avg());
+        stb::qsnprintf(overlay, 32, "frame ratio: %.4f", state.frame_times.current_avg());
 
         // https://github.com/epezent/implot/tree/master
         

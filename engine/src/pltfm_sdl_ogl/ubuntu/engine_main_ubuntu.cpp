@@ -287,6 +287,9 @@ static void game_loop()
 
         state.thread_nano = state.thread_sw.get_time_nano();
         state.thread_sw.start();
+
+        auto ratio = (f32)(state.game_nano / state.thread_nano);
+        state.frame_times.add_time(ratio);
     }
 }
 
