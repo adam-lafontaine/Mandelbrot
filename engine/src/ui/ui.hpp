@@ -14,6 +14,7 @@ constexpr f64 MICRO = 1'000'000;
 
 constexpr f64 TARGET_FRAMERATE_HZ = 60.0;
 constexpr f64 TARGET_NS_PER_FRAME = NANO / TARGET_FRAMERATE_HZ;
+constexpr f64 TARGET_MS_PER_FRAME = TARGET_NS_PER_FRAME / MICRO;
 
 
 class InputFrames
@@ -75,11 +76,11 @@ public:
 class EngineState
 {
 public:
-    Stopwatch engine_sw;
-    f64 engine_frame_nano = TARGET_NS_PER_FRAME;
+    Stopwatch thread_sw;
+    f64 thread_nano = TARGET_NS_PER_FRAME;
 
     Stopwatch game_sw;
-    f64 game_frame_nano = TARGET_NS_PER_FRAME;
+    f64 game_nano = TARGET_NS_PER_FRAME;
 
     ImGuiIO* io = nullptr;
     f32 io_display_scale = 1.5f;
@@ -135,8 +136,9 @@ namespace ui
         }
         else
         {
-            auto const frame_ms = (f32)(state.game_frame_nano / MICRO);
-            ImGui::Text("size = %u x %u | scale = %.1f | frame = %.1f ms", width, height, state.game_window_scale, frame_ms);
+            auto const game_ms = (f32)(state.game_nano / MICRO);
+            auto const thread_ms = (f32)(state.thread_nano / MICRO);
+            ImGui::Text("size = %u x %u | scale = %.1f | frame = %f/%f ms", width, height, state.game_window_scale, game_ms, thread_ms);
         }
 
         auto w = width * state.game_window_scale;

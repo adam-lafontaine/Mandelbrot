@@ -3,6 +3,8 @@
 #include "../../io_test/app/app.hpp"
 #include "../../game_state/game_state.hpp"
 
+#include <thread>
+
 
 namespace img = image;
 namespace iot = game_io_test;
@@ -47,6 +49,21 @@ static void end_program()
 static bool is_running()
 {
     return run_state != RunState::End;
+}
+
+
+static void cap_game_framerate()
+{
+    constexpr f64 fudge = 0.9;
+
+    state.game_nano = state.game_sw.get_time_nano();
+
+    auto sleep_ns = TARGET_NS_PER_FRAME - state.game_nano;
+    if (sleep_ns > 0.0)
+    {
+        std::this_thread::sleep_for(std::chrono::nanoseconds((i64)(sleep_ns * fudge)));
+    }
+    state.game_sw.start();
 }
 
 
@@ -257,15 +274,33 @@ static void main_close()
 }
 
 
+static void game_loop()
+{
+    state.thread_sw.start();
+    state.game_sw.start();
+    while(is_running())
+    {
+        auto input_copy = inputs.cur();
+        gs::update(input_copy);
+
+        cap_game_framerate();
+
+        state.thread_nano = state.thread_sw.get_time_nano();
+        state.thread_sw.start();
+    }
+}
+
+
 static void main_loop()
 {
+    std::thread th(game_loop);
+
     while(is_running())
     {
         process_user_input();
         auto& input = inputs.cur();
 
-        iot::update(io_test_state, input);
-        gs::update(input);
+        iot::update(io_test_state, input);        
 
         render_textures();
 
@@ -273,6 +308,8 @@ static void main_loop()
 
         inputs.swap();
     }
+
+    th.join();
 }
 
 

@@ -11,7 +11,7 @@ namespace game_state
 
     bool init(Vec2Du32& screen_dimensions)
     {
-        screen_dimensions.x = 400;
+        screen_dimensions.x = 401;
         screen_dimensions.y = 400;
 
         return true;

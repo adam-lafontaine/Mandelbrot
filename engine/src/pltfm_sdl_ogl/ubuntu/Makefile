@@ -11,8 +11,9 @@ NO_FLAGS :=
 SDL2 := `sdl2-config --cflags --libs`
 SDL_AUDIO := -lSDL2_mixer
 OPENGL := -lGL -ldl
+THREAD := -lpthread
 
-ALL_LFLAGS := $(SDL2) $(SDL_AUDIO) $(OPENGL)
+ALL_LFLAGS := $(SDL2) $(SDL_AUDIO) $(OPENGL) $(THREAD)
 
 root       := ../../../..
 
