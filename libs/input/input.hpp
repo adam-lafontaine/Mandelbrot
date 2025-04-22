@@ -449,18 +449,8 @@ namespace input
 
 namespace input
 {
-#ifdef SINGLE_CONTROLLER
-	constexpr u32 MAX_CONTROLLERS = 1;
-#else
 	constexpr u32 MAX_CONTROLLERS = 4;
-#endif
-
-
-#ifdef SINGLE_JOYSTICK
-	constexpr u32 MAX_JOYSTICKS = 1;
-#else
 	constexpr u32 MAX_JOYSTICKS = 4;
-#endif
 
 
 	class Input
@@ -478,9 +468,16 @@ namespace input
 
 		union
 		{
-			ControllerInput controller;
 			ControllerInput controllers[MAX_CONTROLLERS];
-		};		
+
+
+			struct
+			{
+				ControllerInput controller;
+
+				ControllerInput unused_controllers[MAX_CONTROLLERS - 1];
+			};
+		};
 		
 	#else
 		ControllerInput controllers[MAX_CONTROLLERS];		
@@ -490,9 +487,15 @@ namespace input
 	#ifdef SINGLE_JOYSTICK
 
 		union
-		{
-			JoystickInput joystick;
+		{			
 			JoystickInput joysticks[MAX_JOYSTICKS];
+
+			struct
+			{
+				JoystickInput joystick;
+
+				JoystickInput unused_joysticks[MAX_JOYSTICKS - 1];
+			};
 		};
 
 	#else
