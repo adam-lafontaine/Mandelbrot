@@ -3,15 +3,15 @@ GPP := g++-11 -std=c++20 -mavx -mavx2 -mfma
 #GPP += -O3
 #GPP += -DNDEBUG
 
-GPP += -DIMAGE_READ
-GPP += -DIMAGE_WRITE
+#GPP += -DIMAGE_READ
+#GPP += -DIMAGE_WRITE
 GPP += -DALLOC_COUNT
 
 NO_FLAGS := 
 SDL2 := `sdl2-config --cflags --libs`
 SDL_AUDIO := -lSDL2_mixer
 OPENGL := -lGL -ldl
-THREAD := -lpthread
+THREAD := -lpthread -ltbb
 
 ALL_LFLAGS := $(SDL2) $(SDL_AUDIO) $(OPENGL) $(THREAD)
 
@@ -223,10 +223,26 @@ io_test_c += $(io_test_res)/asset_sizes.cpp
 #*** game_mbt ***
 
 game_mbt := $(root)/game_mbt
+game_mbt_src := $(game_mbt)/src
+game_mbt_app := $(game_mbt_src)/app
 
-game_mbt_h := 
+game_mbt_h := $(game_mbt_app)/app.hpp
+game_mbt_h += $(input_h)
+game_mbt_h += $(image_h)
 
-game_mbt_c := 
+game_mbt_libs := $(game_mbt_app)/app_libs.cpp
+game_mbt_libs += $(alloc_type_c)
+game_mbt_libs += $(span_c)
+game_mbt_libs += $(image_c)
+game_mbt_libs += $(stb_libs_c)
+#game_mbt_libs += $(ascii_image_c)
+game_mbt_libs += $(sdl_input_c)
+game_mbt_libs += $(sdl_window_c)
+#game_mbt_libs += $(sdl_audio_c)
+
+game_mbt_c := $(game_mbt_app)/app.cpp
+game_mbt_c += $(game_mbt_h)
+game_mbt_c += $(game_mbt_libs)
 
 #*************
 
@@ -240,6 +256,8 @@ game_state_h += $(input_h)
 game_state_h += $(image_h)
 
 game_state_c := $(game_state)/game_state.cpp
+game_state_c += $(game_state_h)
+game_state_c += $(game_mbt_c)
 
 #***************
 
@@ -286,14 +304,6 @@ main_dep += $(io_test_h)
 main_dep += $(pltfm)/main_o.cpp
 main_dep += $(game_state_c)
 main_dep += $(io_test_c)
-main_dep += $(alloc_type_c)
-main_dep += $(span_c)
-main_dep += $(image_c)
-main_dep += $(stb_libs_c)
-main_dep += $(ascii_image_c)
-main_dep += $(sdl_input_c)
-main_dep += $(sdl_window_c)
-main_dep += $(sdl_audio_c)
 
 #************
 
@@ -309,19 +319,6 @@ imgui_dep := $(imgui_options_h)
 #****************
 
 
-#*** input_display cpp ***
-
-input_display_c := $(input_display)/input_display.cpp
-input_display_o := $(build)/input_display.o
-#obj += $(input_display_o)
-
-input_display_dep := $(input_display_h)
-input_display_dep += $(qsprintf_h)
-input_display_dep += $(span_h)
-
-#****************
-
-
 #*** engine ***
 
 
@@ -333,11 +330,6 @@ $(main_o): $(main_c) $(main_dep)
 $(imgui_o): $(imgui_c) $(imgui_dep)
 	@echo "\n  imgui"
 	$(GPP) -o $@ -c $< $(SDL2) $(OPENGL)
-
-
-$(input_display_o): $(input_display_c) $(input_display_dep)
-	@echo "\n  input_display"
-	$(GPP) -o $@ -c $< $(NO_FLAGS)
 
 #**************
 
