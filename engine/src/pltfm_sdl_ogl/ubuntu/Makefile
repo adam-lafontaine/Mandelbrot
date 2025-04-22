@@ -3,8 +3,8 @@ GPP := g++-11 -std=c++20 -mavx -mavx2 -mfma
 #GPP += -O3
 #GPP += -DNDEBUG
 
-#GPP += -DIMAGE_READ
-#GPP += -DIMAGE_WRITE
+GPP += -DIMAGE_READ
+GPP += -DIMAGE_WRITE
 GPP += -DALLOC_COUNT
 
 NO_FLAGS := 

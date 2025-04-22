@@ -2,7 +2,7 @@
 
 //#define NO_CONTROLLER
 
-//#define SINGLE_CONTROLLER
+#define SINGLE_CONTROLLER
 
 
 #define CONTROLLER_BTN_DPAD_UP 1

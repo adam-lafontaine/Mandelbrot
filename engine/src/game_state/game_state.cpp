@@ -7,12 +7,12 @@ namespace game_state
     namespace game = game_mbt;
 
 
-    game::AppState game_state;
+    game::AppState mbt_state;
 
 
     bool init(Vec2Du32& screen_dimensions)
     {
-        auto result = game::init(game_state);
+        auto result = game::init(mbt_state);
         if (!result.success)
         {
             return false;
@@ -26,25 +26,25 @@ namespace game_state
 
     bool set_screen_memory(image::ImageView screen)
     {
-        return game::set_screen_memory(game_state, screen);
+        return game::set_screen_memory(mbt_state, screen);
     }
 
 
     void update(input::Input const& input)
     {
-        game::update(game_state, input);
+        game::update(mbt_state, input);
     }
 
 
     void reset()
     {
-        game::reset(game_state);
+        game::reset(mbt_state);
     }
 
 
     void close()
     {
-        game::close(game_state);
+        game::close(mbt_state);
     }
 }
 

@@ -19,8 +19,8 @@
 //#define STBI_FREE stb_free_void
 
 
-#define IMAGE_READ
-#define IMAGE_WRITE
+//#define IMAGE_READ
+//#define IMAGE_WRITE
 //#define IMAGE_RESIZE
 
 
