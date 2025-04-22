@@ -19,7 +19,7 @@ BUILD := $(ROOT)/build/sdl
 
 RES := $(ROOT)/src/res
 
-#BIN_DATA := $(RES)/music/asteroids_data.bin
+#BIN_DATA := $(RES)/music/mbt_data.bin
 
 OUT := $(BUILD)/$(EXE)
 
