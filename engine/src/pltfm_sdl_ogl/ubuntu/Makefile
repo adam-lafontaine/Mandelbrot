@@ -235,14 +235,17 @@ game_mbt_libs += $(alloc_type_c)
 game_mbt_libs += $(span_c)
 game_mbt_libs += $(image_c)
 game_mbt_libs += $(stb_libs_c)
-#game_mbt_libs += $(ascii_image_c)
+game_mbt_libs += $(ascii_image_c)
 game_mbt_libs += $(sdl_input_c)
 game_mbt_libs += $(sdl_window_c)
-#game_mbt_libs += $(sdl_audio_c)
+game_mbt_libs += $(sdl_audio_c)
 
 game_mbt_c := $(game_mbt_app)/app.cpp
 game_mbt_c += $(game_mbt_h)
+game_mbt_c += $(alloc_type_h)
+game_mbt_c += $(numeric_h)
 game_mbt_c += $(game_mbt_libs)
+game_mbt_c += $(game_mbt_app)/colors.cpp
 
 #*************
 

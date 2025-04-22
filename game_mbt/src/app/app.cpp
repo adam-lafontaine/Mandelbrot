@@ -1,9 +1,11 @@
 #include "app.hpp"
 #include "../../../libs/alloc_type/alloc_type.hpp"
+#include "../../../libs/util/numeric.hpp"
 
 namespace game_mbt
 {
     namespace img = image;
+    namespace num = numeric;
 
     using p32 = img::Pixel;
 
@@ -23,6 +25,8 @@ namespace game_mbt
 
 	constexpr u32 PIXELS_PER_SECOND = (u32)(0.2 * BUFFER_HEIGHT);
 }
+
+#include "colors.cpp"
 
 
 /* state data */
