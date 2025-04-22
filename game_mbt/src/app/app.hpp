@@ -7,7 +7,7 @@
 namespace game_mbt
 {
     constexpr auto APP_TITLE = "Mandelbrot";
-    constexpr auto VERSION = "???";
+    constexpr auto VERSION = "1.2.0";
 
 
     class StateData;
@@ -44,4 +44,6 @@ namespace game_mbt
     void reset(AppState& state);
 
     void close(AppState& state);
+
+    cstr decode_error(AppResult const& result);
 }

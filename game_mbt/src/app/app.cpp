@@ -1,13 +1,83 @@
 #include "app.hpp"
-
+#include "../../../libs/alloc_type/alloc_type.hpp"
 
 namespace game_mbt
 {
     namespace img = image;
 
     using p32 = img::Pixel;
+
+
+    #ifdef SDL2_WASM
+
+	constexpr u32 BUFFER_WIDTH = 640;
+	constexpr u32 BUFFER_HEIGHT = BUFFER_WIDTH * 8 / 9;
+
+	#else
+
+	// allocate memory
+	constexpr u32 BUFFER_HEIGHT = 800;
+	constexpr u32 BUFFER_WIDTH = BUFFER_HEIGHT * 9 / 8;
+
+	#endif
+
+	constexpr u32 PIXELS_PER_SECOND = (u32)(0.2 * BUFFER_HEIGHT);
 }
 
+
+/* state data */
+
+namespace game_mbt
+{
+    class StateData
+    {
+    public:
+
+        
+    };
+
+
+    static inline StateData& get_data(AppState const& state)
+    {
+        return *state.data_;
+    }
+
+
+    static void destroy_state_data(AppState& state)
+    {
+        if (!state.data_)
+        {
+            return;
+        }
+
+        auto& data = get_data(state);
+
+
+
+        mem::free(state.data_);
+    }
+
+
+    static bool create_state_data(AppState& state)
+    {
+        auto data_p = mem::alloc<StateData>("StateData");
+        if (!data_p)
+        {
+            return false;
+        }
+
+        state.data_ = data_p;
+
+        auto& data = get_data(state);
+
+        data = {};
+
+        return true;
+    }
+}
+
+
+/* api */
 
 namespace game_mbt
 {
@@ -15,8 +85,19 @@ namespace game_mbt
     {
         AppResult result;
 
-        result.app_dimensions = { 401, 400 };
+        if (!create_state_data(state))
+        {
+            result.error_code = 1;
+            return result;
+        }
+
+        result.app_dimensions = { 
+            BUFFER_WIDTH,
+            BUFFER_HEIGHT
+         };
+
         result.success = true;
+        result.error_code = 0;
 
         return result;
     }
@@ -76,7 +157,18 @@ namespace game_mbt
 
     void close(AppState& state)
     {
+        destroy_state_data(state);
+    }
 
+
+    cstr decode_error(AppResult const& result)
+    {
+        switch (result.error_code)
+        {
+        case 1: return "create_state_data";            
+
+        default: return "OK";
+        }
     }
 }
 
