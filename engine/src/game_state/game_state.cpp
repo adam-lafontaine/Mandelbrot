@@ -137,15 +137,12 @@ namespace game_state
         ImGui::Text("zoom     : %f", data.zoom);
         ImGui::Text("");
         ImGui::Text("format_option: %u", data.format_option);
+        ImGui::Text("iter_limit   : %u", data.iter_limit);
         ImGui::Text("");
         show_vec("scale   ", data.mbt_scale);
         show_vec("position", data.mbt_pos);
         show_vec("delta   ", data.mbt_delta);
 
         ImGui::Separator();
-
-        
-
-
     }
 }

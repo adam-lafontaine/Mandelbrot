@@ -311,7 +311,9 @@ namespace game_mbt
         u8 format_option = 0;
 
         f32 zoom_rate = 1.0f;
-        f32 zoom = 1.0f;        
+        f32 zoom = 1.0f;
+
+        u32 iter_limit = MAX_ITERATIONS_START;
 
         Vec2D<fmbt> mbt_scale;
         Vec2D<fmbt> mbt_pos;
@@ -337,7 +339,9 @@ namespace game_mbt
         data.format_option = 0;
 
         data.zoom_rate = ZOOM_RATE_LOWER_LIMIT;
-        data.zoom = 1.0f;        
+        data.zoom = 1.0f;
+
+        data.iter_limit = MAX_ITERATIONS_START;
 
         data.mbt_scale = mbt_screen_dims(data.zoom);
 
@@ -467,6 +471,21 @@ namespace ns_update_state
         data.mbt_pos.x += dx;
         data.mbt_pos.y += dy;
     }
+
+
+    static void update_iter_limit(i8 idelta, StateData& data)
+    {
+        constexpr f32 factor = 0.005f;
+
+        auto min = (f32)MAX_ITERTAIONS_LOWER_LIMIT;
+        auto max = (f32)MAX_ITERATIONS_UPPER_LIMIT;
+
+        auto delta = idelta * num::max(factor * data.iter_limit, 5.0f);
+
+        auto limit = num::clamp(data.iter_limit + delta, min, max);
+
+        data.iter_limit = num::round_to_unsigned<u32>(limit);
+    }
 }
 
     static void update_state(InputCommand const& cmd, StateData& data)
@@ -483,7 +502,8 @@ namespace ns_update_state
             ns::update_zoom(cmd.zoom, data);
         }
 
-        ns::update_mbt_pos(cmd.shift, data);        
+        ns::update_mbt_pos(cmd.shift, data);
+        ns::update_iter_limit(cmd.resolution, data);
 
         static_assert(sizeof(cmd) == sizeof(cmd.any));
 
@@ -554,30 +574,7 @@ namespace game_mbt
 
 
     void update(AppState& state, input::Input const& input)
-    {
-        auto& controller = input.controllers[0];
-
-        auto color = img::to_pixel(0);
-
-        if (controller.btn_a.is_down)
-        {
-            color = img::to_pixel(0, 200, 0);
-        }
-        else if (controller.btn_b.is_down)
-        {
-            color = img::to_pixel(200, 0, 0);
-        }
-        else if (controller.btn_x.is_down)
-        {
-            color = img::to_pixel(0, 0, 200);
-        }
-        else if (controller.btn_y.is_down)
-        {
-            color = img::to_pixel(200, 200, 0);
-        }
-
-        img::fill(state.screen, color);
-
+    {       
         auto& data = get_data(state);
 
         data.dt_frame = data.frame_sw.get_time_sec();
@@ -586,6 +583,11 @@ namespace game_mbt
         auto cmd = map_input(input);
         update_state(cmd, data);
 
+        // temp
+        auto rect = img::make_rect(data.screen_dims.x, data.screen_dims.y);
+        mbt_proc(data.color_ids, rect, data.mbt_pos, data.mbt_delta, data.iter_limit);
+
+        render(data.color_ids, state.screen, data.format);
 
         data.color_ids.swap();
     }
