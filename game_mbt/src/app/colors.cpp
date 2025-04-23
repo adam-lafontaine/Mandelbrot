@@ -48,9 +48,12 @@ namespace colors
     template <u32 PaletteSize>
     class ColorId
     {
+    public:
+        static constexpr u32 max = PaletteSize;
+        
     private:
 
-        constexpr ColorId(u16 val) { assert(PaletteSize >= val); value = val; }
+        constexpr ColorId(u16 val) { assert(val <= max); value = val; }
 
         template <typename T>
         static constexpr ColorId make_pvt(T val) { return ColorId((u16)val); }

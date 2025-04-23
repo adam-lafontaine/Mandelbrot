@@ -102,7 +102,7 @@ namespace game_state
     }
 
 
-    void show_input()
+    static void show_input()
     {
         auto& data = game::get_data(mbt_state);
         auto cmd = data.in_cmd;
@@ -114,6 +114,56 @@ namespace game_state
         ImGui::Text("resolution: %d", (int)cmd.resolution);
         ImGui::Text("cycle_color: %d", (int)cmd.cycle_color);
         ImGui::Text("any: %u", cmd.any);
+    }
+
+
+    static void show_properties()
+    {
+        auto& data = game::get_data(mbt_state);
+
+        show_vec(     "screen  ", data.screen_dims);
+        show_time_sec("dt_frame", data.dt_frame);
+        ImGui::Text("");
+        ImGui::Text("zoom rate: %f", data.zoom_rate);
+        ImGui::Text("zoom     : %f", data.zoom);
+        ImGui::Text("");
+        ImGui::Text("format_option: %u", data.format_option);
+        ImGui::Text("iter_limit   : %u", data.iter_limit);
+        ImGui::Text("");
+        show_vec("scale   ", data.mbt_scale);
+        show_vec("position", data.mbt_pos);
+        show_vec("delta   ", data.mbt_delta);
+    }
+
+
+    static void show_dbg()
+    {
+        auto& data = game::get_data(mbt_state);
+
+        static bool enable_ids = false;
+        int id_min = 0;
+        int id_max = game::ColorId::max;
+        static int id_val = game::ColorId::max;
+
+        ImGui::Checkbox("Enable Debug", &enable_ids);
+        data.enabled = !enable_ids;
+
+        if (!enable_ids)
+        {            
+            ImGui::BeginDisabled();
+        }
+
+        ImGui::SliderInt("Color", &id_val, id_min, id_max);
+        if (enable_ids)
+        {
+            auto id = game::ColorId::make((u32)id_val);
+            span::fill(game::to_span(data.color_ids.curr()), id);
+        }
+
+        if (!enable_ids)
+        {
+            ImGui::EndDisabled();
+        }
     }
 
   
@@ -133,21 +183,10 @@ namespace game_state
 
         ImGui::Separator();
 
-        auto& data = game::get_data(mbt_state);
-
-        show_vec(     "screen  ", data.screen_dims);
-        show_time_sec("dt_frame", data.dt_frame);
-        ImGui::Text("");
-        ImGui::Text("zoom rate: %f", data.zoom_rate);
-        ImGui::Text("zoom     : %f", data.zoom);
-        ImGui::Text("");
-        ImGui::Text("format_option: %u", data.format_option);
-        ImGui::Text("iter_limit   : %u", data.iter_limit);
-        ImGui::Text("");
-        show_vec("scale   ", data.mbt_scale);
-        show_vec("position", data.mbt_pos);
-        show_vec("delta   ", data.mbt_delta);
+        show_properties();
 
         ImGui::Separator();
+
+        show_dbg();
     }
 }

@@ -326,6 +326,7 @@ namespace game_mbt
         u8 n_proc = 1;
 
         bool render_new = false;
+        bool enabled = true;
     };
 
 
@@ -362,6 +363,7 @@ namespace game_mbt
         data.n_proc = 1;
 
         data.render_new = true;
+        data.enabled = true;
     }
 
 
@@ -488,6 +490,7 @@ namespace ns_update_state
     }
 }
 
+
     static void update_state(InputCommand const& cmd, StateData& data)
     {
         namespace ns = ns_update_state;
@@ -508,6 +511,19 @@ namespace ns_update_state
         static_assert(sizeof(cmd) == sizeof(cmd.any));
 
         data.render_new = cmd.any;
+    }
+
+
+    static void update_color_ids(StateData& data)
+    {
+        if (!data.enabled && !data.render_new)
+        {
+            return;
+        }
+
+        // temp
+        auto rect = img::make_rect(data.screen_dims.x, data.screen_dims.y);
+        mbt_proc(data.color_ids, rect, data.mbt_pos, data.mbt_delta, data.iter_limit);
     }
 }
 
@@ -582,10 +598,7 @@ namespace game_mbt
 
         auto cmd = map_input(input);
         update_state(cmd, data);
-
-        // temp
-        auto rect = img::make_rect(data.screen_dims.x, data.screen_dims.y);
-        mbt_proc(data.color_ids, rect, data.mbt_pos, data.mbt_delta, data.iter_limit);
+        update_color_ids(data);
 
         render(data.color_ids, state.screen, data.format);
 
