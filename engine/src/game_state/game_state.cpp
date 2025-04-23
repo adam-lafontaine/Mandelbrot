@@ -124,6 +124,11 @@ namespace game_state
             return; 
         }
 
+        if (!mbt_state.data_)
+        {
+            return;
+        }
+
         show_input();
 
         ImGui::Separator();

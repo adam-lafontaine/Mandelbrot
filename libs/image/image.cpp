@@ -2064,7 +2064,7 @@ namespace image
 		image_dst.width = width;
 		image_dst.height = height;
 
-        mem::tag(data, image_dst.width * image_dst.height, "stbi_load");
+        mem::tag(data, image_dst.width * image_dst.height, "stbi_load_from_memory");
 
 		return true;
 

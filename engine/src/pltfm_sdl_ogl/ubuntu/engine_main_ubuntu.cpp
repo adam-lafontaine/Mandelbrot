@@ -236,7 +236,7 @@ static bool main_init()
     ui_state.window_title = "Mandelbrot Engine";
     ui_state.window_width = 1300;
     ui_state.window_height = 800;
-
+    
     if (!ui_imgui::init(ui_state))
     {
         return false;

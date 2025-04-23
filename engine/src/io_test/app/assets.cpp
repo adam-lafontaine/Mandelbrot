@@ -107,10 +107,13 @@ namespace assets
 
     static void destroy_asset_memory(AssetMemory& memory)
     {
+        // -03 optimizer bug?
+    #ifndef NDEBUG
         img::destroy_image(memory.image.controller);
         img::destroy_image(memory.image.keyboard);
         img::destroy_image(memory.image.mouse);
         img::destroy_image(memory.image.arrow);
+    #endif
 
         mb::destroy_buffer(memory.buffer);
     }

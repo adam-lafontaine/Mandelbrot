@@ -5,6 +5,8 @@
 
 #include "assets.cpp"
 
+#include <cstdio>
+
 
 /* definitions */
 
@@ -553,6 +555,7 @@ namespace game_io_test
         if (!assets::load_asset_memory(am))
         {
             assert(" *** ASSET MEMORY ERROR *** " && false);
+            return false;
         }
 
         data.buffer8 = img::create_buffer8(assets::draw_mask_size(am), "buffer8");
