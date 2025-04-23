@@ -11,6 +11,7 @@ namespace game_mbt
     using fmbt = double;
 
     using p32 = img::Pixel;
+    using ImageView = img::ImageView;
 
 
     #ifdef SDL2_WASM
@@ -31,6 +32,8 @@ namespace game_mbt
 
 #include "colors.cpp"
 
+/* color ids */
+
 namespace game_mbt
 {
     using ColorTable = colors::Palette<colors::N_COLORS>;
@@ -38,10 +41,53 @@ namespace game_mbt
     using ColorId = colors::ColorId<colors::N_COLORS>;
 
 
+    class ColorIdMatrix
+    {
+    public:
+
+        MatrixView2D<ColorId> data;
+
+        MemoryBuffer<ColorId> buffer;
+    };
+
+
+    static void destroy_color_ids(ColorIdMatrix& mat)
+    {
+        mb::destroy_buffer(mat.buffer);
+    }
+
+
+    static bool create_color_ids(ColorIdMatrix& mat, u32 width, u32 height)
+    {
+        auto n = width * height;
+
+        if (!mb::create_buffer(mat.buffer, n, "color_ids"))
+        {
+            return false;
+        }
+
+        auto span = span::push_span(mat.buffer, n);
+        mat.data.matrix_data_ = span.data;
+        mat.data.width = width;
+        mat.data.height = height;
+
+        return true;
+    }
+
+
+
+
+}
+
+
+/* render */
+
+namespace game_mbt
+{
     constexpr ColorTable Color_Table = colors::make_palette<colors::N_COLORS>();
 
 
-    static p32 color_at(ColorFormat format, ColorId id)
+    static p32 color_at(ColorId id, ColorFormat format)
     {
         auto r = Color_Table.channels[format.R][id.value];
         auto g = Color_Table.channels[format.G][id.value];
@@ -51,6 +97,25 @@ namespace game_mbt
     }
 
 
+    static void render(ColorIdMatrix const& src, ImageView const& dst, ColorFormat format)
+    {
+        auto s = img::to_span(src.data);
+        auto d = img::to_span(dst);
+
+        assert(s.length == d.length);
+
+        for (u32 i = 0; i < s.length; i++)
+        {
+            d.data[i] = color_at(s.data[i], format);
+        }
+    }
+}
+
+
+/* mandelbrot */
+
+namespace game_mbt
+{
     static ColorId to_color_id(u32 iter, u32 iter_limit)
     {
         constexpr auto C = colors::N_COLORS;
@@ -89,54 +154,27 @@ namespace game_mbt
     }
 
 
-    class ColorIdMatrix
+    static u32 mandelbrot_iter(fmbt cx, fmbt cy, u32 iter_limit)
     {
-    private:
-        u8 p = 1;
-        u8 c = 0;        
-
-    public:
-
-        MatrixView2D<ColorId> data_[2];
-        
-        MatrixView2D<ColorId>& prev() { return data_[p]; }
-        MatrixView2D<ColorId>& curr() { return data_[c]; }
-
-        void swap() { p = c; c = !p; }
-
-        MemoryBuffer<ColorId> buffer;
-    };
-
-
-    static void destroy_color_ids(ColorIdMatrix& mat)
-    {
-        mb::destroy_buffer(mat.buffer);
-    }
-
-
-    static bool create_color_ids(ColorIdMatrix& mat, u32 width, u32 height)
-    {
-        auto n = width * height;
-
-        if (!mb::create_buffer(mat.buffer, n * 2, "color_ids"))
+        u32 iter = 0;
+    
+        fmbt mx = 0.0;
+        fmbt my = 0.0;
+        fmbt mx2 = 0.0;
+        fmbt my2 = 0.0;
+    
+        while (iter < iter_limit && mx2 + my2 <= 4.0)
         {
-            return false;
+            ++iter;
+    
+            my = (mx + mx) * my + cy;
+            mx = mx2 - my2 + cx;
+            my2 = my * my;
+            mx2 = mx * mx;
         }
-
-        for (u32 i = 0; i < 2; i++)
-        {
-            auto span = span::push_span(mat.buffer, n);
-            mat.data_[i].matrix_data_ = span.data;
-            mat.data_[i].width = width;
-            mat.data_[i].height = height;
-        }        
-
-        return true;
+    
+        return iter;
     }
-
-
-
-
 }
 
 
