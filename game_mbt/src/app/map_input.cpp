@@ -32,7 +32,7 @@ namespace ns_map_input
 {
     static inline b8 is_up(Vec2Df32 vec)
     {
-        return vec.y < 0.5f;
+        return vec.y < -0.5f;
     }
 
 
@@ -44,7 +44,7 @@ namespace ns_map_input
 
     static inline b8 is_left(Vec2Df32 vec)
     {
-        return vec.x < 0.5f;
+        return vec.x < -0.5f;
     }
 
 
@@ -87,11 +87,11 @@ namespace ns_map_input
     {
         auto in = 
             input.keyboard.npd_plus.is_down ||
-            input.controller.stick_right.vec.y < 0.5f;
+            is_up(input.controller.stick_right.vec);
 
         auto out = 
             input.keyboard.npd_minus.is_down ||
-            input.controller.stick_right.vec.y > 0.5f;
+            is_down(input.controller.stick_right.vec);
 
         return (i8)((int)in - (int)out);
     }
@@ -128,12 +128,12 @@ namespace ns_map_input
     static i8 map_cycle_color(Input const& input)
     {
         auto right =
-            input.keyboard.kbd_right.is_down ||
-            input.controller.btn_dpad_right.is_down;
+            input.keyboard.kbd_right.pressed ||
+            input.controller.btn_dpad_right.pressed;
         
         auto left =
-            input.keyboard.kbd_left.is_down ||
-            input.controller.btn_dpad_left.is_down;
+            input.keyboard.kbd_left.pressed ||
+            input.controller.btn_dpad_left.pressed;
 
         return (i8)((int)right - (int)left);
     }
@@ -145,10 +145,12 @@ namespace ns_map_input
         namespace ns = ns_map_input;
 
         InputCommand cmd{};
+        cmd.any = 0;
 
         cmd.shift = ns::map_shift(input);
         cmd.zoom = ns::map_zoom(input);
         cmd.zoom_rate = ns::map_zoom_rate(input);
+        cmd.resolution = ns::map_resolution(input);
         cmd.cycle_color = ns::map_cycle_color(input);
 
         return cmd;

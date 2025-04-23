@@ -280,8 +280,23 @@ static void game_loop()
     state.game_sw.start();
     while(is_running())
     {
-        auto input_copy = inputs.curr();
-        gs::update(input_copy);
+        if (state.cmd_reset_game)
+        {
+            gs::reset();
+            state.cmd_reset_game = 0;
+        }
+
+        if (state.cmd_toggle_pause)
+        {
+            state.cmd_toggle_pause = 0;
+            state.hard_pause = !state.hard_pause;
+        }
+
+        if (!state.hard_pause)
+        {
+            auto input_copy = inputs.curr();
+            gs::update(input_copy);
+        }        
 
         cap_game_framerate();
 

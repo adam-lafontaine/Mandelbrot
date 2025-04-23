@@ -303,11 +303,19 @@ namespace game_mbt
 
         Stopwatch frame_sw;
         f64 dt_frame;
+        InputCommand in_cmd;
 
         ColorIdMatrix color_ids;
 
         ColorFormat format;
         u8 format_option = 0;
+
+        f32 zoom_rate = 1.0f;
+        f32 zoom = 1.0f;        
+
+        Vec2D<fmbt> mbt_scale;
+        Vec2D<fmbt> mbt_pos;
+        Vec2D<fmbt> mbt_delta;
 
         Rect2Du32 copy_src;
         Rect2Du32 copy_dst;
@@ -315,15 +323,7 @@ namespace game_mbt
         Rect2Du32 proc_dst[2];
         u8 n_proc = 1;
 
-        f32 zoom_rate = 1.0f;
-        f32 zoom = 1.0f;        
-
-        Vec2D<fmbt> mbt_dims;
-        Vec2D<fmbt> mbt_pos;
-        Vec2D<fmbt> mbt_delta;
-
         bool render_new = false;
-
     };
 
 
@@ -336,6 +336,18 @@ namespace game_mbt
 
         data.format_option = 0;
 
+        data.zoom_rate = ZOOM_RATE_LOWER_LIMIT;
+        data.zoom = 1.0f;        
+
+        data.mbt_scale = mbt_screen_dims(data.zoom);
+
+        data.mbt_pos = { MBT_MIN_X, MBT_MIN_Y };
+
+        data.mbt_delta = {
+            data.mbt_scale.x / w,
+            data.mbt_scale.y / h
+        };
+
         auto full_rect = img::make_rect(w, h);
 
         data.copy_src = full_rect;
@@ -344,18 +356,6 @@ namespace game_mbt
         data.proc_dst[0] = full_rect;
         data.proc_dst[1] = full_rect;
         data.n_proc = 1;
-
-        data.zoom_rate = ZOOM_RATE_LOWER_LIMIT;
-        data.zoom = 1.0f;        
-
-        data.mbt_dims = mbt_screen_dims(data.zoom);
-
-        data.mbt_pos = { MBT_MIN_X, MBT_MIN_Y };
-
-        data.mbt_delta = {
-            data.mbt_dims.x / w,
-            data.mbt_dims.y / h
-        };
 
         data.render_new = true;
     }
@@ -394,7 +394,7 @@ namespace game_mbt
 
         auto& data = get_data(state);
 
-        reset_state_data(data);
+        data = {}; // important!
 
         return true;
     }
@@ -442,19 +442,19 @@ namespace ns_update_state
 
         data.zoom *= (f32)factor;
 
-        auto old_dims = data.mbt_dims;
+        auto old_dims = data.mbt_scale;
 
-        data.mbt_dims = mbt_screen_dims(data.zoom);
+        data.mbt_scale = mbt_screen_dims(data.zoom);
 
-        data.mbt_pos.x += 0.5 * (old_dims.x - data.mbt_dims.x);
-        data.mbt_pos.y += 0.5 * (old_dims.y - data.mbt_dims.y);
+        data.mbt_pos.x += 0.5 * (old_dims.x - data.mbt_scale.x);
+        data.mbt_pos.y += 0.5 * (old_dims.y - data.mbt_scale.y);
 
         auto w = data.screen_dims.x;
         auto h = data.screen_dims.y;
 
         data.mbt_delta = {
-            data.mbt_dims.x / w,
-            data.mbt_dims.y / h
+            data.mbt_scale.x / w,
+            data.mbt_scale.y / h
         };
     }
 
@@ -472,6 +472,8 @@ namespace ns_update_state
     static void update_state(InputCommand const& cmd, StateData& data)
     {
         namespace ns = ns_update_state;
+
+        data.in_cmd = cmd;
 
         ns::update_color_format(cmd.cycle_color, data);
         ns::update_zoom_rate(cmd.zoom_rate, data);
@@ -542,6 +544,8 @@ namespace game_mbt
         }
 
         data.screen_dims = { w, h };
+        
+        reset_state_data(data);
 
         data.frame_sw.start();
 
