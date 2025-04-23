@@ -188,39 +188,11 @@ namespace game_mbt
 {
     static ColorId to_color_id(u32 iter, u32 iter_limit)
     {
-        constexpr auto C = colors::N_COLORS;
-        constexpr u32 N = 8;
+        auto r = num::min((f32)iter / iter_limit, 1.0f);
 
-        u32 iter_levels[N] = { 50, 100, 200, 300, 400, 500, 600, 800 };
+        auto id = num::round_to_unsigned<u32>(r * ColorId::max);
 
-        auto id = ColorId::make_default();
-
-        if (iter >= iter_limit)
-        {
-            return id;
-        }
-
-        u32 min = 0;
-	    u32 max = 0;
-        u32 n_colors = 8;
-
-        for (u32 i = 0; i < N; i++)
-        {
-            n_colors *= 2;
-            min = max;
-            max = i;
-
-            if (iter < max)
-            {
-                id.value = (iter - min) % n_colors * (C / n_colors);
-                return id;
-            }
-        }
-
-        min = max;
-        id.value = (iter - min) % C;
-
-        return id;
+        return ColorId::make(id);
     }
 
 
@@ -266,7 +238,7 @@ namespace game_mbt
         {
             for (u32 x = 0; x < w; x++)
             {
-                auto iter = mandelbrot_iter(cx, cy, limit);
+                auto iter = mandelbrot_iter(cx, cy, limit);                
                 d[x] = to_color_id(iter, limit);
 
                 cx += delta.x;
