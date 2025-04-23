@@ -22,9 +22,6 @@ namespace colors
 
         return n;
     }
-
-
-    constexpr u32 N_COLORS = calc_n_palette_colors();
 }
 
 
@@ -109,21 +106,7 @@ namespace colors
         }
 
         return palette;
-    }
-
-
-    constexpr std::array<u32, N_COLOR_LEVELS> make_color_levels()
-    {
-        u32 min_level = 50;
-        u32 max_level = 1000;
-
-        constexpr std::array<u32, N_COLOR_LEVELS> levels = { 50, 100, 200, 300, 400, 500, 600, 800 };
-
-        return levels;
-    }
-
-
-    
+    }    
 }
 
 
@@ -194,60 +177,9 @@ namespace colors
     }
 
 
-    
+    constexpr u32 N_COLORS = calc_n_palette_colors();
 }
 
-    using ColorTable = colors::Palette<colors::N_COLORS>;
-    using ColorFormat = colors::ColorFormat;
-    using ColorId = colors::ColorId<colors::N_COLORS>;
-
-
-    static p32 color_at(ColorTable const& table, ColorFormat format, ColorId id)
-    {
-        auto r = table.channels[format.R][id.value];
-        auto g = table.channels[format.G][id.value];
-        auto b = table.channels[format.B][id.value];
-
-        return img::to_pixel(r, g, b);
-    }
-
-
-    static ColorId to_color_id(u32 iter, u32 iter_limit)
-    {
-        constexpr auto C = colors::N_COLORS;
-        constexpr u32 N = 8;
-        
-        u32 iter_levels[N] = { 50, 100, 200, 300, 400, 500, 600, 800 };
-
-        auto id = ColorId::make_default();
-
-        if (iter >= iter_limit)
-        {
-            return id;
-        }
-
-        u32 min = 0;
-	    u32 max = 0;
-        u32 n_colors = 8;
-
-        for (u32 i = 0; i < N; i++)
-        {
-            n_colors *= 2;
-            min = max;
-            max = i;
-
-            if (iter < max)
-            {
-                id.value = (iter - min) % n_colors * (C / n_colors);
-                return id;
-            }
-        }
-
-        min = max;
-        id.value = (iter - min) % C;
-
-        return id;
-    }
-
+    
 
 } // game_mbt

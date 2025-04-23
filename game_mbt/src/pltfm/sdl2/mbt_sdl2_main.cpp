@@ -54,7 +54,7 @@ namespace mn
     RunState run_state = RunState::Begin;
 
     window::Window window;
-    input::InputArray input;
+    input::InputArray inputs;
 
     game::AppState app_state;
 }
@@ -143,7 +143,7 @@ static bool main_init()
         return false;
     }
 
-    if (!input::init(mn::input))
+    if (!input::init(mn::inputs))
     {
         return false;
     }
@@ -190,18 +190,19 @@ static void main_loop()
 
     while(is_running())
     {
-        input::record_input(mn::input);
+        input::record_input(mn::inputs);
+        auto& input = mn::inputs.curr();
 
-        if (reset_game(mn::input.cur()))
+        if (reset_game(input))
         {
             game::reset(mn::app_state);
         }
 
-        game::update(mn::app_state, mn::input.cur());
+        game::update(mn::app_state, input);
 
-        window::render(mn::window, mn::input.cur().window_size_changed);
+        window::render(mn::window, input.window_size_changed);
 
-        mn::input.swap();
+        mn::inputs.swap();
         cap_framerate(sw, TARGET_NS_PER_FRAME);
     }
 }

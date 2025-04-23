@@ -519,9 +519,9 @@ namespace input
 		u32 n_controllers;
 		u32 n_joysticks;
 
-		Input& pre() { return inputs[p]; }
+		Input& prev() { return inputs[p]; }
 
-		Input& cur() { return inputs[c]; }
+		Input& curr() { return inputs[c]; }
 
 		void swap() { p = c; c = !p; }
 	};

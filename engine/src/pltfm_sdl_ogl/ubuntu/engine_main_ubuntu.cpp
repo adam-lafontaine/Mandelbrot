@@ -234,7 +234,7 @@ static bool game_state_init()
 static bool main_init()
 {
     ui_state.window_title = "Mandelbrot Engine";
-    ui_state.window_width = 1200;
+    ui_state.window_width = 1300;
     ui_state.window_height = 800;
 
     if (!ui_imgui::init(ui_state))
@@ -280,7 +280,7 @@ static void game_loop()
     state.game_sw.start();
     while(is_running())
     {
-        auto input_copy = inputs.cur();
+        auto input_copy = inputs.curr();
         gs::update(input_copy);
 
         cap_game_framerate();
@@ -301,7 +301,7 @@ static void main_loop()
     while(is_running())
     {
         process_user_input();
-        auto& input = inputs.cur();
+        auto& input = inputs.curr();
 
         iot::update(io_test_state, input);        
 

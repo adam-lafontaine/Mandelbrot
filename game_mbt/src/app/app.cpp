@@ -6,6 +6,9 @@ namespace game_mbt
 {
     namespace img = image;
     namespace num = numeric;
+    namespace mb = memory_buffer;
+
+    using fmbt = double;
 
     using p32 = img::Pixel;
 
@@ -28,6 +31,114 @@ namespace game_mbt
 
 #include "colors.cpp"
 
+namespace game_mbt
+{
+    using ColorTable = colors::Palette<colors::N_COLORS>;
+    using ColorFormat = colors::ColorFormat;
+    using ColorId = colors::ColorId<colors::N_COLORS>;
+
+
+    constexpr ColorTable Color_Table = colors::make_palette<colors::N_COLORS>();
+
+
+    static p32 color_at(ColorFormat format, ColorId id)
+    {
+        auto r = Color_Table.channels[format.R][id.value];
+        auto g = Color_Table.channels[format.G][id.value];
+        auto b = Color_Table.channels[format.B][id.value];
+
+        return img::to_pixel(r, g, b);
+    }
+
+
+    static ColorId to_color_id(u32 iter, u32 iter_limit)
+    {
+        constexpr auto C = colors::N_COLORS;
+        constexpr u32 N = 8;
+
+        u32 iter_levels[N] = { 50, 100, 200, 300, 400, 500, 600, 800 };
+
+        auto id = ColorId::make_default();
+
+        if (iter >= iter_limit)
+        {
+            return id;
+        }
+
+        u32 min = 0;
+	    u32 max = 0;
+        u32 n_colors = 8;
+
+        for (u32 i = 0; i < N; i++)
+        {
+            n_colors *= 2;
+            min = max;
+            max = i;
+
+            if (iter < max)
+            {
+                id.value = (iter - min) % n_colors * (C / n_colors);
+                return id;
+            }
+        }
+
+        min = max;
+        id.value = (iter - min) % C;
+
+        return id;
+    }
+
+
+    class ColorIdMatrix
+    {
+    private:
+        u8 p = 1;
+        u8 c = 0;        
+
+    public:
+
+        MatrixView2D<ColorId> data_[2];
+        
+        MatrixView2D<ColorId>& prev() { return data_[p]; }
+        MatrixView2D<ColorId>& curr() { return data_[c]; }
+
+        void swap() { p = c; c = !p; }
+
+        MemoryBuffer<ColorId> buffer;
+    };
+
+
+    static void destroy_color_ids(ColorIdMatrix& mat)
+    {
+        mb::destroy_buffer(mat.buffer);
+    }
+
+
+    static bool create_color_ids(ColorIdMatrix& mat, u32 width, u32 height)
+    {
+        auto n = width * height;
+
+        if (!mb::create_buffer(mat.buffer, n * 2, "color_ids"))
+        {
+            return false;
+        }
+
+        for (u32 i = 0; i < 2; i++)
+        {
+            auto span = span::push_span(mat.buffer, n);
+            mat.data_[i].matrix_data_ = span.data;
+            mat.data_[i].width = width;
+            mat.data_[i].height = height;
+        }        
+
+        return true;
+    }
+
+
+
+
+}
+
 
 /* state data */
 
@@ -36,6 +147,18 @@ namespace game_mbt
     class StateData
     {
     public:
+
+        ColorIdMatrix color_ids;
+
+        ColorFormat format;
+
+        Rect2Du32 copy_src;
+        Rect2Du32 copy_dst;
+
+        fmbt min_mx;
+        fmbt min_my;
+        fmbt mx_step;
+        fmbt my_step;
 
         
     };
@@ -56,7 +179,7 @@ namespace game_mbt
 
         auto& data = get_data(state);
 
-
+        destroy_color_ids(data.color_ids);
 
         mem::free(state.data_);
     }
@@ -74,7 +197,7 @@ namespace game_mbt
 
         auto& data = get_data(state);
 
-        data = {};
+        data = {};        
 
         return true;
     }
@@ -121,6 +244,16 @@ namespace game_mbt
     bool set_screen_memory(AppState& state, image::ImageView screen)
     {
         state.screen = screen;
+
+        auto& data = get_data(state);
+
+        auto w = state.screen.width;
+        auto h = state.screen.height;
+
+        if (!create_color_ids(data.color_ids, w, h))
+        {
+            return false;
+        }
 
         return true;
     }

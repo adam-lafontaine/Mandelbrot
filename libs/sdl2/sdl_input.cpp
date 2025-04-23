@@ -25,7 +25,7 @@ namespace sdl
     };
 
 
-    static void open_gamepad_device(GamepadDevice& device, input::InputArray& input)
+    static void open_gamepad_device(GamepadDevice& device, input::InputArray& inputs)
     {        
         int cmax = (int)input::MAX_CONTROLLERS;
         int jmax = (int)input::MAX_JOYSTICKS;
@@ -101,8 +101,8 @@ namespace sdl
         device.n_controllers = c;
         device.n_joysticks = j;
 
-        input.n_controllers = c;
-        input.n_joysticks = j;
+        inputs.n_controllers = c;
+        inputs.n_joysticks = j;
     }
 
 
@@ -245,12 +245,12 @@ namespace sdl
     }
 
 
-    static void handle_sdl_event(SDL_Event const& event, input::Input& input)
+    static void handle_sdl_event(SDL_Event const& event, input::Input& inputs)
     {
         switch(event.type)
         {
         case SDL_WINDOWEVENT:
-            handle_window_event(event.window, input);
+            handle_window_event(event.window, inputs);
             break;
 
         case SDL_QUIT:
@@ -279,7 +279,7 @@ namespace sdl
                     print_message("ALT ENTER");
                     auto window = SDL_GetWindowFromID(event.window.windowID);
                     toggle_fullscreen(window);
-                    input.window_size_changed = 1;
+                    inputs.window_size_changed = 1;
                     break;
                 #endif
                 }
@@ -1100,7 +1100,7 @@ namespace input
     }
 
 
-    bool init(InputArray& input)
+    bool init(InputArray& inputs)
     {
         auto error = SDL_InitSubSystem(subsystem_flags());
         if (error)
@@ -1109,10 +1109,10 @@ namespace input
             return false;
         }
 
-        reset_input_state(input.pre());
-        reset_input_state(input.cur());
+        reset_input_state(inputs.prev());
+        reset_input_state(inputs.curr());
 
-        sdl::open_gamepad_device(sdl::gamepad, input);
+        sdl::open_gamepad_device(sdl::gamepad, inputs);
 
         return true;
     }
@@ -1125,10 +1125,10 @@ namespace input
     }
 
 
-    void record_input(InputArray& input)
+    void record_input(InputArray& inputs)
     {
-        auto& pre = input.pre();
-        auto& cur = input.cur();
+        auto& pre = inputs.prev();
+        auto& cur = inputs.curr();
 
         copy_input_state(pre, cur);
         cur.frame = pre.frame + 1;
@@ -1141,17 +1141,17 @@ namespace input
             sdl::handle_sdl_event(event, cur);
             record_keyboard_input(event, pre.keyboard, cur.keyboard);
             record_mouse_input(event, pre.mouse, cur.mouse);
-            record_joystick_input(event, pre, cur, input.n_joysticks);
+            record_joystick_input(event, pre, cur, inputs.n_joysticks);
         }
 
-        record_controller_input(pre, cur, input.n_controllers);
+        record_controller_input(pre, cur, inputs.n_controllers);
     }
 
 
-    void record_input(InputArray& input, event_cb handle_event)
+    void record_input(InputArray& inputs, event_cb handle_event)
     {
-        auto& pre = input.pre();
-        auto& cur = input.cur();
+        auto& pre = inputs.prev();
+        auto& cur = inputs.curr();
 
         copy_input_state(pre, cur);
         cur.frame = pre.frame + 1;
@@ -1165,9 +1165,9 @@ namespace input
             sdl::handle_sdl_event(event, cur);
             record_keyboard_input(event, pre.keyboard, cur.keyboard);
             record_mouse_input(event, pre.mouse, cur.mouse);
-            record_joystick_input(event, pre, cur, input.n_joysticks);
+            record_joystick_input(event, pre, cur, inputs.n_joysticks);
         }
 
-        record_controller_input(pre, cur, input.n_controllers);
+        record_controller_input(pre, cur, inputs.n_controllers);
     }
 }
