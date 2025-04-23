@@ -1,6 +1,8 @@
 #include "app.hpp"
 #include "../../../libs/alloc_type/alloc_type.hpp"
 #include "../../../libs/util/numeric.hpp"
+#include "../../../libs/util/stopwatch.hpp"
+
 
 namespace game_mbt
 {
@@ -33,9 +35,19 @@ namespace game_mbt
     constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
     constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 1000;
     constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
-    constexpr f32 ZOOM_SPEED_LOWER_LIMIT = 1.0f;
+    constexpr f32 ZOOM_RATE_LOWER_LIMIT = 1.0f;
+
+
+    constexpr fmbt MBT_MIN_X = -2.0;
+    constexpr fmbt MBT_MAX_X = 0.7;
+    constexpr fmbt MBT_MIN_Y = -1.2;
+    constexpr fmbt MBT_MAX_Y = 1.2;
+    constexpr fmbt MBT_WIDTH = MBT_MAX_X - MBT_MIN_X;
+    constexpr fmbt MBT_HEIGHT = MBT_MAX_Y - MBT_MIN_Y;
 }
 
+
+#include "map_input.cpp"
 #include "colors.cpp"
 
 /* color ids */
@@ -265,143 +277,16 @@ namespace game_mbt
             cx = begin.x;
         }
     }
-}
 
 
-/* map input */
-
-namespace game_mbt
-{
-    class InputCommand
+    static inline Vec2D<fmbt> mbt_screen_dims(f32 zoom)
     {
-    public:
-        Vec2D<i8> pan;
-        i8 zoom = 0; 
-        i8 zoom_speed = 0;
-        i8 resolution = 0;
-        i8 cycle_color = 0;
-    };
-
-
-    static inline b8 is_up(Vec2Df32 vec)
-    {
-        return vec.y < 0.5f;
-    }
-
-
-    static inline b8 is_down(Vec2Df32 vec)
-    {
-        return vec.y > 0.5f;
-    }
-
-
-    static inline b8 is_left(Vec2Df32 vec)
-    {
-        return vec.x < 0.5f;
-    }
-
-
-    static inline b8 is_right(Vec2Df32 vec)
-    {
-        return vec.x > 0.5f;
-    }
-
-
-    static Vec2D<i8> map_pan(Input const& input)
-    {
-        auto right = 
-            input.keyboard.kbd_D.is_down ||
-            input.keyboard.npd_6.is_down ||
-            is_right(input.controller.stick_left.vec);
-        
-        auto left = 
-            input.keyboard.kbd_A.is_down ||
-            input.keyboard.npd_4.is_down ||
-            is_left(input.controller.stick_left.vec);
-
-        auto up = 
-            input.keyboard.kbd_W.is_down ||
-            input.keyboard.npd_8.is_down ||
-            is_up(input.controller.stick_left.vec);
-
-        auto down = 
-            input.keyboard.kbd_S.is_down ||
-            input.keyboard.npd_2.is_down ||
-            is_down(input.controller.stick_left.vec);
+        auto scale = 1.0f / zoom;
 
         return {
-            (i8)((int)right - (int)left),
-            (i8)((int)down - (int)up)
+            MBT_WIDTH * scale,
+            MBT_HEIGHT * scale
         };
-    }
-
-
-    static i8 map_zoom(Input const& input)
-    {
-        auto in = 
-            input.keyboard.npd_plus.is_down ||
-            input.controller.stick_right.vec.y < 0.5f;
-
-        auto out = 
-            input.keyboard.npd_minus.is_down ||
-            input.controller.stick_right.vec.y > 0.5f;
-
-        return (i8)((int)in - (int)out);
-    }
-
-
-    static i8 map_zoom_speed(Input const& input)
-    {
-        auto fast = 
-            input.keyboard.npd_mult.is_down ||
-            input.controller.trigger_right > 0.5f;
-
-        auto slow = 
-            input.keyboard.npd_div.is_down ||
-            input.controller.trigger_left > 0.5f;
-
-        return (i8)((int)fast - (int)slow);
-    }
-
-
-    static i8 map_resolution(Input const& input)
-    {
-        auto more = 
-            input.keyboard.kbd_up.is_down ||
-            input.controller.btn_dpad_up.is_down;
-
-        auto less = 
-            input.keyboard.kbd_down.is_down ||
-            input.controller.btn_dpad_down.is_down;
-
-        return (i8)((int)more - (int)less);
-    }
-
-
-    static i8 map_cycle_color(Input const& input)
-    {
-        auto right =
-            input.keyboard.kbd_right.is_down ||
-            input.controller.btn_dpad_right.is_down;
-        
-        auto left =
-            input.keyboard.kbd_left.is_down ||
-            input.controller.btn_dpad_left.is_down;
-
-        return (i8)((int)right - (int)left);
-    }
-
-
-    static InputCommand map_input(Input const& input)
-    {
-        InputCommand cmd{};
-
-        cmd.pan = map_pan(input);
-        cmd.zoom = map_zoom(input);
-        cmd.zoom_speed = map_zoom_speed(input);
-        cmd.cycle_color = map_cycle_color(input);
-
-        return cmd;
     }
 }
 
@@ -414,21 +299,66 @@ namespace game_mbt
     {
     public:
 
+        Vec2Du32 screen_dims;
+
+        Stopwatch frame_sw;
+        f64 dt_frame;
+
         ColorIdMatrix color_ids;
 
         ColorFormat format;
+        u8 format_option = 0;
 
         Rect2Du32 copy_src;
         Rect2Du32 copy_dst;
 
         Rect2Du32 proc_dst[2];
-        u8 n_proc;
+        u8 n_proc = 1;
 
-        Vec2D<fmbt> mbt_begin;
+        f32 zoom_rate = 1.0f;
+        f32 zoom = 1.0f;        
+
+        Vec2D<fmbt> mbt_dims;
+        Vec2D<fmbt> mbt_pos;
         Vec2D<fmbt> mbt_delta;
 
-        
+        bool render_new = false;
+
     };
+
+
+    static void reset_state_data(StateData& data)
+    {
+        auto w = data.screen_dims.x;
+        auto h = data.screen_dims.y;
+
+        data.dt_frame = 1.0 / 60;
+
+        data.format_option = 0;
+
+        auto full_rect = img::make_rect(w, h);
+
+        data.copy_src = full_rect;
+        data.copy_dst = full_rect;
+
+        data.proc_dst[0] = full_rect;
+        data.proc_dst[1] = full_rect;
+        data.n_proc = 1;
+
+        data.zoom_rate = ZOOM_RATE_LOWER_LIMIT;
+        data.zoom = 1.0f;        
+
+        data.mbt_dims = mbt_screen_dims(data.zoom);
+
+        data.mbt_pos = { MBT_MIN_X, MBT_MIN_Y };
+
+        data.mbt_delta = {
+            data.mbt_dims.x / w,
+            data.mbt_dims.y / h
+        };
+
+        data.render_new = true;
+    }
 
 
     static inline StateData& get_data(AppState const& state)
@@ -464,9 +394,98 @@ namespace game_mbt
 
         auto& data = get_data(state);
 
-        data = {};        
+        reset_state_data(data);
 
         return true;
+    }
+}
+
+
+/* update */
+
+namespace game_mbt
+{
+
+namespace ns_update_state
+{
+    static void update_color_format(i8 idelta, StateData& data)
+    {
+        i32 min = 0;
+        i32 max = 6;
+
+        i32 option = (i32)data.format_option + (i32)idelta;
+
+        option = (option > max) ? min : ((option < min) ? max : option);
+
+        data.format_option = (u8)option;
+        data.format = colors::make_color_format(data.format_option);        
+    }
+
+
+    static void update_zoom_rate(i8 idelta, StateData& data)
+    {
+        constexpr f32 factor_per_second = 0.1f;
+
+        auto factor = 1.0 + idelta * factor_per_second * data.dt_frame;
+
+        auto rate = data.zoom_rate * (f32)factor;
+
+        data.zoom_rate = num::max(rate, ZOOM_RATE_LOWER_LIMIT);
+    }
+
+
+    static void update_zoom(i8 idelta, StateData& data)
+    {
+        constexpr f32 zoom_per_second = 0.5f;
+
+        auto factor = 1.0 + idelta * zoom_per_second * data.dt_frame;
+
+        data.zoom *= (f32)factor;
+
+        auto old_dims = data.mbt_dims;
+
+        data.mbt_dims = mbt_screen_dims(data.zoom);
+
+        data.mbt_pos.x += 0.5 * (old_dims.x - data.mbt_dims.x);
+        data.mbt_pos.y += 0.5 * (old_dims.y - data.mbt_dims.y);
+
+        auto w = data.screen_dims.x;
+        auto h = data.screen_dims.y;
+
+        data.mbt_delta = {
+            data.mbt_dims.x / w,
+            data.mbt_dims.y / h
+        };
+    }
+
+
+    static void update_mbt_pos(Vec2D<i8> ishift, StateData& data)
+    {
+        auto dx = ishift.x * data.mbt_delta.x;
+        auto dy = ishift.y * data.mbt_delta.y;
+
+        data.mbt_pos.x += dx;
+        data.mbt_pos.y += dy;
+    }
+}
+
+    static void update_state(InputCommand const& cmd, StateData& data)
+    {
+        namespace ns = ns_update_state;
+
+        ns::update_color_format(cmd.cycle_color, data);
+        ns::update_zoom_rate(cmd.zoom_rate, data);
+
+        if (!cmd.direction)
+        {
+            ns::update_zoom(cmd.zoom, data);
+        }
+
+        ns::update_mbt_pos(cmd.shift, data);        
+
+        static_assert(sizeof(cmd) == sizeof(cmd.any));
+
+        data.render_new = cmd.any;
     }
 }
 
@@ -522,6 +541,10 @@ namespace game_mbt
             return false;
         }
 
+        data.screen_dims = { w, h };
+
+        data.frame_sw.start();
+
         return true;
     }
 
@@ -551,14 +574,23 @@ namespace game_mbt
 
         img::fill(state.screen, color);
 
-        auto cmd = map_input(input);
+        auto& data = get_data(state);
 
+        data.dt_frame = data.frame_sw.get_time_sec();
+        data.frame_sw.start();
+
+        auto cmd = map_input(input);
+        update_state(cmd, data);
+
+
+        data.color_ids.swap();
     }
 
 
     void reset(AppState& state)
     {
-
+        auto& data = get_data(state);
+        reset_state_data(data);
     }
 
 

@@ -123,7 +123,7 @@ namespace colors
     };
 
 
-    static ColorFormat make_color_format(u32 option)
+    static ColorFormat make_color_format(u8 option)
     {
         ColorFormat format{};
 
