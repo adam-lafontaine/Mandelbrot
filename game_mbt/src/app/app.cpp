@@ -28,6 +28,11 @@ namespace game_mbt
 	#endif
 
 	constexpr u32 PIXELS_PER_SECOND = (u32)(0.2 * BUFFER_HEIGHT);
+
+    constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
+    constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 1000;
+    constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
+    constexpr f32 ZOOM_SPEED_LOWER_LIMIT = 1.0f;
 }
 
 #include "colors.cpp"
@@ -43,9 +48,21 @@ namespace game_mbt
 
     class ColorIdMatrix
     {
+    private:
+        u8 p = 1;
+        u8 c = 0;
+
     public:
 
-        MatrixView2D<ColorId> data;
+        MatrixView2D<ColorId> data_[2];
+        
+        //MatrixView2D<ColorId> prev() { return data_[p]; }
+        //MatrixView2D<ColorId> curr() { return data_[c]; }
+
+        MatrixView2D<ColorId> prev() const { return data_[p]; }
+        MatrixView2D<ColorId> curr() const { return data_[c]; }
+
+        void swap() { p = c; c = !p; }
 
         MemoryBuffer<ColorId> buffer;
     };
@@ -61,17 +78,58 @@ namespace game_mbt
     {
         auto n = width * height;
 
-        if (!mb::create_buffer(mat.buffer, n, "color_ids"))
+        if (!mb::create_buffer(mat.buffer, n * 2, "color_ids"))
         {
             return false;
         }
 
-        auto span = span::push_span(mat.buffer, n);
-        mat.data.matrix_data_ = span.data;
-        mat.data.width = width;
-        mat.data.height = height;
+        for (u32 i = 0; i < 2; i++)
+        {
+            auto span = span::push_span(mat.buffer, n);
+            mat.data_[i].matrix_data_ = span.data;
+            mat.data_[i].width = width;
+            mat.data_[i].height = height;
+        }        
 
         return true;
+    }
+
+
+    static inline auto to_span(MatrixView2D<ColorId> const& mat)
+    {
+        return img::to_span(mat);
+    }
+
+
+    static inline auto sub_view(MatrixView2D<ColorId> const& mat, Rect2Du32 const& range)
+    {
+        return img::sub_view(mat, range);
+    }
+
+
+    static void copy(ColorIdMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst)
+    {
+        auto src = sub_view(mat.prev(), r_src);
+        auto dst = sub_view(mat.curr(), r_dst);
+
+        assert(src.width == dst.width);
+        assert(src.height == dst.height);
+
+        auto w = src.width;
+        auto h = src.height;
+
+        auto s = src.matrix_data_ + r_src.x_begin;
+        auto d = dst.matrix_data_ + dst.x_begin;
+
+        auto stride = mat.curr().width;
+
+        for (u32 y = 0; y < h; y++)
+        {
+            span::copy(span::make_view(s, w), span::make_view(d, w));
+
+            s += stride;
+            d += stride;
+        }
     }
 
 
@@ -84,11 +142,10 @@ namespace game_mbt
 
 namespace game_mbt
 {
-    constexpr ColorTable Color_Table = colors::make_palette<colors::N_COLORS>();
-
-
     static p32 color_at(ColorId id, ColorFormat format)
     {
+        static constexpr ColorTable Color_Table = colors::make_palette<colors::N_COLORS>();
+
         auto r = Color_Table.channels[format.R][id.value];
         auto g = Color_Table.channels[format.G][id.value];
         auto b = Color_Table.channels[format.B][id.value];
@@ -99,7 +156,7 @@ namespace game_mbt
 
     static void render(ColorIdMatrix const& src, ImageView const& dst, ColorFormat format)
     {
-        auto s = img::to_span(src.data);
+        auto s = to_span(src.curr());
         auto d = img::to_span(dst);
 
         assert(s.length == d.length);
@@ -175,6 +232,38 @@ namespace game_mbt
     
         return iter;
     }
+
+
+    static void mbt_proc(ColorIdMatrix const& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit)
+    {
+        auto view = mat.curr();
+        auto dst = sub_view(view, r_dst);
+
+        auto w = dst.width;
+        auto h = dst.height;
+
+        auto stride = view.width;
+
+        auto d = dst.matrix_data_ + dst.x_begin;
+
+        auto cy = begin.y;
+        auto cx = begin.x;
+
+        for (u32 y = 0; y < h; y++)
+        {
+            for (u32 x = 0; x < w; x++)
+            {
+                auto iter = mandelbrot_iter(cx, cy, limit);
+                d[x] = to_color_id(iter, limit);
+
+                cx += delta.x;
+            }
+
+            d += stride;
+            cy += delta.y;
+            cx = begin.x;
+        }
+    }
 }
 
 
@@ -193,10 +282,11 @@ namespace game_mbt
         Rect2Du32 copy_src;
         Rect2Du32 copy_dst;
 
-        fmbt min_mx;
-        fmbt min_my;
-        fmbt mx_step;
-        fmbt my_step;
+        Rect2Du32 proc_dst[2];
+        u8 n_proc;
+
+        Vec2D<fmbt> mbt_begin;
+        Vec2D<fmbt> mbt_delta;
 
         
     };
