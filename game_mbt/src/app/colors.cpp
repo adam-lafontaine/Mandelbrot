@@ -84,10 +84,10 @@ namespace colors
     {
     public:
 
-        static constexpr u32 n_channels = 6;
+        static constexpr u32 count = 6;
         static constexpr u32 len = 16;
 
-        u8 channels[n_channels][len] = { 0 };
+        u8 channels[count][len] = { 0 };
     };
 
 
@@ -150,25 +150,10 @@ namespace colors
     {
     public:
 
-        static constexpr u32 count = N;
+        static constexpr u32 count = 6;
+        static constexpr u32 len = N;
 
-        u8 channels[3][N + 1] = {
-            /*{  sc(0) , sc(1) , sc(2) , sc(3) , sc(4) , sc(5) , sc(6) , sc(7) , sc(8) , sc(9) , sc(10), sc(11), sc(12), sc(13), sc(14), sc(15), 0 },
-            {  sc(6) , sc(7) , sc(8) , sc(9) , sc(10), sc(11), sc(12), sc(13), sc(14), sc(15), sc(0) , sc(1) , sc(2) , sc(3) , sc(4) , sc(5) , 0 },
-            {  sc(11), sc(12), sc(13), sc(14), sc(15), sc(0) , sc(1) , sc(2) , sc(3) , sc(4) , sc(5) , sc(6) , sc(7) , sc(8) , sc(9) , sc(10), 0 }*/
-
-            /*{  sc(0) , sc(3) , sc(6) , sc(9) , sc(12), sc(15), sc(2) , sc(5) , sc(8) , sc(11), sc(14), sc(1) , sc(4) , sc(7) , sc(10), sc(13), 0 },
-            {  sc(15), sc(2) , sc(5) , sc(8) , sc(11), sc(14), sc(1) , sc(4) , sc(7) , sc(10), sc(13), sc(0) , sc(3) , sc(6) , sc(9) , sc(12), 0 },
-            {  sc(14), sc(1) , sc(4) , sc(7) , sc(10), sc(13), sc(0) , sc(3) , sc(6) , sc(9) , sc(12), sc(15), sc(2) , sc(5) , sc(8) , sc(11), 0 }*/
-
-            /*{ sc(0) , sc(5) , sc(10), sc(15), sc(4) , sc(9) , sc(14), sc(3) , sc(8) , sc(13), sc(2) , sc(7) , sc(12), sc(1) , sc(6) , sc(11), 0 },
-            { sc(5) , sc(10), sc(15), sc(4) , sc(9) , sc(14), sc(3) , sc(8) , sc(13), sc(2) , sc(7) , sc(11), sc(1) , sc(6) , sc(11), sc(0) , 0 },
-            { sc(10), sc(15), sc(4) , sc(9) , sc(14), sc(3) , sc(8) , sc(13), sc(2) , sc(7) , sc(12), sc(1) , sc(6) , sc(11), sc(0) , sc(5) , 0 }*/
-
-            /*{ 66, 25,  9,  4,   0,  12,  24,  57, 134, 211, 241, 248, 255, 204, 153, 106, 0 },
-            { 30,  7,  1,  4,   7,  44,  82, 125, 181, 236, 233, 201, 170, 128,  87,  57, 0 },
-            { 15, 26, 47, 73, 100, 138, 177, 209, 229, 248, 191,  95,  50,  30,  20,  10, 0 }*/
-        };
+        u8 channels[count][N + 1] = { 0 };
     };
 
 
@@ -207,48 +192,16 @@ namespace colors
 
 
     template <u32 N>
-    constexpr Palette<N> make_palette_old()
-    {
-        static_assert(N % 16 == 0);
-
-        auto lerp = [](u8 a, u8 b, f32 t){ return num::cxpr::round_to_unsigned<u8>(a + t * (b - a)); };
-
-        constexpr Palette<16> palette16;
-        Palette<N> palette;
-
-        auto S = N / 16;
-        auto C = 3;
-
-        for (u32 i = 0; i < 15; i++)
-        {
-            auto a = pixel_at(palette16, ColorId<16>::make(i));
-            auto b = pixel_at(palette16, ColorId<16>::make(i + 1));
-
-            for (u32 s = 0; s < S; s++)
-            {
-                auto n = i * S + s;
-                f32 t = (f32)s / S;
-
-                palette.channels[0][n] = lerp(a.red, b.red, t);
-                palette.channels[1][n] = lerp(a.green, b.green, t);
-                palette.channels[2][n] = lerp(a.blue, b.blue, t);
-            }
-        }
-
-        return palette;
-    }
-
-
-    template <u32 N>
     constexpr Palette<N> make_palette()
     {
         Palette<N> palette;
 
         auto cch = color_channels();
 
-        expand_channel<N>(cch.channels[0], palette.channels[0]);
-        expand_channel<N>(cch.channels[1], palette.channels[1]);
-        expand_channel<N>(cch.channels[2], palette.channels[2]);
+        for (u32 i = 0; i < palette.count; i++)
+        {
+            expand_channel<N>(cch.channels[i], palette.channels[i]);
+        }
 
         return palette;
     }
@@ -268,55 +221,15 @@ namespace colors
     };
 
 
-    static ColorFormat make_color_format(u8 option)
+    static ColorFormat make_color_format()
     {
+        static rng::iUniform format_rng(0, ColorChannels::count);
+
         ColorFormat format{};
 
-        auto& c1 = format.R;
-        auto& c2 = format.G;
-        auto& c3 = format.B;
-
-        switch (option)
-        {
-        case 1:
-            c1 = 0;
-            c2 = 1;
-            c3 = 2;
-            break;
-
-        case 2:
-            c1 = 0;
-            c2 = 2;
-            c3 = 1;
-            break;
-
-        case 3:
-            c1 = 1;
-            c2 = 0;
-            c3 = 2;
-            break;
-
-        case 4:
-            c1 = 1;
-            c2 = 2;
-            c3 = 0;
-            break;
-
-        case 5:
-            c1 = 2;
-            c2 = 0;
-            c3 = 1;
-            break;
-
-        case 6:
-            c1 = 2;
-            c2 = 1;
-            c3 = 0;
-            break;
-
-        default:
-            break;
-        }
+        format.R = format_rng.get();
+        format.G = format_rng.get();
+        format.B = format_rng.get();
 
         return format;
     }

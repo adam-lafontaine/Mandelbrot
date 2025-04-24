@@ -57,6 +57,7 @@ numeric_h := $(util)/numeric.hpp
 numeric_h += $(types_h)
 
 stopwatch_h := $(util)/stopwatch.hpp
+rng_h := $(util)/rng.hpp
 
 #************
 
@@ -244,6 +245,7 @@ game_mbt_c += $(game_mbt_h)
 game_mbt_c += $(alloc_type_h)
 game_mbt_c += $(numeric_h)
 game_mbt_c += $(stopwatch_h)
+game_mbt_c += $(rng_h)
 game_mbt_c += $(game_mbt_libs)
 game_mbt_c += $(game_mbt_app)/colors.cpp
 game_mbt_c += $(game_mbt_app)/map_input.cpp

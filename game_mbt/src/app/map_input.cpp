@@ -17,7 +17,7 @@ namespace game_mbt
                 i8 zoom; 
                 i8 zoom_rate;
                 i8 resolution;
-                i8 cycle_color;
+                b8 change_color;
 
                 u8 available[2];
             };
@@ -125,17 +125,15 @@ namespace ns_map_input
     }
 
 
-    static i8 map_cycle_color(Input const& input)
+    static b8 map_change_color(Input const& input)
     {
-        auto right =
+        auto change =
             input.keyboard.kbd_right.pressed ||
-            input.controller.btn_dpad_right.pressed;
-        
-        auto left =
+            input.controller.btn_dpad_right.pressed ||
             input.keyboard.kbd_left.pressed ||
             input.controller.btn_dpad_left.pressed;
 
-        return (i8)((int)right - (int)left);
+        return (b8)(change);
     }
 }
 
@@ -151,7 +149,7 @@ namespace ns_map_input
         cmd.zoom = ns::map_zoom(input);
         cmd.zoom_rate = ns::map_zoom_rate(input);
         cmd.resolution = ns::map_resolution(input);
-        cmd.cycle_color = ns::map_cycle_color(input);
+        cmd.change_color = ns::map_change_color(input);
 
         return cmd;
     }

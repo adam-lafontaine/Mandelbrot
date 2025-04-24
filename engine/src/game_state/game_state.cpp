@@ -120,12 +120,12 @@ namespace game_state
         auto cmd = data.in_cmd;
 
         ImGui::Text("INPUT");
-        show_vec("shift", cmd.shift);
-        ImGui::Text("zoom: %d", (int)cmd.zoom);
-        ImGui::Text("zoom_rate: %d", (int)cmd.zoom_rate);
-        ImGui::Text("resolution: %d", (int)cmd.resolution);
-        ImGui::Text("cycle_color: %d", (int)cmd.cycle_color);
-        ImGui::Text("any: %u", cmd.any);
+        show_vec(  "shift        ", cmd.shift);
+        ImGui::Text("zoom        : %d", (int)cmd.zoom);
+        ImGui::Text("zoom_rate   : %d", (int)cmd.zoom_rate);
+        ImGui::Text("resolution  : %d", (int)cmd.resolution);
+        ImGui::Text("change_color: %d", (int)cmd.change_color);
+        ImGui::Text("any         : %u", cmd.any);
     }
 
 
@@ -137,11 +137,9 @@ namespace game_state
         show_time_sec("dt_frame   ", data.dt_frame);
         show_vec(     "pixel_shift", data.pixel_shift);
         ImGui::Text("");
-        ImGui::Text("zoom rate: %f", data.zoom_rate);
-        ImGui::Text("zoom     : %f", data.zoom);
-        ImGui::Text("");
-        ImGui::Text("format_option: %u", data.format_option);
-        ImGui::Text("iter_limit   : %u", data.iter_limit);
+        ImGui::Text("zoom rate : %f", data.zoom_rate);
+        ImGui::Text("zoom      : %f", data.zoom);
+        ImGui::Text("iter_limit: %u", data.iter_limit);
         ImGui::Text("");
         show_vec("scale   ", data.mbt_scale);
         show_vec("position", data.mbt_pos);

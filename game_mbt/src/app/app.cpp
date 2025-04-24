@@ -2,6 +2,7 @@
 #include "../../../libs/alloc_type/alloc_type.hpp"
 #include "../../../libs/util/numeric.hpp"
 #include "../../../libs/util/stopwatch.hpp"
+#include "../../../libs/util/rng.hpp"
 
 
 namespace game_mbt
@@ -68,9 +69,6 @@ namespace game_mbt
     public:
 
         MatrixView2D<ColorId> data_[2];
-        
-        //MatrixView2D<ColorId> prev() { return data_[p]; }
-        //MatrixView2D<ColorId> curr() { return data_[c]; }
 
         MatrixView2D<ColorId> prev() const { return data_[p]; }
         MatrixView2D<ColorId> curr() const { return data_[c]; }
@@ -191,10 +189,6 @@ namespace game_mbt
 
         auto id = iter % colors::N_COLORS;
 
-        //auto r = num::min((f32)iter / iter_limit, 1.0f);
-
-        //auto id = num::round_to_unsigned<u32>(r * ColorId::max);
-
         return ColorId::make(id);
     }
 
@@ -286,7 +280,6 @@ namespace game_mbt
         ColorIdMatrix color_ids;
 
         ColorFormat format;
-        u8 format_option = 0;
 
         f32 zoom_rate = 1.0f;
         f32 zoom = 1.0f;
@@ -317,8 +310,6 @@ namespace game_mbt
         auto h = data.screen_dims.y;
 
         data.dt_frame = 1.0 / 60;
-
-        data.format_option = 0;
 
         data.zoom_rate = ZOOM_RATE_LOWER_LIMIT;
         data.zoom = 1.0f;
@@ -398,17 +389,14 @@ namespace game_mbt
 
 namespace ns_update_state
 {
-    static void update_color_format(i8 idelta, StateData& data)
+    static void update_color_format(b8 change, StateData& data)
     {
-        i32 min = 0;
-        i32 max = 6;
-
-        i32 option = (i32)data.format_option + (i32)idelta;
-
-        option = (option > max) ? min : ((option < min) ? max : option);
-
-        data.format_option = (u8)option;
-        data.format = colors::make_color_format(data.format_option);        
+        if (!change)
+        {
+            return;
+        }
+        
+        data.format = colors::make_color_format();
     }
 
 
@@ -579,7 +567,7 @@ namespace ns_update_state
 
         data.in_cmd = cmd;
 
-        ns::update_color_format(cmd.cycle_color, data);
+        ns::update_color_format(cmd.change_color, data);
         ns::update_zoom_rate(cmd.zoom_rate, data);
 
         if (!cmd.direction)
