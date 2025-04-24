@@ -184,9 +184,16 @@ namespace game_mbt
 {
     static ColorId to_color_id(u32 iter, u32 iter_limit)
     {
-        auto r = num::min((f32)iter / iter_limit, 1.0f);
+        if (iter >= iter_limit)
+        {
+            return ColorId::make_default();
+        }
 
-        auto id = num::round_to_unsigned<u32>(r * ColorId::max);
+        auto id = iter % colors::N_COLORS;
+
+        //auto r = num::min((f32)iter / iter_limit, 1.0f);
+
+        //auto id = num::round_to_unsigned<u32>(r * ColorId::max);
 
         return ColorId::make(id);
     }
