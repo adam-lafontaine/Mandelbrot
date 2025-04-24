@@ -131,10 +131,10 @@ namespace game_mbt
         auto w = src.width;
         auto h = src.height;
 
-        auto s = src.matrix_data_ + src.x_begin;
-        auto d = dst.matrix_data_ + dst.x_begin;
-
         auto stride = mat.curr().width;
+
+        auto s = src.matrix_data_ + src.y_begin * stride + src.x_begin;
+        auto d = dst.matrix_data_ + dst.y_begin * stride + dst.x_begin;
 
         for (u32 y = 0; y < h; y++)
         {
@@ -144,10 +144,6 @@ namespace game_mbt
             d += stride;
         }
     }
-
-
-
-
 }
 
 
@@ -229,10 +225,13 @@ namespace game_mbt
 
         auto stride = view.width;
 
-        auto d = dst.matrix_data_ + dst.x_begin;
+        auto d = dst.matrix_data_ + dst.y_begin * stride + dst.x_begin;
 
-        auto cy = begin.y;
-        auto cx = begin.x;
+        auto cy_begin = (fmbt)dst.y_begin * delta.y + begin.y;
+        auto cx_begin = (fmbt)dst.x_begin * delta.x + begin.x;
+
+        auto cy = cy_begin;
+        auto cx = cx_begin;
 
         for (u32 y = 0; y < h; y++)
         {
@@ -246,7 +245,7 @@ namespace game_mbt
 
             d += stride;
             cy += delta.y;
-            cx = begin.x;
+            cx = cx_begin;
         }
     }
 
@@ -291,6 +290,8 @@ namespace game_mbt
         Vec2D<fmbt> mbt_pos;
         Vec2D<fmbt> mbt_delta;
 
+        Vec2D<i16> pixel_shift;
+
         u8 n_copy = 0;
         Rect2Du32 copy_src;
         Rect2Du32 copy_dst;
@@ -325,6 +326,8 @@ namespace game_mbt
             data.mbt_scale.x / w,
             data.mbt_scale.y / h
         };
+
+        data.pixel_shift = { 0 };
 
         auto full_rect = img::make_rect(w, h);
 
@@ -429,8 +432,8 @@ namespace ns_update_state
         data.mbt_pos.x += 0.5 * (old_dims.x - data.mbt_scale.x);
         data.mbt_pos.y += 0.5 * (old_dims.y - data.mbt_scale.y);
 
-        auto w = data.screen_dims.x;
-        auto h = data.screen_dims.y;
+        auto w = (fmbt)data.screen_dims.x;
+        auto h = (fmbt)data.screen_dims.y;
 
         data.mbt_delta = {
             data.mbt_scale.x / w,
@@ -443,8 +446,13 @@ namespace ns_update_state
     {
         auto n_px = PIXELS_PER_SECOND * data.dt_frame;
 
-        auto dx = ishift.x * data.mbt_delta.x * n_px;
-        auto dy = ishift.y * data.mbt_delta.y * n_px;
+        data.pixel_shift = {
+            num::round_to_signed<i16>(ishift.x * n_px),
+            num::round_to_signed<i16>(ishift.y * n_px),
+        };
+
+        auto dx = data.mbt_delta.x * data.pixel_shift.x;
+        auto dy = data.mbt_delta.y * data.pixel_shift.y;
 
         data.mbt_pos.x += dx;
         data.mbt_pos.y += dy;
@@ -466,7 +474,7 @@ namespace ns_update_state
     }
 
 
-    static void update_ranges(Vec2D<i8> ishift, StateData& data)
+    static void update_ranges(StateData& data)
     {
         data.n_copy = 0;
         data.n_proc = 0;
@@ -481,7 +489,9 @@ namespace ns_update_state
 
         auto full_range = img::make_rect(w, h);
 
-        if (!ishift.x && !ishift.y)
+        auto shift = data.pixel_shift;
+
+        if (!shift.x && !shift.y)
         {
             data.n_copy = 0;
             data.n_proc = 1;
@@ -490,64 +500,64 @@ namespace ns_update_state
             return;
         }
 
+        auto copy_right = shift.x < 0;
+        auto copy_left = shift.x > 0;
+        auto copy_down = shift.y < 0;
+        auto copy_up = shift.y > 0;
+
+        auto const n_cols = num::abs(shift.x);
+        auto const n_rows = num::abs(shift.y);
+
+        auto& src = data.copy_src;
+        auto& dst = data.copy_dst;
+
+        src = full_range;
+        dst = full_range;
+
         data.n_copy = 1;
         data.n_proc = 0;
-
-        auto copy_right = ishift.x < 0;
-        auto copy_left = ishift.x < 0;
-        auto copy_down = ishift.y < 0;
-        auto copy_up = ishift.y > 0;
-
-        auto n_px = PIXELS_PER_SECOND * data.dt_frame;
-
-        auto const n_cols = num::round_to_unsigned<u32>(num::abs(ishift.x) * n_px);
-        auto const n_rows = num::round_to_unsigned<u32>(num::abs(ishift.y) * n_px);
-
-        data.copy_src = full_range;
-        data.copy_dst = full_range;
 
         if (copy_up || copy_down)
         {
             data.n_proc++;
-            auto& proc_dst = data.proc_dst[data.n_proc - 1];
-            proc_dst = full_range;
+            auto& proc = data.proc_dst[data.n_proc - 1];
+            proc = full_range;
 
             if(copy_up)
             {
-                data.copy_src.y_begin = n_rows;
-                data.copy_dst.y_end -= n_rows;
+                src.y_begin = n_rows;
+                dst.y_end -= n_rows;
 
-                proc_dst.y_begin = data.copy_dst.y_end;
+                proc.y_begin = dst.y_end;
             }
             else if (copy_down)
             {
-                data.copy_dst.y_begin = n_rows;
-                data.copy_src.y_end -= n_rows;
+                dst.y_begin = n_rows;
+                src.y_end -= n_rows;
 
-                proc_dst.y_end = data.copy_dst.y_begin;
+                proc.y_end = dst.y_begin;
             }
-
         }
 
         if (copy_right || copy_left)
         {
             data.n_proc++;
-            auto& proc_dst = data.proc_dst[data.n_proc - 1];
-            proc_dst = full_range;
+            auto& proc = data.proc_dst[data.n_proc - 1];
+            proc = full_range;
 
             if(copy_left)
             {
-                data.copy_src.x_begin = n_cols;
-                data.copy_dst.x_end -= n_cols;
+                src.x_begin = n_cols;
+                dst.x_end -= n_cols;
 
-                proc_dst.x_begin = data.copy_dst.x_end;                
+                proc.x_begin = dst.x_end;                
             }
             else if(copy_right)
             {
-                data.copy_dst.x_begin = n_cols;
-                data.copy_src.x_end -= n_cols;
+                dst.x_begin = n_cols;
+                src.x_end -= n_cols;
 
-                proc_dst.x_end = data.copy_dst.x_begin;
+                proc.x_end = dst.x_begin;
             }
         }
     }
@@ -559,8 +569,6 @@ namespace ns_update_state
         namespace ns = ns_update_state;
 
         static_assert(sizeof(cmd) == sizeof(cmd.any));
-
-        data.render_new |= cmd.any;
 
         data.in_cmd = cmd;
 
@@ -575,7 +583,7 @@ namespace ns_update_state
         ns::update_mbt_pos(cmd.shift, data);
         ns::update_iter_limit(cmd.resolution, data);        
 
-        ns::update_ranges(cmd.shift, data);
+        ns::update_ranges(data);
     }
 
 
@@ -592,7 +600,7 @@ namespace ns_update_state
         }
 
         for (u32 i = 0; i < data.n_proc; i++)
-        {
+        {            
             mbt_proc(data.color_ids, data.proc_dst[i], data.mbt_pos, data.mbt_delta, data.iter_limit);
         }        
     }
@@ -656,7 +664,6 @@ namespace game_mbt
         reset_state_data(data);
 
         mbt_proc(data.color_ids, data.proc_dst[0], data.mbt_pos, data.mbt_delta, data.iter_limit);
-        data.color_ids.swap();
 
         data.frame_sw.start();
 
@@ -672,12 +679,18 @@ namespace game_mbt
         data.frame_sw.start();        
 
         auto cmd = map_input(input);
+
+        data.render_new = cmd.any;
+        if (data.render_new)
+        {
+            data.color_ids.swap();
+        }
+
         update_state(cmd, data);
         update_color_ids(data);
 
         render(data.color_ids, state.screen, data.format);
-
-        data.color_ids.swap();
+        
         data.render_new = false;
     }
 

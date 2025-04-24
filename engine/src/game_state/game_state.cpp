@@ -102,6 +102,12 @@ namespace game_state
     }
 
 
+    static void show_rect(cstr label, Rect2Du32 r)
+    {
+        ImGui::Text("%s: {%u, %u, %u, %u}", label, r.x_begin, r.y_begin, r.x_end, r.y_end);
+    }
+
+
     static void show_input()
     {
         auto& data = game::get_data(mbt_state);
@@ -135,7 +141,12 @@ namespace game_state
         show_vec("delta   ", data.mbt_delta);
         ImGui::Text("");
         ImGui::Text("n_copy: %u", data.n_copy);
+        show_rect("copy_src", data.copy_src);
+        show_rect("copy_dst", data.copy_dst);
+        ImGui::Text("");
         ImGui::Text("n_proc: %u", data.n_proc);
+        show_rect("proc_dst[0]", data.proc_dst[0]);
+        show_rect("proc_dst[1]", data.proc_dst[1]);
         // TODO: ranges
     }
 
