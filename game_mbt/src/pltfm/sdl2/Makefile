@@ -2,8 +2,8 @@ CPP := g++-11
 
 CPPFLAGS := -std=c++20
 CPPFLAGS += -mavx -mfma
-#CPPFLAGS += -O3
-#CPPFLAGS += -DNDEBUG
+CPPFLAGS += -O3
+CPPFLAGS += -DNDEBUG
 
 EXE := mandelbrot
 

@@ -69,6 +69,12 @@ namespace game_state
     }
 
 
+    static void show_vec(cstr label, Vec2D<i16> vec)
+    {
+        ImGui::Text("%s: {%d, %d}", label, (int)vec.x, (int)vec.y);
+    }
+
+
     static void show_time_sec(cstr label, f32 sec)
     {
         constexpr f32 NANO =  1.0f / 1'000'000'000;
@@ -127,8 +133,9 @@ namespace game_state
     {
         auto& data = game::get_data(mbt_state);
 
-        show_vec(     "screen  ", data.screen_dims);
-        show_time_sec("dt_frame", data.dt_frame);
+        show_vec(     "screen     ", data.screen_dims);
+        show_time_sec("dt_frame   ", data.dt_frame);
+        show_vec(     "pixel_shift", data.pixel_shift);
         ImGui::Text("");
         ImGui::Text("zoom rate: %f", data.zoom_rate);
         ImGui::Text("zoom     : %f", data.zoom);
@@ -138,15 +145,15 @@ namespace game_state
         ImGui::Text("");
         show_vec("scale   ", data.mbt_scale);
         show_vec("position", data.mbt_pos);
-        show_vec("delta   ", data.mbt_delta);
+        show_vec("delta   ", data.mbt_delta);        
         ImGui::Text("");
-        ImGui::Text("n_copy: %u", data.n_copy);
-        show_rect("copy_src", data.copy_src);
-        show_rect("copy_dst", data.copy_dst);
+        ImGui::Text("n_copy    : %u", data.n_copy);
+        show_rect(   "copy_src", data.copy_src);
+        show_rect(   "copy_dst", data.copy_dst);
         ImGui::Text("");
-        ImGui::Text("n_proc: %u", data.n_proc);
-        show_rect("proc_dst[0]", data.proc_dst[0]);
-        show_rect("proc_dst[1]", data.proc_dst[1]);
+        ImGui::Text("n_proc     : %u", data.n_proc);
+        show_rect(  "proc_dst[0]", data.proc_dst[0]);
+        show_rect(  "proc_dst[1]", data.proc_dst[1]);
         // TODO: ranges
     }
 
