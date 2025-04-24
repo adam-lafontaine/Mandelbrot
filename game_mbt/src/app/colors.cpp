@@ -231,6 +231,12 @@ namespace colors
     constexpr u32 N_COLOR_LEVELS = 2;
 
     constexpr u32 N_COLORS = calc_n_palette_colors(N_COLOR_LEVELS);
+
+
+    constexpr Palette<N_COLORS> make_table()
+    {
+        return make_palette<N_COLORS>();
+    }
 }
 
     

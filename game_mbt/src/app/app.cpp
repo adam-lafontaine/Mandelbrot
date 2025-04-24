@@ -22,6 +22,7 @@ namespace game_mbt
 
 
 #include "colors.cpp"
+#include "map_input.cpp"
 
 
 /* constants */
@@ -59,14 +60,10 @@ namespace game_mbt
 }
 
 
-#include "map_input.cpp"
-
-
 /* color ids */
 
 namespace game_mbt
 {
-    using ColorTable = colors::Palette<colors::N_COLORS>;
     using ColorFormat = colors::ColorFormat;
     using ColorId = colors::ColorId<colors::N_COLORS>;
 
@@ -162,7 +159,7 @@ namespace game_mbt
 {
     static p32 color_at(ColorId id, ColorFormat format)
     {
-        static constexpr ColorTable Color_Table = colors::make_palette<colors::N_COLORS>();
+        static constexpr auto Color_Table = colors::make_table();
 
         constexpr auto D = ColorId::make_default().value;
 
@@ -202,14 +199,9 @@ namespace game_mbt
 {
     static ColorId to_color_id(u32 iter, u32 iter_limit)
     {
-        if (iter >= iter_limit)
-        {
-            return ColorId::make_default();
-        }
+        constexpr auto DEF = ColorId::make_default();
 
-        auto id = iter % colors::N_COLORS;
-
-        return ColorId::make(id);
+        return iter >= iter_limit ? DEF : ColorId::make(iter % colors::N_COLORS);
     }
 
 
