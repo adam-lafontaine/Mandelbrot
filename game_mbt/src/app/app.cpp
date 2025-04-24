@@ -5,6 +5,8 @@
 #include "../../../libs/util/rng.hpp"
 
 
+/* defines */
+
 namespace game_mbt
 {
     namespace img = image;
@@ -16,7 +18,16 @@ namespace game_mbt
     using p32 = img::Pixel;
     using ImageView = img::ImageView;
     using Input = input::Input;
+}
 
+
+#include "colors.cpp"
+
+
+/* constants */
+
+namespace game_mbt
+{
 
     #ifdef SDL2_WASM
 
@@ -33,8 +44,8 @@ namespace game_mbt
 
 	constexpr u32 PIXELS_PER_SECOND = (u32)(0.2 * BUFFER_HEIGHT);
 
-    constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = 50;
-    constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = 1000;
+    constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = colors::N_COLORS;
+    constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = MAX_ITERTAIONS_LOWER_LIMIT * 16;
     constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
     constexpr f32 ZOOM_RATE_LOWER_LIMIT = 1.0f;
 
@@ -49,7 +60,7 @@ namespace game_mbt
 
 
 #include "map_input.cpp"
-#include "colors.cpp"
+
 
 /* color ids */
 
@@ -152,6 +163,15 @@ namespace game_mbt
     static p32 color_at(ColorId id, ColorFormat format)
     {
         static constexpr ColorTable Color_Table = colors::make_palette<colors::N_COLORS>();
+
+        constexpr auto D = ColorId::make_default().value;
+
+        static_assert(Color_Table.channels[0][D] == 0);
+        static_assert(Color_Table.channels[1][D] == 0);
+        static_assert(Color_Table.channels[2][D] == 0);
+        static_assert(Color_Table.channels[3][D] == 0);
+        static_assert(Color_Table.channels[4][D] == 0);
+        static_assert(Color_Table.channels[5][D] == 0);
 
         auto r = Color_Table.channels[format.R][id.value];
         auto g = Color_Table.channels[format.G][id.value];

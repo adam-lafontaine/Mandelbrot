@@ -142,6 +142,8 @@ namespace colors
                 d++;
             }
         }
+
+        dst[N] = 0;
     }
 
 
@@ -184,14 +186,6 @@ namespace colors
 
 
     template <u32 N>
-    static constexpr p32 pixel_at(Palette<N> const& palette, ColorId<N> id)
-    {
-        auto i = id.value;
-        return img::to_pixel(palette.channels[0][i], palette.channels[1][i], palette.channels[2][i]);
-    }
-
-
-    template <u32 N>
     constexpr Palette<N> make_palette()
     {
         Palette<N> palette;
@@ -223,7 +217,7 @@ namespace colors
 
     static ColorFormat make_color_format()
     {
-        static rng::iUniform format_rng(0, ColorChannels::count);
+        static rng::iUniform format_rng(0, ColorChannels::count - 1);
 
         ColorFormat format{};
 

@@ -119,7 +119,7 @@ namespace game_state
         auto& data = game::get_data(mbt_state);
         auto cmd = data.in_cmd;
 
-        ImGui::Text("INPUT");
+        //ImGui::SeparatorText("INPUT");
         show_vec(  "shift        ", cmd.shift);
         ImGui::Text("zoom        : %d", (int)cmd.zoom);
         ImGui::Text("zoom_rate   : %d", (int)cmd.zoom_rate);
@@ -173,12 +173,18 @@ namespace game_state
             ImGui::BeginDisabled();
         }
 
+        auto id = game::ColorId::make_default();
+
         ImGui::SliderInt("Color", &id_val, id_min, id_max);
         if (enable_ids)
         {
-            auto id = game::ColorId::make((u32)id_val);
+            id = game::ColorId::make((u32)id_val);
             span::fill(game::to_span(data.color_ids.curr()), id);
         }
+
+        ImGui::Text(" Id: %u", id.value);
+        auto rgb = game::color_at(id, data.format);
+        ImGui::Text("RGB: {%u, %u, %u}", rgb.red, rgb.green, rgb.blue);
 
         if (!enable_ids)
         {
@@ -199,14 +205,22 @@ namespace game_state
             return;
         }
 
-        show_input();
+        if (ImGui::TreeNode("Input"))
+        {
+            show_input();
+            ImGui::TreePop();
+        }
 
-        ImGui::Separator();
+        if (ImGui::TreeNode("Properties"))
+        {
+            show_properties();
+            ImGui::TreePop();
+        }
 
-        show_properties();
-
-        ImGui::Separator();
-
-        show_dbg();
+        if (ImGui::TreeNode("DBG"))
+        {
+            show_dbg();
+            ImGui::TreePop();
+        }
     }
 }
