@@ -131,7 +131,7 @@ namespace game_mbt
         auto w = src.width;
         auto h = src.height;
 
-        auto s = src.matrix_data_ + r_src.x_begin;
+        auto s = src.matrix_data_ + src.x_begin;
         auto d = dst.matrix_data_ + dst.x_begin;
 
         auto stride = mat.curr().width;
@@ -291,11 +291,12 @@ namespace game_mbt
         Vec2D<fmbt> mbt_pos;
         Vec2D<fmbt> mbt_delta;
 
+        u8 n_copy = 0;
         Rect2Du32 copy_src;
         Rect2Du32 copy_dst;
 
-        Rect2Du32 proc_dst[2];
-        u8 n_proc = 1;
+        u8 n_proc = 0;
+        Rect2Du32 proc_dst[2];        
 
         bool render_new = false;
         bool enabled = true;
@@ -327,12 +328,13 @@ namespace game_mbt
 
         auto full_rect = img::make_rect(w, h);
 
+        data.n_copy = 0;
         data.copy_src = full_rect;
         data.copy_dst = full_rect;
 
-        data.proc_dst[0] = full_rect;
-        data.proc_dst[1] = full_rect;
         data.n_proc = 1;
+        data.proc_dst[0] = full_rect;
+        data.proc_dst[1] = full_rect;        
 
         data.render_new = true;
         data.enabled = true;
@@ -439,8 +441,10 @@ namespace ns_update_state
 
     static void update_mbt_pos(Vec2D<i8> ishift, StateData& data)
     {
-        auto dx = ishift.x * data.mbt_delta.x;
-        auto dy = ishift.y * data.mbt_delta.y;
+        auto n_px = PIXELS_PER_SECOND * data.dt_frame;
+
+        auto dx = ishift.x * data.mbt_delta.x * n_px;
+        auto dy = ishift.y * data.mbt_delta.y * n_px;
 
         data.mbt_pos.x += dx;
         data.mbt_pos.y += dy;
@@ -460,12 +464,103 @@ namespace ns_update_state
 
         data.iter_limit = num::round_to_unsigned<u32>(limit);
     }
+
+
+    static void update_ranges(Vec2D<i8> ishift, StateData& data)
+    {
+        data.n_copy = 0;
+        data.n_proc = 0;
+
+        if (!data.render_new)
+        {
+            return;
+        }
+
+        auto w = data.screen_dims.x;
+        auto h = data.screen_dims.y;
+
+        auto full_range = img::make_rect(w, h);
+
+        if (!ishift.x && !ishift.y)
+        {
+            data.n_copy = 0;
+            data.n_proc = 1;
+            data.proc_dst[0] = full_range;
+
+            return;
+        }
+
+        data.n_copy = 1;
+        data.n_proc = 0;
+
+        auto copy_right = ishift.x < 0;
+        auto copy_left = ishift.x < 0;
+        auto copy_down = ishift.y < 0;
+        auto copy_up = ishift.y > 0;
+
+        auto n_px = PIXELS_PER_SECOND * data.dt_frame;
+
+        auto const n_cols = num::round_to_unsigned<u32>(num::abs(ishift.x) * n_px);
+        auto const n_rows = num::round_to_unsigned<u32>(num::abs(ishift.y) * n_px);
+
+        data.copy_src = full_range;
+        data.copy_dst = full_range;
+
+        if (copy_up || copy_down)
+        {
+            data.n_proc++;
+            auto& proc_dst = data.proc_dst[data.n_proc - 1];
+            proc_dst = full_range;
+
+            if(copy_up)
+            {
+                data.copy_src.y_begin = n_rows;
+                data.copy_dst.y_end -= n_rows;
+
+                proc_dst.y_begin = data.copy_dst.y_end;
+            }
+            else if (copy_down)
+            {
+                data.copy_dst.y_begin = n_rows;
+                data.copy_src.y_end -= n_rows;
+
+                proc_dst.y_end = data.copy_dst.y_begin;
+            }
+
+        }
+
+        if (copy_right || copy_left)
+        {
+            data.n_proc++;
+            auto& proc_dst = data.proc_dst[data.n_proc - 1];
+            proc_dst = full_range;
+
+            if(copy_left)
+            {
+                data.copy_src.x_begin = n_cols;
+                data.copy_dst.x_end -= n_cols;
+
+                proc_dst.x_begin = data.copy_dst.x_end;                
+            }
+            else if(copy_right)
+            {
+                data.copy_dst.x_begin = n_cols;
+                data.copy_src.x_end -= n_cols;
+
+                proc_dst.x_end = data.copy_dst.x_begin;
+            }
+        }
+    }
 }
 
 
     static void update_state(InputCommand const& cmd, StateData& data)
     {
         namespace ns = ns_update_state;
+
+        static_assert(sizeof(cmd) == sizeof(cmd.any));
+
+        data.render_new |= cmd.any;
 
         data.in_cmd = cmd;
 
@@ -478,25 +573,30 @@ namespace ns_update_state
         }
 
         ns::update_mbt_pos(cmd.shift, data);
-        ns::update_iter_limit(cmd.resolution, data);
+        ns::update_iter_limit(cmd.resolution, data);        
 
-        static_assert(sizeof(cmd) == sizeof(cmd.any));
-
-        data.render_new = cmd.any;
+        ns::update_ranges(cmd.shift, data);
     }
 
 
     static void update_color_ids(StateData& data)
     {
-        if (!data.enabled && !data.render_new)
+        if (!data.enabled || !data.render_new)
         {
             return;
         }
 
-        // temp
-        auto rect = img::make_rect(data.screen_dims.x, data.screen_dims.y);
-        mbt_proc(data.color_ids, rect, data.mbt_pos, data.mbt_delta, data.iter_limit);
+        if (data.n_copy)
+        {
+            copy(data.color_ids, data.copy_src, data.copy_dst);
+        }
+
+        for (u32 i = 0; i < data.n_proc; i++)
+        {
+            mbt_proc(data.color_ids, data.proc_dst[i], data.mbt_pos, data.mbt_delta, data.iter_limit);
+        }        
     }
+
 }
 
 
@@ -555,6 +655,9 @@ namespace game_mbt
         
         reset_state_data(data);
 
+        mbt_proc(data.color_ids, data.proc_dst[0], data.mbt_pos, data.mbt_delta, data.iter_limit);
+        data.color_ids.swap();
+
         data.frame_sw.start();
 
         return true;
@@ -566,7 +669,7 @@ namespace game_mbt
         auto& data = get_data(state);
 
         data.dt_frame = data.frame_sw.get_time_sec();
-        data.frame_sw.start();
+        data.frame_sw.start();        
 
         auto cmd = map_input(input);
         update_state(cmd, data);
@@ -575,6 +678,7 @@ namespace game_mbt
         render(data.color_ids, state.screen, data.format);
 
         data.color_ids.swap();
+        data.render_new = false;
     }
 
 

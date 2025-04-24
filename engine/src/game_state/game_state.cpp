@@ -133,6 +133,10 @@ namespace game_state
         show_vec("scale   ", data.mbt_scale);
         show_vec("position", data.mbt_pos);
         show_vec("delta   ", data.mbt_delta);
+        ImGui::Text("");
+        ImGui::Text("n_copy: %u", data.n_copy);
+        ImGui::Text("n_proc: %u", data.n_proc);
+        // TODO: ranges
     }
 
 
