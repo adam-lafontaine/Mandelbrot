@@ -1,44 +1,4 @@
-#include "app.hpp"
-#include "../../../libs/alloc_type/alloc_type.hpp"
-#include "../../../libs/util/numeric.hpp"
-#include "../../../libs/util/stopwatch.hpp"
-#include "../../../libs/util/rng.hpp"
-
-
-/* defines */
-
-namespace game_mbt
-{
-    namespace img = image;
-    namespace num = numeric;
-    namespace mb = memory_buffer;
-
-    using fmbt = double;
-
-    using p32 = img::Pixel;
-    using ImageView = img::ImageView;
-    using Input = input::Input;
-}
-
-#include "colors.hpp"
-#include "mbt_process.hpp"
-#include "map_input.cpp"
-
-
-/* mandelbrot */
-
-namespace game_mbt
-{
-    static inline Vec2D<fmbt> mbt_screen_dims(f32 zoom)
-    {
-        auto scale = 1.0f / zoom;
-
-        return {
-            MBT_WIDTH * scale,
-            MBT_HEIGHT * scale
-        };
-    }
-}
+#include "app_include.hpp"
 
 
 /* state data */

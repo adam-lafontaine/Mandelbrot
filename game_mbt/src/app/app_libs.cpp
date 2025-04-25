@@ -4,7 +4,6 @@
 #include "../../../libs/image/image.cpp"
 #include "../../../libs/stb_libs/stb_libs.cpp"
 #include "../../../libs/ascii_image/ascii_image.cpp"
-#include "../../../libs/for_each_in_range/for_each_in_range.cpp"
 
 #include "../../../libs/sdl2/sdl_input.cpp"
 #include "../../../libs/sdl2/sdl_window.cpp"
@@ -12,4 +11,8 @@
 
 // TODO: processing/cuda etc.
 #include "colors.cpp"
-#include "mbt_process.cpp"
+
+#include "mbt_process_seq.cpp"
+
+//#include "mbt_process.cpp"
+//#include "../../../libs/for_each_in_range/for_each_in_range.cpp"

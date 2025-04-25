@@ -234,51 +234,57 @@ io_test_c += $(io_test_res)/asset_sizes.cpp
 #************
 
 
-#*** game_mbt ***
+#*** game_app ***
 
 game_mbt := $(root)/game_mbt
 game_mbt_src := $(game_mbt)/src
-game_mbt_app := $(game_mbt_src)/app
+game_app := $(game_mbt_src)/app
 
-game_mbt_h := $(game_mbt_app)/app.hpp
-game_mbt_h += $(input_h)
-game_mbt_h += $(image_h)
+game_app_h := $(game_app)/app.hpp
+game_app_h += $(input_h)
+game_app_h += $(image_h)
 
-colors_h := $(game_mbt_app)/colors.hpp
+colors_h := $(game_app)/colors.hpp
 
-colors_c := $(game_mbt_app)/colors.cpp
+colors_c := $(game_app)/colors.cpp
 colors_c += $(colors_h)
 
-mbt_process_h := $(game_mbt_app)/mbt_process.hpp
+mbt_process_h := $(game_app)/mbt_process.hpp
 
-mbt_process_c := $(game_mbt_app)/mbt_process.cpp
+mbt_process_seq_c := $(game_app)/mbt_process_seq.cpp
+
+mbt_process_c := $(game_app)/mbt_process.cpp
 mbt_process_c += $(mbt_process_h)
 mbt_process_c += $(for_each_in_range_h)
 
-game_mbt_libs := $(game_mbt_app)/app_libs.cpp
-game_mbt_libs += $(alloc_type_c)
-game_mbt_libs += $(span_c)
-game_mbt_libs += $(image_c)
-game_mbt_libs += $(stb_libs_c)
-game_mbt_libs += $(ascii_image_c)
-game_mbt_libs += $(sdl_input_c)
-game_mbt_libs += $(sdl_window_c)
-game_mbt_libs += $(sdl_audio_c)
-game_mbt_libs += $(sdl_audio_c)
-game_mbt_libs += $(colors_c)
-game_mbt_libs += $(mbt_process_c)
-game_mbt_libs += $(for_each_in_range_c)
+game_app_include_h := $(game_app)/app_include.hpp
+game_app_include_h += $(game_app_h)
+game_app_include_h += $(alloc_type_h)
+game_app_include_h += $(numeric_h)
+game_app_include_h += $(stopwatch_h)
+game_app_include_h += $(rng_h)
+game_app_include_h += $(colors_h)
+game_app_include_h += $(mbt_process_h)
+game_app_include_h += $(game_app)/map_input.cpp
 
-game_mbt_c := $(game_mbt_app)/app.cpp
-game_mbt_c += $(game_mbt_h)
-game_mbt_c += $(alloc_type_h)
-game_mbt_c += $(numeric_h)
-game_mbt_c += $(stopwatch_h)
-game_mbt_c += $(rng_h)
-game_mbt_c += $(colors_h)
-game_mbt_c += $(mbt_process_h)
-game_mbt_c += $(game_mbt_libs)
-game_mbt_c += $(game_mbt_app)/map_input.cpp
+game_app_libs := $(game_app)/app_libs.cpp
+game_app_libs += $(alloc_type_c)
+game_app_libs += $(span_c)
+game_app_libs += $(image_c)
+game_app_libs += $(stb_libs_c)
+game_app_libs += $(ascii_image_c)
+game_app_libs += $(sdl_input_c)
+game_app_libs += $(sdl_window_c)
+game_app_libs += $(sdl_audio_c)
+game_app_libs += $(sdl_audio_c)
+game_app_libs += $(colors_c)
+game_app_libs += $(mbt_process_c)
+game_app_libs += $(for_each_in_range_c)
+
+game_app_c := $(game_app)/app.cpp
+game_app_c += $(game_app_include_h)
+game_app_c += $(game_app_libs)
+
 
 #*************
 
@@ -293,7 +299,7 @@ game_state_h += $(image_h)
 
 game_state_c := $(game_state)/game_state.cpp
 game_state_c += $(game_state_h)
-game_state_c += $(game_mbt_c)
+game_state_c += $(game_app_c)
 
 #***************
 
