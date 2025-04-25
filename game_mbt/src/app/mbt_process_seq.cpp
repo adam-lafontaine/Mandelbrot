@@ -36,11 +36,8 @@ namespace game_mbt
 
         assert(id_src.width == id_dst.width);
         assert(id_src.height == id_dst.height);
-
-        auto w = px_src.width;
+        
         auto h = px_src.height;
-
-        auto stride = mat.id_curr().width;
 
         for (u32 y = 0; y < h; y++)
         {

@@ -6,18 +6,11 @@
 namespace game_mbt
 {
     void proc_copy(ColorMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst);
-
-    //void proc_mbt(ColorMatrix const& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit);
-
-    //void proc_mbt_range(ColorMatrix const& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit);
-
     
     void proc_mbt(ColorMatrix const& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit, ColorFormat format);
 
     void proc_mbt_range(ColorMatrix const& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit, ColorFormat format);
 
-    
-    void proc_render(ColorMatrix const& src, ImageView const& dst, ColorFormat format);
 }
 
 
