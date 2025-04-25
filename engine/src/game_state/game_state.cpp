@@ -223,4 +223,15 @@ namespace game_state
             ImGui::TreePop();
         }
     }
+
+
+    void show_profiling()
+    {
+        if (!ImGui::CollapsingHeader("Profiling"))
+        {
+            return; 
+        }
+
+        ImGui::Text("TODO");
+    }
 }

@@ -287,6 +287,7 @@ namespace ui
 
         diagnostics::show_memory();
         gs::show_game_state();
+        gs::show_profiling();
 
         ImGui::End();
     }

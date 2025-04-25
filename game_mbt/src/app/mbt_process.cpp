@@ -1,10 +1,15 @@
 #include "mbt_process.hpp"
 
-#define PROC_PAR
+//#define PROC_PAR
 
 
 #ifdef PROC_PAR
 #include "../../../libs/for_each_in_range/for_each_in_range.hpp"
+
+namespace game_mbt
+{
+    namespace proc = for_each_in_range::par;
+}
 #endif
 
 
@@ -316,16 +321,17 @@ namespace game_mbt
 
         auto stride = mat.curr().width;
 
-        auto s = src.matrix_data_ + src.y_begin * stride + src.x_begin;
-        auto d = dst.matrix_data_ + dst.y_begin * stride + dst.x_begin;
+        auto s_begin = src.matrix_data_ + src.y_begin * stride + src.x_begin;
+        auto d_begin = dst.matrix_data_ + dst.y_begin * stride + dst.x_begin;
 
-        for (u32 y = 0; y < h; y++)
+        auto copy_row = [&](u64 y) 
         {
+            auto s = s_begin + stride * y;
+            auto d = d_begin + stride * y;
             span::copy(span::make_view(s, w), span::make_view(d, w));
+        };
 
-            s += stride;
-            d += stride;
-        }
+        proc::for_each_in_range((u64)0, (u64)h, copy_row);
     }
 
 
@@ -339,28 +345,22 @@ namespace game_mbt
 
         auto stride = view.width;
 
-        auto d = dst.matrix_data_ + dst.y_begin * stride + dst.x_begin;
-
         auto cy_begin = (fmbt)dst.y_begin * delta.y + begin.y;
         auto cx_begin = (fmbt)dst.x_begin * delta.x + begin.x;
 
-        auto cy = cy_begin;
-        auto cx = cx_begin;
+        auto d_begin = dst.matrix_data_ + dst.y_begin * stride + dst.x_begin;
 
-        for (u32 y = 0; y < h; y++)
+        auto mbt_at_xy = [&](u64 x, u64 y)
         {
-            for (u32 x = 0; x < w; x++)
-            {
-                auto iter = mandelbrot_iter(cx, cy, limit);                
-                d[x] = to_color_id(iter, limit);
+            auto cy = cy_begin + y * delta.y;
+            auto cx = cx_begin + x * delta.x;
+            auto d = d_begin + y * stride;
 
-                cx += delta.x;
-            }
+            auto iter = mandelbrot_iter(cx, cy, limit);
+            d[x] = to_color_id(iter, limit);
+        };
 
-            d += stride;
-            cy += delta.y;
-            cx = cx_begin;
-        }
+        proc::for_each_in_range_2d(w, h, mbt_at_xy);
     }    
 
 
@@ -371,10 +371,14 @@ namespace game_mbt
 
         assert(s.length == d.length);
 
-        for (u32 i = 0; i < s.length; i++)
+        auto black = img::to_pixel(0);
+
+        auto render_f = [&](u64 i) 
         {
             d.data[i] = color_at(s.data[i], format);
-        }
+        };
+
+        proc::for_each_in_range(s.length, render_f);
     }
 
 
@@ -447,6 +451,8 @@ namespace game_mbt
         auto d = img::to_span(dst);
 
         assert(s.length == d.length);
+
+        auto black = img::to_pixel(0);
 
         for (u32 i = 0; i < s.length; i++)
         {
