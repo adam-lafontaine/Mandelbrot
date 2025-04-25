@@ -159,7 +159,7 @@ namespace game_state
 
     static void show_dbg()
     {
-        auto& data = game::get_data(mbt_state);
+        /*auto& data = game::get_data(mbt_state);
 
         static bool enable_ids = false;
         int id_min = 0;
@@ -190,7 +190,7 @@ namespace game_state
         if (!enable_ids)
         {
             ImGui::EndDisabled();
-        }
+        }*/
     }
     
 }
@@ -231,6 +231,14 @@ namespace game_state
 
             plot_min = num::min(val, plot_min);
             plot_max = num::max(val, plot_max);
+        }
+
+
+        void reset()
+        {
+            enabled = false;
+            started = false;
+            minmax = false;
         }
 
     };
@@ -395,7 +403,7 @@ namespace game_state
         }
         else
         {
-            copy_props.started = false;
+            copy_props.reset();
         }
 
         ImGui::Checkbox("proc_mbt", &mbt_props.enabled);
@@ -412,7 +420,7 @@ namespace game_state
         }
         else
         {
-            mbt_props.started = false;
+            mbt_props.reset();
         }
 
         
@@ -428,7 +436,7 @@ namespace game_state
         }
         else
         {
-            render_props.started = false;
+            render_props.reset();
         }
 
 
