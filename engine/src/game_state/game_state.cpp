@@ -8,6 +8,7 @@ namespace game_state
 
 
     game::AppState mbt_state;
+    bool game_running = false;
 
 
     bool init(Vec2Du32& screen_dimensions)
@@ -26,7 +27,7 @@ namespace game_state
 
     bool set_screen_memory(image::ImageView screen)
     {
-        return game::set_screen_memory(mbt_state, screen);
+        return game_running = game::set_screen_memory(mbt_state, screen);
     }
 
 
@@ -191,8 +192,95 @@ namespace game_state
             ImGui::EndDisabled();
         }
     }
+    
+}
 
-  
+
+namespace game_state
+{
+    class PlotProps
+    {
+    public:
+        cstr label = 0;
+
+        cstr units = 0;
+
+        f32 plot_data[256];
+        int data_count = 256;
+        int data_offset = 0;
+        int data_stride = sizeof(f32);
+        f32 plot_min = 0.0f;
+        f32 plot_max = 0.0f;
+        ImVec2 plot_size = ImVec2(0, 100.0f);
+
+        bool enabled = false;
+        bool started = false;
+        bool minmax = false;
+
+        void add_data(f32 val)
+        {
+            plot_data[data_offset] = val;
+            data_offset = (data_offset + 1) & 255;
+
+            if (!minmax)
+            {                
+                plot_min = plot_max = val;
+
+                minmax = true;
+            }
+
+            plot_min = num::min(val, plot_min);
+            plot_max = num::max(val, plot_max);
+        }
+
+    };
+
+
+    static void show_plot(PlotProps& props, cstr label)
+    {
+        ImGui::Text("min: %f %s, max: %f %s", props.plot_min, props.units, props.plot_max, props.units);
+        ImGui::PlotLines(label, 
+            props.plot_data, 
+            props.data_count, 
+            props.data_offset, 
+            "",
+            props.plot_min, props.plot_max, 
+            props.plot_size, 
+            props.data_stride);
+    }
+
+
+
+
+
+    static void start_proc_copy(PlotProps& props)
+    {
+        props.units = "ms";
+
+        auto copy_loop = [&]()
+        {
+            auto& data = game::get_data(mbt_state);
+            auto r = img::make_rect(data.screen_dims.x, data.screen_dims.y);
+
+            Stopwatch sw;
+            while (game_running && props.enabled)
+            {
+                sw.start();
+                game::proc_copy(data.color_ids, r, r);
+                props.add_data((f32)sw.get_time_milli());
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        };
+
+        std::thread th(copy_loop);
+        th.detach();        
+    }
+}
+
+
+namespace game_state
+{
     void show_game_state()
     {
         if (!ImGui::CollapsingHeader("Game State"))
@@ -226,12 +314,57 @@ namespace game_state
 
 
     void show_profiling()
-    {
+    {   
+        static bool enable_profile = false;
+        
+        static bool enable_mbt = false;
+        static bool enable_render = false;
+        
+        static PlotProps copy_props = {};
+
+        static Stopwatch sw;
+
         if (!ImGui::CollapsingHeader("Profiling"))
         {
             return; 
         }
 
-        ImGui::Text("TODO");
+        ImGui::Checkbox("Enable", &enable_profile);
+
+        state.hard_pause = enable_profile;
+
+        ImGui::Separator();
+
+        if (!enable_profile)
+        {
+            ImGui::BeginDisabled();
+        }
+        
+        ImGui::Checkbox("proc_copy", &copy_props.enabled);
+        if (copy_props.enabled)
+        {
+            if (!copy_props.started)
+            {
+                start_proc_copy(copy_props);
+                copy_props.started = true;
+            }
+            show_plot(copy_props, "##CopyPlot");
+        }
+        else
+        {
+            copy_props.started = false;
+        }
+
+
+        ImGui::Checkbox("proc_mbt", &enable_mbt);
+        ImGui::Checkbox("proc_render", &enable_render);
+
+
+        
+
+        if (!enable_profile)
+        {
+            ImGui::EndDisabled();
+        }
     }
 }

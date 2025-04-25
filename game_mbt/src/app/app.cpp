@@ -21,13 +21,7 @@ namespace game_mbt
 }
 
 #include "mbt_process.hpp"
-
-
-
 #include "map_input.cpp"
-
-
-
 
 
 /* state data */
@@ -78,6 +72,8 @@ namespace game_mbt
 
         data.dt_frame = 1.0 / 60;
 
+        data.format = colors::make_color_format();
+
         data.zoom_rate = ZOOM_RATE_LOWER_LIMIT;
         data.zoom = 1.0f;
 
@@ -127,6 +123,7 @@ namespace game_mbt
         destroy_color_ids(data.color_ids);
 
         mem::free(state.data_);
+        state.data_ = 0;
     }
 
 
