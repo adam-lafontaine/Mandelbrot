@@ -250,9 +250,6 @@ namespace game_state
     }
 
 
-
-
-
     static void start_proc_copy(PlotProps& props)
     {
         props.units = "ms";
@@ -275,6 +272,56 @@ namespace game_state
 
         std::thread th(copy_loop);
         th.detach();        
+    }
+
+
+    static void start_proc_mbt(PlotProps& props, int& limit)
+    {
+        props.units = "ms";
+
+        auto copy_loop = [&]()
+        {
+            auto& data = game::get_data(mbt_state);
+            auto r = img::make_rect(data.screen_dims.x, data.screen_dims.y);
+
+            Stopwatch sw;
+            while (game_running && props.enabled)
+            {
+                sw.start();
+                game::proc_mbt(data.color_ids, r, data.mbt_pos, data.mbt_delta, (u32)limit);
+                props.add_data((f32)sw.get_time_milli());
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        };
+
+        std::thread th(copy_loop);
+        th.detach();        
+    }
+
+
+    static void start_proc_render(PlotProps& props)
+    {
+        props.units = "ms";
+
+        auto copy_loop = [&]()
+        {
+            auto& data = game::get_data(mbt_state);
+            auto r = img::make_rect(data.screen_dims.x, data.screen_dims.y);
+
+            Stopwatch sw;
+            while (game_running && props.enabled)
+            {
+                sw.start();
+                game::proc_render(data.color_ids, mbt_state.screen, data.format);
+                props.add_data((f32)sw.get_time_milli());
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
+        };
+
+        std::thread th(copy_loop);
+        th.detach();
     }
 }
 
@@ -316,13 +363,9 @@ namespace game_state
     void show_profiling()
     {   
         static bool enable_profile = false;
-        
-        static bool enable_mbt = false;
-        static bool enable_render = false;
-        
         static PlotProps copy_props = {};
-
-        static Stopwatch sw;
+        static PlotProps mbt_props = {};
+        static PlotProps render_props = {};
 
         if (!ImGui::CollapsingHeader("Profiling"))
         {
@@ -355,9 +398,38 @@ namespace game_state
             copy_props.started = false;
         }
 
+        ImGui::Checkbox("proc_mbt", &mbt_props.enabled);
 
-        ImGui::Checkbox("proc_mbt", &enable_mbt);
-        ImGui::Checkbox("proc_render", &enable_render);
+        static int limit = 64; // slider?
+        if (mbt_props.enabled)
+        {
+            if (!mbt_props.started)
+            {
+                start_proc_mbt(mbt_props, limit);
+                mbt_props.started = true;
+            }
+            show_plot(mbt_props, "##MbtPlot");
+        }
+        else
+        {
+            mbt_props.started = false;
+        }
+
+        
+        ImGui::Checkbox("proc_render", &render_props.enabled);
+        if (render_props.enabled)
+        {
+            if (!render_props.started)
+            {
+                start_proc_render(render_props);
+                render_props.started = true;
+            }
+            show_plot(render_props, "##RenderPlot");
+        }
+        else
+        {
+            render_props.started = false;
+        }
 
 
         
