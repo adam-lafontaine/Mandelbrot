@@ -11,4 +11,5 @@
 #include "../../../libs/sdl2/sdl_audio.cpp"
 
 // TODO: processing/cuda etc.
+#include "colors.cpp"
 #include "mbt_process.cpp"

@@ -20,8 +20,25 @@ namespace game_mbt
     using Input = input::Input;
 }
 
+#include "colors.hpp"
 #include "mbt_process.hpp"
 #include "map_input.cpp"
+
+
+/* mandelbrot */
+
+namespace game_mbt
+{
+    static inline Vec2D<fmbt> mbt_screen_dims(f32 zoom)
+    {
+        auto scale = 1.0f / zoom;
+
+        return {
+            MBT_WIDTH * scale,
+            MBT_HEIGHT * scale
+        };
+    }
+}
 
 
 /* state data */
