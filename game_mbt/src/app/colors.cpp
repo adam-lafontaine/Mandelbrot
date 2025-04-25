@@ -196,7 +196,8 @@ namespace game_mbt
 {
     void destroy_color_ids(ColorMatrix& mat)
     {
-        mb::destroy_buffer(mat.buffer);
+        mb::destroy_buffer(mat.id_buffer);
+        mb::destroy_buffer(mat.px_buffer);
     }
 
 
@@ -204,17 +205,24 @@ namespace game_mbt
     {
         auto n = width * height;
 
-        if (!mb::create_buffer(mat.buffer, n * 2, "color_ids"))
+        if (!mb::create_buffer(mat.id_buffer, n * 2, "color_ids"))
+        {
+            return false;
+        }
+
+        if (!mb::create_buffer(mat.px_buffer, n * 2, "color_px"))
         {
             return false;
         }
 
         for (u32 i = 0; i < 2; i++)
         {
-            auto span = span::push_span(mat.buffer, n);
-            mat.data_[i].matrix_data_ = span.data;
-            mat.data_[i].width = width;
-            mat.data_[i].height = height;
+            auto id = span::push_span(mat.id_buffer, n);
+            mat.id_data_[i].matrix_data_ = id.data;
+            mat.id_data_[i].width = width;
+            mat.id_data_[i].height = height;
+
+            mat.px_data_[i] = img::make_view(width, height, mat.px_buffer);
         }        
 
         return true;

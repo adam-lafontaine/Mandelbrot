@@ -324,7 +324,7 @@ namespace game_state
             while (game_running && props.enabled)
             {
                 sw.start();
-                game::proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, (u32)limit);
+                game::proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, (u32)limit, data.format);
                 props.add_data((f32)sw.get_time_milli());
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -332,11 +332,11 @@ namespace game_state
         };
 
         std::thread th(copy_loop);
-        th.detach();        
+        th.detach();   
     }
 
 
-    static void start_proc_render(PlotProps& props)
+    /*static void start_proc_render(PlotProps& props)
     {
         props.units = "ms";
 
@@ -358,7 +358,7 @@ namespace game_state
 
         std::thread th(copy_loop);
         th.detach();
-    }
+    }*/
 }
 
 
@@ -408,6 +408,11 @@ namespace game_state
             return; 
         }
 
+        if (!mbt_state.data_)
+        {
+            return;
+        }
+
         ImGui::Checkbox("Enable", &enable_profile);
 
         state.hard_pause = enable_profile;
@@ -452,7 +457,7 @@ namespace game_state
         }
 
         
-        ImGui::Checkbox("proc_render", &render_props.enabled);
+        /*ImGui::Checkbox("proc_render", &render_props.enabled);
         if (render_props.enabled)
         {
             if (!render_props.started)
@@ -465,7 +470,7 @@ namespace game_state
         else
         {
             render_props.reset();
-        }
+        }*/
 
 
         

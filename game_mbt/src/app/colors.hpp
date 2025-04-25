@@ -90,30 +90,23 @@ namespace game_mbt
 
     public:
 
-        MatrixView2D<ColorId> data_[2];
+        MatrixView2D<ColorId> id_data_[2];
+        img::ImageView px_data_[2];
 
-        MatrixView2D<ColorId> id_prev() const { return data_[p]; }
-        MatrixView2D<ColorId> id_curr() const { return data_[c]; }
+        MatrixView2D<ColorId> id_prev() const { return id_data_[p]; }
+        MatrixView2D<ColorId> id_curr() const { return id_data_[c]; }
+
+        img::ImageView px_prev() const { return px_data_[p]; }
+        img::ImageView px_curr() const { return px_data_[c]; }
 
         void swap() { p = c; c = !p; }
 
-        MemoryBuffer<ColorId> buffer;
+        MemoryBuffer<ColorId> id_buffer;
+        MemoryBuffer<img::Pixel> px_buffer;
     };
 
 
     void destroy_color_ids(ColorMatrix& mat);
 
-    bool create_color_ids(ColorMatrix& mat, u32 width, u32 height);    
-
-
-    inline auto to_span(MatrixView2D<ColorId> const& mat)
-    {
-        return img::to_span(mat);
-    }
-
-
-    inline auto sub_view(MatrixView2D<ColorId> const& mat, Rect2Du32 const& range)
-    {
-        return img::sub_view(mat, range);
-    }
+    bool create_color_ids(ColorMatrix& mat, u32 width, u32 height);
 }

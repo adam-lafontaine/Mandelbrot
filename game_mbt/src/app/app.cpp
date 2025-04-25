@@ -336,12 +336,12 @@ namespace ns_update_state
 
             for (u32 i = 0; i < data.n_proc; i++)
             {            
-                proc_mbt_range(data.color_ids, data.proc_dst[i], data.mbt_pos, data.mbt_delta, data.iter_limit);
+                proc_mbt_range(data.color_ids, data.proc_dst[i], data.mbt_pos, data.mbt_delta, data.iter_limit, data.format);
             }
         }
         else
         {
-            proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit);
+            proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit, data.format);
         }    
     }
 
@@ -403,7 +403,7 @@ namespace game_mbt
         
         reset_state_data(data);
 
-        proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit);
+        proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit, data.format);
 
         data.frame_sw.start();
 
@@ -429,7 +429,7 @@ namespace game_mbt
         update_state(cmd, data);
         update_color_ids(data);
 
-        proc_render(data.color_ids, state.screen, data.format);
+        img::copy(data.color_ids.px_curr(), state.screen);
         
         data.render_new = false;
     }
