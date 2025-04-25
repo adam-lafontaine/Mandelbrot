@@ -62,9 +62,6 @@ namespace game_mbt
         auto cy_begin = begin.y;
         auto cx_begin = begin.x;
 
-        auto cy = cy_begin;
-        auto cx = cx_begin;
-
         auto mbt_at = [&](u32 i)
         {
             auto y = i / w;
@@ -79,7 +76,7 @@ namespace game_mbt
             auto iter = mandelbrot_iter(cx, cy, limit);
             auto color_id = to_color_id(iter, limit);
             auto px_id = color_id.value;
-            
+
             id[x] = color_id;
             px[x] = img::to_pixel(r[px_id], g[px_id], b[px_id]);
         };
@@ -105,38 +102,34 @@ namespace game_mbt
         auto x_begin = dst.x_begin;
         auto y_begin = dst.y_begin;
 
-        auto stride = view.width;
-
-        auto px_begin = dst.matrix_data_ + y_begin * stride + x_begin;
-        auto id_begin = ids.matrix_data_ + y_begin * stride + x_begin;
-
         auto cy_begin = (fmbt)y_begin * delta.y + begin.y;
         auto cx_begin = (fmbt)x_begin * delta.x + begin.x;
-
-        auto px = px_begin;
-        auto id = id_begin;
 
         auto cy = cy_begin;
         auto cx = cx_begin;
 
-        for (u32 y = 0; y < h; y++)
+        auto mbt_row = [&](u32 y)
         {
+            auto id = img::row_span(ids, y).data;
+            auto px = img::row_span(dst, y).data;
+
+            auto cx = cx_begin;
+            auto cy = cy_begin + y * delta.y;
+            
             for (u32 x = 0; x < w; x++)
             {
                 auto iter = mandelbrot_iter(cx, cy, limit);
                 auto color_id = to_color_id(iter, limit);
                 auto px_id = color_id.value;
+
                 id[x] = color_id;
                 px[x] = img::to_pixel(r[px_id], g[px_id], b[px_id]);
 
                 cx += delta.x;
             }
+        };
 
-            px += stride;
-            id += stride;
-            cy += delta.y;
-            cx = cx_begin;
-        }
+        tbb::parallel_for(0u, h, mbt_row);
     }
 
 }
