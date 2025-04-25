@@ -194,13 +194,13 @@ namespace colors
 
 namespace game_mbt
 {
-    void destroy_color_ids(ColorIdMatrix& mat)
+    void destroy_color_ids(ColorMatrix& mat)
     {
         mb::destroy_buffer(mat.buffer);
     }
 
 
-    bool create_color_ids(ColorIdMatrix& mat, u32 width, u32 height)
+    bool create_color_ids(ColorMatrix& mat, u32 width, u32 height)
     {
         auto n = width * height;
 

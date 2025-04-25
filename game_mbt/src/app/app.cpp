@@ -15,7 +15,7 @@ namespace game_mbt
         f64 dt_frame;
         InputCommand in_cmd;
 
-        ColorIdMatrix color_ids;
+        ColorMatrix color_ids;
 
         ColorFormat format;
 

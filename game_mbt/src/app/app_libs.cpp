@@ -12,9 +12,17 @@
 // TODO: processing/cuda etc.
 #include "colors.cpp"
 
+
+//#define CAN_TBB
+
+#ifdef CAN_TBB
+
 #if __has_include(<tbb/parallel_for.h>)
 #include "mbt_process_tbb.cpp"
 #else
 #include "mbt_process_seq.cpp"
 #endif
 
+#else
+#include "mbt_process_seq.cpp"
+#endif

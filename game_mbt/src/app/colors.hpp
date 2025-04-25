@@ -82,7 +82,7 @@ namespace game_mbt
     using ColorId = colors::ColorId<colors::N_COLORS>;
 
 
-    class ColorIdMatrix
+    class ColorMatrix
     {
     private:
         u8 p = 1;
@@ -92,8 +92,8 @@ namespace game_mbt
 
         MatrixView2D<ColorId> data_[2];
 
-        MatrixView2D<ColorId> prev() const { return data_[p]; }
-        MatrixView2D<ColorId> curr() const { return data_[c]; }
+        MatrixView2D<ColorId> id_prev() const { return data_[p]; }
+        MatrixView2D<ColorId> id_curr() const { return data_[c]; }
 
         void swap() { p = c; c = !p; }
 
@@ -101,9 +101,9 @@ namespace game_mbt
     };
 
 
-    void destroy_color_ids(ColorIdMatrix& mat);
+    void destroy_color_ids(ColorMatrix& mat);
 
-    bool create_color_ids(ColorIdMatrix& mat, u32 width, u32 height);    
+    bool create_color_ids(ColorMatrix& mat, u32 width, u32 height);    
 
 
     inline auto to_span(MatrixView2D<ColorId> const& mat)

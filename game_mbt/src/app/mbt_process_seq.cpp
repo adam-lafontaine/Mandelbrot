@@ -7,10 +7,10 @@ namespace game_mbt
 {
 
 
-    void proc_copy(ColorIdMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst)
+    void proc_copy(ColorMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst)
     {
-        auto src = sub_view(mat.prev(), r_src);
-        auto dst = sub_view(mat.curr(), r_dst);
+        auto src = sub_view(mat.id_prev(), r_src);
+        auto dst = sub_view(mat.id_curr(), r_dst);
 
         assert(src.width == dst.width);
         assert(src.height == dst.height);
@@ -18,7 +18,7 @@ namespace game_mbt
         auto w = src.width;
         auto h = src.height;
 
-        auto stride = mat.curr().width;
+        auto stride = mat.id_curr().width;
 
         auto s = src.matrix_data_ + src.y_begin * stride + src.x_begin;
         auto d = dst.matrix_data_ + dst.y_begin * stride + dst.x_begin;
@@ -33,9 +33,9 @@ namespace game_mbt
     }
 
 
-    void proc_mbt(ColorIdMatrix const& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit)
+    void proc_mbt(ColorMatrix const& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit)
     {
-        auto dst = mat.curr();
+        auto dst = mat.id_curr();
 
         auto w = dst.width;
         auto h = dst.height;
@@ -67,9 +67,9 @@ namespace game_mbt
     }
 
 
-    void proc_mbt_range(ColorIdMatrix const& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit)
+    void proc_mbt_range(ColorMatrix const& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit)
     {
-        auto view = mat.curr();
+        auto view = mat.id_curr();
         auto dst = sub_view(view, r_dst);
 
         auto w = dst.width;
@@ -102,7 +102,7 @@ namespace game_mbt
     }    
 
 
-    void proc_render(ColorIdMatrix const& src, ImageView const& dst, ColorFormat format)
+    void proc_render(ColorMatrix const& src, ImageView const& dst, ColorFormat format)
     {
         static constexpr auto Color_Table = colors::make_table();
 
@@ -115,7 +115,7 @@ namespace game_mbt
         static_assert(Color_Table.channels[4][D] == 0);
         static_assert(Color_Table.channels[5][D] == 0);
 
-        auto s = to_span(src.curr());
+        auto s = to_span(src.id_curr());
         auto d = img::to_span(dst);
 
         assert(s.length == d.length);
