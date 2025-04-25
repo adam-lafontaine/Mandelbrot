@@ -12,7 +12,7 @@
 // TODO: processing/cuda etc.
 #include "colors.cpp"
 
-#include "mbt_process_seq.cpp"
+//#include "mbt_process_seq.cpp"
 
-//#include "mbt_process.cpp"
-//#include "../../../libs/for_each_in_range/for_each_in_range.cpp"
+#include "mbt_process_exe.cpp"
+#include "../../../libs/for_each_in_range/for_each_in_range.cpp"
