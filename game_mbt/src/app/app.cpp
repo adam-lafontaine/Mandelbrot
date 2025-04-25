@@ -451,7 +451,7 @@ namespace game_mbt
         update_state(cmd, data);
         update_color_ids(data);
 
-        render(data.color_ids, state.screen, data.format);
+        proc_render(data.color_ids, state.screen, data.format);
         
         data.render_new = false;
     }

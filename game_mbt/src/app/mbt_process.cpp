@@ -221,30 +221,7 @@ namespace game_mbt
     }
 
 
-    void proc_copy(ColorIdMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst)
-    {
-        auto src = sub_view(mat.prev(), r_src);
-        auto dst = sub_view(mat.curr(), r_dst);
-
-        assert(src.width == dst.width);
-        assert(src.height == dst.height);
-
-        auto w = src.width;
-        auto h = src.height;
-
-        auto stride = mat.curr().width;
-
-        auto s = src.matrix_data_ + src.y_begin * stride + src.x_begin;
-        auto d = dst.matrix_data_ + dst.y_begin * stride + dst.x_begin;
-
-        for (u32 y = 0; y < h; y++)
-        {
-            span::copy(span::make_view(s, w), span::make_view(d, w));
-
-            s += stride;
-            d += stride;
-        }
-    }
+    
 }
 
 
@@ -270,20 +247,6 @@ namespace game_mbt
         auto b = Color_Table.channels[format.B][id.value];
 
         return img::to_pixel(r, g, b);
-    }
-
-
-    void render(ColorIdMatrix const& src, ImageView const& dst, ColorFormat format)
-    {
-        auto s = to_span(src.curr());
-        auto d = img::to_span(dst);
-
-        assert(s.length == d.length);
-
-        for (u32 i = 0; i < s.length; i++)
-        {
-            d.data[i] = color_at(s.data[i], format);
-        }
     }
 }
 
@@ -323,6 +286,40 @@ namespace game_mbt
     }
 
 
+    
+}
+
+
+/* proc */
+
+namespace game_mbt
+{
+    void proc_copy(ColorIdMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst)
+    {
+        auto src = sub_view(mat.prev(), r_src);
+        auto dst = sub_view(mat.curr(), r_dst);
+
+        assert(src.width == dst.width);
+        assert(src.height == dst.height);
+
+        auto w = src.width;
+        auto h = src.height;
+
+        auto stride = mat.curr().width;
+
+        auto s = src.matrix_data_ + src.y_begin * stride + src.x_begin;
+        auto d = dst.matrix_data_ + dst.y_begin * stride + dst.x_begin;
+
+        for (u32 y = 0; y < h; y++)
+        {
+            span::copy(span::make_view(s, w), span::make_view(d, w));
+
+            s += stride;
+            d += stride;
+        }
+    }
+
+
     void proc_mbt(ColorIdMatrix const& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit)
     {
         auto view = mat.curr();
@@ -354,6 +351,20 @@ namespace game_mbt
             d += stride;
             cy += delta.y;
             cx = cx_begin;
+        }
+    }    
+
+
+    void proc_render(ColorIdMatrix const& src, ImageView const& dst, ColorFormat format)
+    {
+        auto s = to_span(src.curr());
+        auto d = img::to_span(dst);
+
+        assert(s.length == d.length);
+
+        for (u32 i = 0; i < s.length; i++)
+        {
+            d.data[i] = color_at(s.data[i], format);
         }
     }
 }

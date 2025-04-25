@@ -142,9 +142,7 @@ namespace game_mbt
 
     void destroy_color_ids(ColorIdMatrix& mat);
 
-    bool create_color_ids(ColorIdMatrix& mat, u32 width, u32 height);
-
-    void proc_copy(ColorIdMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst);
+    bool create_color_ids(ColorIdMatrix& mat, u32 width, u32 height);    
 
 
     inline auto to_span(MatrixView2D<ColorId> const& mat)
@@ -160,21 +158,11 @@ namespace game_mbt
 }
 
 
-/* render */
-
-namespace game_mbt
-{
-    void render(ColorIdMatrix const& src, ImageView const& dst, ColorFormat format);
-}
-
 
 /* mandelbrot */
 
 namespace game_mbt
 {
-    void proc_mbt(ColorIdMatrix const& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit);
-
-
     static inline Vec2D<fmbt> mbt_screen_dims(f32 zoom)
     {
         auto scale = 1.0f / zoom;
@@ -184,4 +172,16 @@ namespace game_mbt
             MBT_HEIGHT * scale
         };
     }
+}
+
+
+/* proc */
+
+namespace game_mbt
+{
+    void proc_copy(ColorIdMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst);
+
+    void proc_mbt(ColorIdMatrix const& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit);
+
+    void proc_render(ColorIdMatrix const& src, ImageView const& dst, ColorFormat format);
 }
