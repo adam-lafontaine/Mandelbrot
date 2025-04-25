@@ -38,34 +38,27 @@ namespace game_mbt
     void proc_mbt(ColorIdMatrix const& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit)
     {
         auto dst = mat.curr();
+        auto s = to_span(dst);
 
         auto w = dst.width;
         auto h = dst.height;
 
-        auto stride = dst.width;
+        auto cy_begin = begin.y;
+        auto cx_begin = begin.x;
 
-        auto d = dst.matrix_data_;
-
-        auto cy_begin = delta.y;
-        auto cx_begin = delta.x;
-
-        auto cy = cy_begin;
-        auto cx = cx_begin;
-
-        for (u32 y = 0; y < h; y++)
+        auto mbt_at = [&](u32 i)
         {
-            for (u32 x = 0; x < w; x++)
-            {
-                auto iter = mandelbrot_iter(cx, cy, limit);                
-                d[x] = to_color_id(iter, limit);
+            auto y = i / w;
+            auto x = i - (w * y);
 
-                cx += delta.x;
-            }
+            auto cy = cy_begin + y * delta.y;
+            auto cx = cx_begin + x * delta.x;
 
-            d += stride;
-            cy += delta.y;
-            cx = cx_begin;
-        }
+            auto iter = mandelbrot_iter(cx, cy, limit);
+            s.data[i] = to_color_id(iter, limit);
+        };
+
+        tbb::parallel_for(0u, s.length, mbt_at);
     }
 
 
