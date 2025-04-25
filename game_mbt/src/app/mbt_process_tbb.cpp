@@ -1,5 +1,7 @@
 #include "mbt_process.hpp"
 
+#include <tbb/parallel_for.h>
+
 
 /* proc */
 
@@ -44,8 +46,8 @@ namespace game_mbt
 
         auto d = dst.matrix_data_;
 
-        auto cy_begin = begin.y;
-        auto cx_begin = begin.x;
+        auto cy_begin = delta.y;
+        auto cx_begin = delta.x;
 
         auto cy = cy_begin;
         auto cx = cx_begin;
@@ -124,11 +126,13 @@ namespace game_mbt
         auto g = Color_Table.channels[format.G];
         auto b = Color_Table.channels[format.B];
 
-        for (u32 i = 0; i < s.length; i++)
+        auto render_f = [&](u64 i) 
         {
             auto id = s.data[i].value;
             d.data[i] = img::to_pixel(r[id], g[id], b[id]);
-        }
+        };
+
+        tbb::parallel_for(0u, s.length, render_f);
     }
 
 }

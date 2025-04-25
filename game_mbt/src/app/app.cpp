@@ -333,12 +333,16 @@ namespace ns_update_state
         if (data.n_copy)
         {
             proc_copy(data.color_ids, data.copy_src, data.copy_dst);
-        }
 
-        for (u32 i = 0; i < data.n_proc; i++)
-        {            
-            proc_mbt(data.color_ids, data.proc_dst[i], data.mbt_pos, data.mbt_delta, data.iter_limit);
-        }        
+            for (u32 i = 0; i < data.n_proc; i++)
+            {            
+                proc_mbt_range(data.color_ids, data.proc_dst[i], data.mbt_pos, data.mbt_delta, data.iter_limit);
+            }
+        }
+        else
+        {
+            proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit);
+        }    
     }
 
 }
@@ -399,7 +403,7 @@ namespace game_mbt
         
         reset_state_data(data);
 
-        proc_mbt(data.color_ids, data.proc_dst[0], data.mbt_pos, data.mbt_delta, data.iter_limit);
+        proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit);
 
         data.frame_sw.start();
 

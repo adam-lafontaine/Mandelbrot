@@ -252,6 +252,7 @@ colors_c += $(colors_h)
 mbt_process_h := $(game_app)/mbt_process.hpp
 
 mbt_process_seq_c := $(game_app)/mbt_process_seq.cpp
+mbt_process_tbb_c := $(game_app)/mbt_process_tbb.cpp
 
 mbt_process_exe_c := $(game_app)/mbt_process_exe.cpp
 mbt_process_exe_c += $(mbt_process_h)
@@ -280,6 +281,7 @@ game_app_libs += $(sdl_audio_c)
 game_app_libs += $(colors_c)
 
 game_app_libs += $(mbt_process_seq_c)
+game_app_libs += $(mbt_process_tbb_c)
 
 game_app_libs += $(mbt_process_exe_c)
 game_app_libs += $(for_each_in_range_c)

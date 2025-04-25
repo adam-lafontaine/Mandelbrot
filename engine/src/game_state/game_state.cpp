@@ -290,13 +290,12 @@ namespace game_state
         auto copy_loop = [&]()
         {
             auto& data = game::get_data(mbt_state);
-            auto r = img::make_rect(data.screen_dims.x, data.screen_dims.y);
 
             Stopwatch sw;
             while (game_running && props.enabled)
             {
                 sw.start();
-                game::proc_mbt(data.color_ids, r, data.mbt_pos, data.mbt_delta, (u32)limit);
+                game::proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, (u32)limit);
                 props.add_data((f32)sw.get_time_milli());
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
