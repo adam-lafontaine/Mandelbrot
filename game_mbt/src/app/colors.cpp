@@ -1,25 +1,10 @@
+#include "colors.hpp"
 
 
+/* colors */
 
 namespace game_mbt
 {
-
-/* n colors */
-
-namespace colors
-{
-    constexpr u32 calc_n_palette_colors(u32 n_levels)
-    {
-        u32 n = 16;
-
-        for (u32 i = 0; i < n_levels; ++i)
-        {
-            n *= 2;
-        }
-
-        return n;
-    }
-}
 
 
 /* color palette */
@@ -159,32 +144,6 @@ namespace colors
     };
 
 
-    template <u32 PaletteSize>
-    class ColorId
-    {
-    public:
-        static constexpr u32 max = PaletteSize;
-
-    private:
-
-        constexpr ColorId(u16 val) { assert(val <= max); value = val; }
-
-        template <typename T>
-        static constexpr ColorId make_pvt(T val) { return ColorId((u16)val); }
-
-    public:
-        u16 value = (u16)PaletteSize;
-
-        static constexpr ColorId make(u8 v) { return make_pvt(v); }
-        static constexpr ColorId make(u16 v) { return make_pvt(v); }
-        static constexpr ColorId make(u32 v) { return make_pvt(v); }
-
-        static constexpr ColorId make_default() { return make_pvt((u16)PaletteSize); }
-
-        ColorId() = delete;
-    };
-
-
     template <u32 N>
     constexpr Palette<N> make_palette()
     {
@@ -199,6 +158,7 @@ namespace colors
 
         return palette;
     }
+
 }
 
 
@@ -206,16 +166,7 @@ namespace colors
 
 namespace colors
 {
-    class ColorFormat
-    {
-    public:
-        u8 R = 0;
-        u8 G = 1;
-        u8 B = 2;
-    };
-
-
-    static ColorFormat make_color_format()
+    ColorFormat make_color_format()
     {
         static rng::iUniform format_rng(0, ColorChannels::count - 1);
 
@@ -228,10 +179,6 @@ namespace colors
         return format;
     }
 
-    constexpr u32 N_COLOR_LEVELS = 2;
-
-    constexpr u32 N_COLORS = calc_n_palette_colors(N_COLOR_LEVELS);
-
 
     constexpr Palette<N_COLORS> make_table()
     {
@@ -239,6 +186,41 @@ namespace colors
     }
 }
 
-    
 
 } // game_mbt
+
+
+/* color ids */
+
+namespace game_mbt
+{
+    void destroy_color_ids(ColorIdMatrix& mat)
+    {
+        mb::destroy_buffer(mat.buffer);
+    }
+
+
+    bool create_color_ids(ColorIdMatrix& mat, u32 width, u32 height)
+    {
+        auto n = width * height;
+
+        if (!mb::create_buffer(mat.buffer, n * 2, "color_ids"))
+        {
+            return false;
+        }
+
+        for (u32 i = 0; i < 2; i++)
+        {
+            auto span = span::push_span(mat.buffer, n);
+            mat.data_[i].matrix_data_ = span.data;
+            mat.data_[i].width = width;
+            mat.data_[i].height = height;
+        }        
+
+        return true;
+    }
+
+
+    
+}
+

@@ -22,4 +22,6 @@ namespace game_state
 {
   
     void show_game_state();
+
+    void show_profiling();
 }

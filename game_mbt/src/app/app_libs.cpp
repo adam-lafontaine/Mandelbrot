@@ -10,3 +10,11 @@
 #include "../../../libs/sdl2/sdl_audio.cpp"
 
 // TODO: processing/cuda etc.
+#include "colors.cpp"
+
+#if __has_include(<tbb/parallel_for.h>)
+#include "mbt_process_tbb.cpp"
+#else
+#include "mbt_process_seq.cpp"
+#endif
+
