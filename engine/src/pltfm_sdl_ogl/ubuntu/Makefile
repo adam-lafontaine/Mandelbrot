@@ -253,7 +253,6 @@ game_mbt_c += $(stopwatch_h)
 game_mbt_c += $(rng_h)
 game_mbt_c += $(mbt_process_h)
 game_mbt_c += $(game_mbt_libs)
-game_mbt_c += $(game_mbt_app)/colors.cpp
 game_mbt_c += $(game_mbt_app)/map_input.cpp
 
 #*************

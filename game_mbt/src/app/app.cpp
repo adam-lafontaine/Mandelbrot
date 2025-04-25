@@ -20,9 +20,6 @@ namespace game_mbt
     using Input = input::Input;
 }
 
-
-#include "colors.cpp"
-
 #include "mbt_process.hpp"
 
 
@@ -361,12 +358,12 @@ namespace ns_update_state
 
         if (data.n_copy)
         {
-            copy(data.color_ids, data.copy_src, data.copy_dst);
+            proc_copy(data.color_ids, data.copy_src, data.copy_dst);
         }
 
         for (u32 i = 0; i < data.n_proc; i++)
         {            
-            mbt_proc(data.color_ids, data.proc_dst[i], data.mbt_pos, data.mbt_delta, data.iter_limit);
+            proc_mbt(data.color_ids, data.proc_dst[i], data.mbt_pos, data.mbt_delta, data.iter_limit);
         }        
     }
 
@@ -428,7 +425,7 @@ namespace game_mbt
         
         reset_state_data(data);
 
-        mbt_proc(data.color_ids, data.proc_dst[0], data.mbt_pos, data.mbt_delta, data.iter_limit);
+        proc_mbt(data.color_ids, data.proc_dst[0], data.mbt_pos, data.mbt_delta, data.iter_limit);
 
         data.frame_sw.start();
 
