@@ -12,6 +12,7 @@ EXE := mandelbrot
 
 LDFLAGS := -lSDL2
 LDFLAGS += -lSDL2_mixer
+LDFLAGS += -ltbb
 
 ROOT := ../../..
 

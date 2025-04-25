@@ -1,6 +1,9 @@
 #include "game_state.hpp"
 #include "../../../libs/imgui/imgui.h"
+#include "../../../libs/stb_libs/qsprintf.hpp"
 #include "../../../game_mbt/src/app/app.cpp"
+
+#include <thread>
 
 namespace game_state
 {    
@@ -200,13 +203,16 @@ namespace game_state
 {
     class PlotProps
     {
+    private:
+        static constexpr int N = 256;
+
     public:
         cstr label = 0;
 
         cstr units = 0;
 
-        f32 plot_data[256];
-        int data_count = 256;
+        f32 plot_data[N] = { 0 };
+        int data_count = N;
         int data_offset = 0;
         int data_stride = sizeof(f32);
         f32 plot_min = 0.0f;
@@ -217,10 +223,25 @@ namespace game_state
         bool started = false;
         bool minmax = false;
 
+        int count = 0;
+        f32 total = 0.0f;
+        f32 avg = 0.0f;
+
         void add_data(f32 val)
-        {
+        {            
+            if (count == N)
+            {
+                total -= plot_data[data_offset];
+            }
+
+            total += val;
+
             plot_data[data_offset] = val;
-            data_offset = (data_offset + 1) & 255;
+            data_offset = (data_offset + 1) & (N - 1);
+
+            count = num::min(count + 1, N);
+
+            avg = total / count;            
 
             if (!minmax)
             {                
@@ -239,6 +260,9 @@ namespace game_state
             enabled = false;
             started = false;
             minmax = false;
+            count = 0;
+            total = 0.0f;
+            avg = 0.0f;
         }
 
     };
@@ -246,12 +270,17 @@ namespace game_state
 
     static void show_plot(PlotProps& props, cstr label)
     {
+        char label_text[32] = { 0 };
+        stb::qsnprintf(label_text, 32, "avg: %f##%s", props.avg, label);
+
+        char overlay[32] = { 0 };
+
         ImGui::Text("min: %f %s, max: %f %s", props.plot_min, props.units, props.plot_max, props.units);
-        ImGui::PlotLines(label, 
+        ImGui::PlotLines(label_text, 
             props.plot_data, 
             props.data_count, 
             props.data_offset, 
-            "",
+            overlay,
             props.plot_min, props.plot_max, 
             props.plot_size, 
             props.data_stride);
@@ -398,7 +427,7 @@ namespace game_state
                 start_proc_copy(copy_props);
                 copy_props.started = true;
             }
-            show_plot(copy_props, "##CopyPlot");
+            show_plot(copy_props, "CopyPlot");
         }
         else
         {
@@ -415,7 +444,7 @@ namespace game_state
                 start_proc_mbt(mbt_props, limit);
                 mbt_props.started = true;
             }
-            show_plot(mbt_props, "##MbtPlot");
+            show_plot(mbt_props, "MbtPlot");
         }
         else
         {
@@ -431,7 +460,7 @@ namespace game_state
                 start_proc_render(render_props);
                 render_props.started = true;
             }
-            show_plot(render_props, "##RenderPlot");
+            show_plot(render_props, "RenderPlot");
         }
         else
         {

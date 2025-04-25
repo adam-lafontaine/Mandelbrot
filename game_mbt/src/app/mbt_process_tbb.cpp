@@ -7,8 +7,6 @@
 
 namespace game_mbt
 {
-
-
     void proc_copy(ColorIdMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst)
     {
         auto src = sub_view(mat.prev(), r_src);

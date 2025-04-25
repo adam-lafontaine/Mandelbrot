@@ -150,20 +150,6 @@ ascii_image_c += $(ascii_image)/ascii_joystick_8.cpp
 #************
 
 
-#*** for_each_in_range ***
-
-for_each_in_range := $(libs)/for_each_in_range
-
-for_each_in_range_h := $(for_each_in_range)/for_each_in_range.hpp
-
-for_each_in_range_c := $(for_each_in_range)/for_each_in_range.cpp
-for_each_in_range_c += $(for_each_in_range)/index_range.hpp
-for_each_in_range_c += $(for_each_in_range)/point_range_2d.hpp
-for_each_in_range_c += $(for_each_in_range_h)
-
-#******************
-
-
 #*** input ***
 
 input := $(libs)/input
@@ -254,10 +240,6 @@ mbt_process_h := $(game_app)/mbt_process.hpp
 mbt_process_seq_c := $(game_app)/mbt_process_seq.cpp
 mbt_process_tbb_c := $(game_app)/mbt_process_tbb.cpp
 
-mbt_process_exe_c := $(game_app)/mbt_process_exe.cpp
-mbt_process_exe_c += $(mbt_process_h)
-mbt_process_exe_c += $(for_each_in_range_h)
-
 game_app_include_h := $(game_app)/app_include.hpp
 game_app_include_h += $(game_app_h)
 game_app_include_h += $(alloc_type_h)
@@ -282,9 +264,6 @@ game_app_libs += $(colors_c)
 
 game_app_libs += $(mbt_process_seq_c)
 game_app_libs += $(mbt_process_tbb_c)
-
-game_app_libs += $(mbt_process_exe_c)
-game_app_libs += $(for_each_in_range_c)
 
 game_app_c := $(game_app)/app.cpp
 game_app_c += $(game_app_include_h)
