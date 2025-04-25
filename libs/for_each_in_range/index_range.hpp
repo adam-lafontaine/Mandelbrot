@@ -1,3 +1,7 @@
+#pragma once
+
+#include "../util/types.hpp"
+
 #include <iterator>
 
 
@@ -5,7 +9,7 @@ class UnsignedRange
 {
 public:
 
-    using index_type = unsigned long;
+    using index_type = u64;
 
     class iterator
     {
@@ -70,7 +74,7 @@ class SignedRange
 {
 public:
 
-    using index_type = long;
+    using index_type = i64;
 
     class iterator
     {

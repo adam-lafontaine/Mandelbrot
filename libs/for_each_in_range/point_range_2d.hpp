@@ -1,19 +1,16 @@
+#pragma once
+
+#include "../util/types.hpp"
+
 #include <iterator>
 
 class UnsignedPointRange2D
 {
 public:
 
-    using index_type = unsigned long;
+    using index_type = u64;
 
-    template<typename INT_T>
-    struct point
-    {
-        INT_T x;
-        INT_T y;
-    };
-
-    typedef struct point<index_type> pt;
+    using pt = Point2D<index_type>;
 
     class iterator
     {
@@ -110,7 +107,7 @@ public:
     }
 
     template<typename INT_T>
-    UnsignedPointRange2D(point<INT_T> const& first, point<INT_T> const& last)
+    UnsignedPointRange2D(Point2D<INT_T> const& first, Point2D<INT_T> const& last)
     {
         if(last.y > first.y)
         {
@@ -144,16 +141,9 @@ class SignedPointRange2D
 {
 public:
 
-    using index_type = long;
+    using index_type = i64;
 
-    template<typename INT_T>
-    struct point
-    {
-        INT_T x;
-        INT_T y;
-    };
-
-    typedef struct point<index_type> pt;
+    using pt = Point2D<index_type>;
 
     class iterator
     {
@@ -233,7 +223,7 @@ private:
 public:
 
     template<typename INT_T>
-    SignedPointRange2D(point<INT_T> const& first, point<INT_T> const& last)
+    SignedPointRange2D(Point2D<INT_T> const& first, Point2D<INT_T> const& last)
     {
         if(last.y > first.y)
         {

@@ -1,5 +1,12 @@
 #include "mbt_process.hpp"
 
+#define PROC_PAR
+
+
+#ifdef PROC_PAR
+#include "../../../libs/for_each_in_range/for_each_in_range.hpp"
+#endif
+
 
 /* colors */
 
@@ -294,6 +301,8 @@ namespace game_mbt
 
 namespace game_mbt
 {
+#ifdef PROC_PAR
+
     void proc_copy(ColorIdMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst)
     {
         auto src = sub_view(mat.prev(), r_src);
@@ -367,4 +376,84 @@ namespace game_mbt
             d.data[i] = color_at(s.data[i], format);
         }
     }
+
+
+#else
+
+    void proc_copy(ColorIdMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst)
+    {
+        auto src = sub_view(mat.prev(), r_src);
+        auto dst = sub_view(mat.curr(), r_dst);
+
+        assert(src.width == dst.width);
+        assert(src.height == dst.height);
+
+        auto w = src.width;
+        auto h = src.height;
+
+        auto stride = mat.curr().width;
+
+        auto s = src.matrix_data_ + src.y_begin * stride + src.x_begin;
+        auto d = dst.matrix_data_ + dst.y_begin * stride + dst.x_begin;
+
+        for (u32 y = 0; y < h; y++)
+        {
+            span::copy(span::make_view(s, w), span::make_view(d, w));
+
+            s += stride;
+            d += stride;
+        }
+    }
+
+
+    void proc_mbt(ColorIdMatrix const& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit)
+    {
+        auto view = mat.curr();
+        auto dst = sub_view(view, r_dst);
+
+        auto w = dst.width;
+        auto h = dst.height;
+
+        auto stride = view.width;
+
+        auto d = dst.matrix_data_ + dst.y_begin * stride + dst.x_begin;
+
+        auto cy_begin = (fmbt)dst.y_begin * delta.y + begin.y;
+        auto cx_begin = (fmbt)dst.x_begin * delta.x + begin.x;
+
+        auto cy = cy_begin;
+        auto cx = cx_begin;
+
+        for (u32 y = 0; y < h; y++)
+        {
+            for (u32 x = 0; x < w; x++)
+            {
+                auto iter = mandelbrot_iter(cx, cy, limit);                
+                d[x] = to_color_id(iter, limit);
+
+                cx += delta.x;
+            }
+
+            d += stride;
+            cy += delta.y;
+            cx = cx_begin;
+        }
+    }    
+
+
+    void proc_render(ColorIdMatrix const& src, ImageView const& dst, ColorFormat format)
+    {
+        auto s = to_span(src.curr());
+        auto d = img::to_span(dst);
+
+        assert(s.length == d.length);
+
+        for (u32 i = 0; i < s.length; i++)
+        {
+            d.data[i] = color_at(s.data[i], format);
+        }
+    }
+
+
+#endif
 }

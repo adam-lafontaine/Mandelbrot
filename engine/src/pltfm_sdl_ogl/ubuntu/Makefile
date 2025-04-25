@@ -150,6 +150,20 @@ ascii_image_c += $(ascii_image)/ascii_joystick_8.cpp
 #************
 
 
+#*** for_each_in_range ***
+
+for_each_in_range := $(libs)/for_each_in_range
+
+for_each_in_range_h := $(for_each_in_range)/for_each_in_range.hpp
+
+for_each_in_range_c := $(for_each_in_range)/for_each_in_range.cpp
+for_each_in_range_c += $(for_each_in_range)/index_range.hpp
+for_each_in_range_c += $(for_each_in_range)/point_range_2d.hpp
+for_each_in_range_c += $(for_each_in_range_h)
+
+#******************
+
+
 #*** input ***
 
 input := $(libs)/input
@@ -231,7 +245,10 @@ game_mbt_h += $(input_h)
 game_mbt_h += $(image_h)
 
 mbt_process_h := $(game_mbt_app)/mbt_process.hpp
+
 mbt_process_c := $(game_mbt_app)/mbt_process.cpp
+mbt_process_c += $(mbt_process_h)
+mbt_process_c += $(for_each_in_range_h)
 
 game_mbt_libs := $(game_mbt_app)/app_libs.cpp
 game_mbt_libs += $(alloc_type_c)
@@ -244,6 +261,7 @@ game_mbt_libs += $(sdl_window_c)
 game_mbt_libs += $(sdl_audio_c)
 game_mbt_libs += $(sdl_audio_c)
 game_mbt_libs += $(mbt_process_c)
+game_mbt_libs += $(for_each_in_range_c)
 
 game_mbt_c := $(game_mbt_app)/app.cpp
 game_mbt_c += $(game_mbt_h)
