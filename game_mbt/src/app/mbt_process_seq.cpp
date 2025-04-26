@@ -24,25 +24,33 @@ namespace game_mbt
 
 namespace game_mbt
 {
-    
-
     void proc_copy(ColorMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst)
     {
         auto id_src = img::sub_view(mat.id_prev(), r_src);
         auto id_dst = img::sub_view(mat.id_curr(), r_dst);
 
-        auto px_src = img::sub_view(mat.px_prev(), r_src);
-        auto px_dst = img::sub_view(mat.px_curr(), r_dst);
+        auto rgb_src = mat.rgb_prev();
+        auto rgb_dst = mat.rgb_curr();
+
+        auto red_src   = img::sub_view(rgb_src.view_red(),   r_src);
+        auto green_src = img::sub_view(rgb_src.view_green(), r_src);
+        auto blue_src  = img::sub_view(rgb_src.view_blue(),  r_src);
+
+        auto red_dst   = img::sub_view(rgb_dst.view_red(),   r_dst);
+        auto green_dst = img::sub_view(rgb_dst.view_green(), r_dst);
+        auto blue_dst  = img::sub_view(rgb_dst.view_blue(),  r_dst);
 
         assert(id_src.width == id_dst.width);
         assert(id_src.height == id_dst.height);
         
-        auto h = px_src.height;
+        auto h = rgb_src.height;
 
         for (u32 y = 0; y < h; y++)
         {
             span::copy(img::row_span(id_src, y), img::row_span(id_dst, y));
-            span::copy(img::row_span(px_src, y), img::row_span(px_dst, y));
+            span::copy(img::row_span(red_src, y), img::row_span(red_dst, y));
+            span::copy(img::row_span(green_src, y), img::row_span(green_dst, y));
+            span::copy(img::row_span(blue_src, y), img::row_span(blue_dst, y));
         }
     }
 
@@ -52,12 +60,15 @@ namespace game_mbt
         auto r = Color_Table.channels[format.R];
         auto g = Color_Table.channels[format.G];
         auto b = Color_Table.channels[format.B];
-        
-        auto dst = mat.px_curr();
-        auto ids = mat.id_curr();
 
-        auto w = dst.width;
-        auto h = dst.height;
+        auto ids = mat.id_curr();
+        auto rgb = mat.rgb_curr();
+        auto red   = rgb.view_red();
+        auto green = rgb.view_green();
+        auto blue  = rgb.view_blue();
+
+        auto w = rgb.width;
+        auto h = rgb.height;
 
         auto cy_begin = begin.y;
         auto cx_begin = begin.x;
@@ -67,8 +78,10 @@ namespace game_mbt
 
         for (u32 y = 0; y < h; y++)
         {
-            auto id = img::row_span(ids, y).data;
-            auto px = img::row_span(dst, y).data;
+            auto id_dst    = img::row_span(ids, y);
+            auto red_dst   = img::row_span(red, y);
+            auto green_dst = img::row_span(green, y);
+            auto blue_dst  = img::row_span(blue, y);
 
             for (u32 x = 0; x < w; x++)
             {
@@ -76,8 +89,10 @@ namespace game_mbt
                 auto color_id = to_color_id(iter, limit);
                 auto px_id = color_id.value;
 
-                id[x] = color_id;
-                px[x] = img::to_pixel(r[px_id], g[px_id], b[px_id]);
+                id_dst.data[x]    = color_id;
+                red_dst.data[x]   = r[px_id];
+                green_dst.data[x] = g[px_id];
+                blue_dst.data[x]  = b[px_id];
 
                 cx += delta.x;
             }
@@ -94,16 +109,17 @@ namespace game_mbt
         auto g = Color_Table.channels[format.G];
         auto b = Color_Table.channels[format.B];
 
-        auto view = mat.px_curr();
-
-        auto dst = img::sub_view(view, r_dst);
         auto ids = img::sub_view(mat.id_curr(), r_dst);
+        auto rgb = mat.rgb_curr();
+        auto red =   img::sub_view(rgb.view_red(), r_dst);
+        auto green = img::sub_view(rgb.view_green(), r_dst);
+        auto blue =  img::sub_view(rgb.view_blue(), r_dst);
 
-        auto w = dst.width;
-        auto h = dst.height;
+        auto w = ids.width;
+        auto h = ids.height;
 
-        auto x_begin = dst.x_begin;
-        auto y_begin = dst.y_begin;
+        auto x_begin = r_dst.x_begin;
+        auto y_begin = r_dst.y_begin;
 
         auto cy_begin = (fmbt)y_begin * delta.y + begin.y;
         auto cx_begin = (fmbt)x_begin * delta.x + begin.x;
@@ -113,8 +129,10 @@ namespace game_mbt
 
         for (u32 y = 0; y < h; y++)
         {
-            auto id = img::row_span(ids, y).data;
-            auto px = img::row_span(dst, y).data;
+            auto id_dst    = img::row_span(ids, y);
+            auto red_dst   = img::row_span(red, y);
+            auto green_dst = img::row_span(green, y);
+            auto blue_dst  = img::row_span(blue, y);
             
             for (u32 x = 0; x < w; x++)
             {
@@ -122,14 +140,32 @@ namespace game_mbt
                 auto color_id = to_color_id(iter, limit);
                 auto px_id = color_id.value;
 
-                id[x] = color_id;
-                px[x] = img::to_pixel(r[px_id], g[px_id], b[px_id]);
+                id_dst.data[x]    = color_id;
+                red_dst.data[x]   = r[px_id];
+                green_dst.data[x] = g[px_id];
+                blue_dst.data[x]  = b[px_id];
 
                 cx += delta.x;
             }
             
             cy += delta.y;
             cx = cx_begin;
+        }
+    }
+
+
+    void proc_render(ColorMatrix const& mat, img::ImageView const& screen)
+    {
+        auto rgb = mat.rgb_curr();
+        auto red   = img::to_span(rgb.view_red());
+        auto green = img::to_span(rgb.view_green());
+        auto blue  = img::to_span(rgb.view_blue());
+
+        auto dst = img::to_span(screen);
+
+        for (u32 i = 0; i < dst.length; i++)
+        {
+            dst.data[i] = img::to_pixel(red.data[i], green.data[i], blue.data[i]);
         }
     }
 
