@@ -109,6 +109,53 @@ namespace game_mbt
     using ColorId = colors::ColorId<colors::N_COLORS>;
 
 
+    class MatrixViewRGB
+    {
+    public:
+        u32 width = 0;
+        u32 height = 0;
+
+        u8* r = 0;
+        u8* g = 0;
+        u8* b = 0;
+
+        img::GrayView view_red()
+        {
+            img::GrayView view{};
+
+            view.matrix_data_ = r;
+            view.width = width;
+            view.height = height;
+
+            return view;
+        }
+
+
+        img::GrayView view_green()
+        {
+            img::GrayView view{};
+
+            view.matrix_data_ = g;
+            view.width = width;
+            view.height = height;
+
+            return view;
+        }
+
+
+        img::GrayView view_blue()
+        {
+            img::GrayView view{};
+
+            view.matrix_data_ = b;
+            view.width = width;
+            view.height = height;
+
+            return view;
+        }
+    };
+
+
     class ColorMatrix
     {
     private:
@@ -118,18 +165,18 @@ namespace game_mbt
     public:
 
         MatrixView2D<ColorId> id_data_[2];
-        img::ImageView px_data_[2];
+        MatrixViewRGB rgb_data_[2];
 
         MatrixView2D<ColorId> id_prev() const { return id_data_[p]; }
         MatrixView2D<ColorId> id_curr() const { return id_data_[c]; }
 
-        img::ImageView px_prev() const { return px_data_[p]; }
-        img::ImageView px_curr() const { return px_data_[c]; }
+        MatrixViewRGB rgb_prev() const { return rgb_data_[p]; }
+        MatrixViewRGB rgb_curr() const { return rgb_data_[c]; }
 
         void swap() { p = c; c = !p; }
 
         MemoryBuffer<ColorId> id_buffer;
-        MemoryBuffer<img::Pixel> px_buffer;
+        MemoryBuffer<u8> rgb_buffer;
     };
 
 

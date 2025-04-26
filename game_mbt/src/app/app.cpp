@@ -429,7 +429,7 @@ namespace game_mbt
         update_state(cmd, data);
         update_color_ids(data);
 
-        img::copy(data.color_ids.px_curr(), state.screen);
+        proc_render(data.color_ids, state.screen);
         
         data.render_new = false;
     }
