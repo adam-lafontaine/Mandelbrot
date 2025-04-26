@@ -72,7 +72,7 @@ namespace game_mbt
         auto cy_begin = begin.y;
         auto cx_begin = begin.x;
 
-        auto id_dst    = img::to_span(ids);        
+        auto id_dst    = img::to_span(ids);
         auto red_dst   = img::to_span(rgb.view_red());
         auto green_dst = img::to_span(rgb.view_green());
         auto blue_dst  = img::to_span(rgb.view_blue());

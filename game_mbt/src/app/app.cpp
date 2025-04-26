@@ -420,7 +420,7 @@ namespace game_mbt
 
         auto cmd = map_input(input);
 
-        data.render_new = cmd.any;
+        data.render_new |= cmd.any;
         if (data.render_new)
         {
             data.color_ids.swap();
@@ -429,7 +429,10 @@ namespace game_mbt
         update_state(cmd, data);
         update_color_ids(data);
 
-        proc_render(data.color_ids, state.screen);
+        if (data.render_new)
+        {
+            proc_render(data.color_ids, state.screen);
+        }
         
         data.render_new = false;
     }

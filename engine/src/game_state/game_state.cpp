@@ -336,7 +336,7 @@ namespace game_state
     }
 
 
-    /*static void start_proc_render(PlotProps& props)
+    static void start_proc_render(PlotProps& props)
     {
         props.units = "ms";
 
@@ -349,7 +349,7 @@ namespace game_state
             while (game_running && props.enabled)
             {
                 sw.start();
-                game::proc_render(data.color_ids, mbt_state.screen, data.format);
+                game::proc_render(data.color_ids, mbt_state.screen);
                 props.add_data((f32)sw.get_time_milli());
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -358,7 +358,7 @@ namespace game_state
 
         std::thread th(copy_loop);
         th.detach();
-    }*/
+    }
 }
 
 
@@ -457,7 +457,7 @@ namespace game_state
         }
 
         
-        /*ImGui::Checkbox("proc_render", &render_props.enabled);
+        ImGui::Checkbox("proc_render", &render_props.enabled);
         if (render_props.enabled)
         {
             if (!render_props.started)
@@ -470,7 +470,7 @@ namespace game_state
         else
         {
             render_props.reset();
-        }*/
+        }
 
 
         
