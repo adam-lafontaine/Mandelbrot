@@ -8,11 +8,11 @@ namespace game_mbt
 
 namespace colors
 {
-    constexpr u32 calc_n_palette_colors(u32 n_levels)
+    constexpr u32 n_level_colors(u32 level)
     {
-        u32 n = 16;
+        u32 n = 32;
 
-        for (u32 i = 0; i < n_levels; ++i)
+        for (u32 i = 0; i < level - 1; ++i)
         {
             n *= 2;
         }
@@ -21,9 +21,36 @@ namespace colors
     }
 
 
-    constexpr u32 N_COLOR_LEVELS = 2;
+    constexpr u32 n_colors_level(u32 n)
+    {
+        u32 level = 1;
 
-    constexpr u32 N_COLORS = calc_n_palette_colors(N_COLOR_LEVELS);
+        while (n > 32)
+        {
+            n /= 2;
+            level++;
+        }
+
+        return level;
+    }
+
+
+    static constexpr void static_test_level_colors()
+    {
+        static_assert(n_colors_level(n_level_colors(1)) == 1);
+        static_assert(n_colors_level(n_level_colors(2)) == 2);
+        static_assert(n_colors_level(n_level_colors(3)) == 3);
+        static_assert(n_colors_level(n_level_colors(4)) == 4);
+        static_assert(n_colors_level(n_level_colors(5)) == 5);
+        static_assert(n_colors_level(n_level_colors(6)) == 6);
+        static_assert(n_colors_level(n_level_colors(7)) == 7);
+        static_assert(n_colors_level(n_level_colors(8)) == 8);
+    }
+
+
+    constexpr u32 N_COLOR_LEVELS = 8;
+
+    constexpr u32 N_COLORS = n_level_colors(N_COLOR_LEVELS);
 }
 
 

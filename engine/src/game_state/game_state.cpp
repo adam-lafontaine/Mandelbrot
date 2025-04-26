@@ -147,7 +147,8 @@ namespace game_state
         ImGui::Text("");
         show_vec("scale   ", data.mbt_scale);
         show_vec("position", data.mbt_pos);
-        show_vec("delta   ", data.mbt_delta);        
+        show_vec("delta   ", data.mbt_delta);
+
         ImGui::Text("");
         ImGui::Text("n_copy    : %u", data.n_copy);
         show_rect(   "copy_src", data.copy_src);
@@ -156,7 +157,6 @@ namespace game_state
         ImGui::Text("n_proc     : %u", data.n_proc);
         show_rect(  "proc_dst[0]", data.proc_dst[0]);
         show_rect(  "proc_dst[1]", data.proc_dst[1]);
-        // TODO: ranges
     }
 
 

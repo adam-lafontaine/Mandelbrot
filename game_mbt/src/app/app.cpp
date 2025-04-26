@@ -158,8 +158,8 @@ namespace ns_update_state
         constexpr f32 zoom_per_second = 0.5f;
 
         auto factor = 1.0 + idelta * zoom_per_second * data.dt_frame;
-
-        data.zoom *= (f32)factor;
+        
+        data.zoom = num::clamp(data.zoom * (f32)factor, ZOOM_LOWER_LIMIT, ZOOM_UPPER_LIMIT);        
 
         auto old_dims = data.mbt_scale;
 
