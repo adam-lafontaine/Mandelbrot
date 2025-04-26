@@ -312,7 +312,7 @@ namespace game_state
     }
 
 
-    static void start_proc_mbt(PlotProps& props, int& limit)
+    static void start_proc_mbt(PlotProps& props)
     {
         props.units = "ms";
 
@@ -324,7 +324,7 @@ namespace game_state
             while (game_running && props.enabled)
             {
                 sw.start();
-                game::proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, (u32)limit, data.format);
+                game::proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit, data.format);
                 props.add_data((f32)sw.get_time_milli());
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -413,7 +413,7 @@ namespace game_state
             return;
         }
 
-        ImGui::Checkbox("Enable", &enable_profile);
+        ImGui::Checkbox("Enable", &enable_profile);        
 
         state.hard_pause = enable_profile;
 
@@ -421,6 +421,10 @@ namespace game_state
 
         if (!enable_profile)
         {
+            copy_props.enabled = false;
+            mbt_props.enabled = false;
+            render_props.enabled = false;
+
             ImGui::BeginDisabled();
         }
         
@@ -440,13 +444,12 @@ namespace game_state
         }
 
         ImGui::Checkbox("proc_mbt", &mbt_props.enabled);
-
-        static int limit = 64; // slider?
+        
         if (mbt_props.enabled)
         {
             if (!mbt_props.started)
             {
-                start_proc_mbt(mbt_props, limit);
+                start_proc_mbt(mbt_props);
                 mbt_props.started = true;
             }
             show_plot(mbt_props, "MbtPlot");
