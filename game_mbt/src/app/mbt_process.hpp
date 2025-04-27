@@ -21,42 +21,19 @@ namespace game_mbt
 namespace game_mbt
 {
     static inline ColorId to_color_id(u32 iter, u32 iter_limit)
-    {
-        constexpr auto DEF = ColorId::make_default();
+    {   
         constexpr auto N = colors::N_COLORS;
-
-        static_assert(num::cxpr::is_power_of_2(N));
-
-        constexpr u32 level_base[9] = 
-        {
-            0,
-            colors::n_level_colors(1),
-            colors::n_level_colors(2),
-            colors::n_level_colors(3),
-            colors::n_level_colors(4),
-            colors::n_level_colors(5),
-            colors::n_level_colors(6),
-            colors::n_level_colors(7),
-            colors::n_level_colors(8),
-        };
+        constexpr auto DEF = ColorId::make_default();
 
         if (iter >= iter_limit)
         {
             return DEF;
         }
 
-        u32 n = 0;
-        u32 d = 1;
-
-        for (u32 i = 1; i < 9; i++)
-        {
-            if (iter < level_base[i])
-            {
-                n = iter - level_base[i - 1];
-                d = level_base[i] - level_base[i - 1];
-                break;
-            }
-        }
+        u32 limit = num::min(iter_limit, N);
+        
+        u32 d = num::max(32u, limit / 2);
+        u32 n = iter % d;
 
         return ColorId::make(N * n / d);
     }

@@ -48,7 +48,7 @@ namespace colors
     }
 
 
-    constexpr u32 N_COLOR_LEVELS = 8;
+    constexpr u32 N_COLOR_LEVELS = 7;
 
     constexpr u32 N_COLORS = n_level_colors(N_COLOR_LEVELS);
 }
