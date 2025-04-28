@@ -52,13 +52,16 @@ namespace game_mbt
         data.format = colors::make_color_format();
 
         data.zoom_rate = ZOOM_RATE_LOWER_LIMIT;
-        data.zoom = 1.0f;
 
+        data.zoom = 1.0f;
         data.iter_limit = MAX_ITERATIONS_START;
+        data.mbt_pos = { MBT_MIN_X, MBT_MIN_Y };
+
+        //data.zoom = 4.210048f;        
+        //data.iter_limit = 128;        
+        //data.mbt_pos = { -0.476671f, -0.285032f };
 
         data.mbt_scale = mbt_screen_dims(data.zoom);
-
-        data.mbt_pos = { MBT_MIN_X, MBT_MIN_Y };
 
         data.mbt_delta = {
             data.mbt_scale.x / w,

@@ -55,7 +55,7 @@ namespace game_mbt
     }
 
 
-    void proc_mbt(ColorMatrix const& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit, ColorFormat format)
+    void proc_mbt_(ColorMatrix const& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit, ColorFormat format)
     {
         auto r = Color_Table.channels[format.R];
         auto g = Color_Table.channels[format.G];
@@ -169,4 +169,138 @@ namespace game_mbt
         }
     }
 
+}
+
+
+/* by frame */
+
+namespace game_mbt
+{
+    void proc_mbt(ColorMatrix const& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit, ColorFormat format)
+    {
+        auto r = Color_Table.channels[format.R];
+        auto g = Color_Table.channels[format.G];
+        auto b = Color_Table.channels[format.B];
+
+        auto ids = mat.id_curr();
+        auto rgb = mat.rgb_curr();
+        auto red   = rgb.view_red();
+        auto green = rgb.view_green();
+        auto blue  = rgb.view_blue();
+
+        auto w = rgb.width;
+        auto h = rgb.height;
+
+        auto dy = delta.y;
+        auto dx = delta.x;
+
+        u32 n = 4;
+
+        auto cy_begin = (begin.y * 2 + (n - 1) * dy) / 2;
+        auto cx_begin = (begin.x * 2 + (n - 1) * dx) / 2;
+
+        auto cy = cy_begin;
+        auto cx = cx_begin;
+
+        ColorId* id_dst[4] = {0};
+        u8* r_dst[4] = {0};
+        u8* g_dst[4] = {0};
+        u8* b_dst[4] = {0};
+
+        for (u32 y = 0; y < h; y += n)
+        {
+            /*auto id0_dst    = img::row_span(ids, y);
+            auto red0_dst   = img::row_span(red, y);
+            auto green0_dst = img::row_span(green, y);
+            auto blue0_dst  = img::row_span(blue, y);
+
+            auto id1_dst    = img::row_span(ids, y + 1);
+            auto red1_dst   = img::row_span(red, y + 1);
+            auto green1_dst = img::row_span(green, y + 1);
+            auto blue1_dst  = img::row_span(blue, y + 1);*/
+
+            for (u32 i = 0; i < n; i++)
+            {
+                id_dst[i] = img::row_span(ids, y + i).data;
+                r_dst[i] = img::row_span(red, y + i).data;
+                g_dst[i] = img::row_span(green, y + i).data;
+                b_dst[i] = img::row_span(blue, y + i).data;
+            }
+
+            for (u32 x = 0; x < w; x += n)
+            {
+                auto iter = mandelbrot_iter(cx, cy, limit);
+                auto id = to_color_id(iter, limit);
+                auto px = id.value;
+
+                auto rp = r[px];
+                auto gp = g[px];
+                auto bp = b[px];
+
+                for (u32 i = 0; i < n; i++)
+                {
+                    for (u32 j = 0; j < n; j++)
+                    {
+                        id_dst[i][x + j] = id;
+                        r_dst[i][x + j] = rp;
+                        g_dst[i][x + j] = gp;
+                        b_dst[i][x + j] = bp;
+                    }
+                }
+
+                /*id0_dst.data[x]    = id;
+                red0_dst.data[x]   = rp;
+                green0_dst.data[x] = gp;
+                blue0_dst.data[x]  = bp;
+
+                id1_dst.data[x]    = id;
+                red1_dst.data[x]   = rp;
+                green1_dst.data[x] = gp;
+                blue1_dst.data[x]  = bp;
+
+                id0_dst.data[x + 1]    = id;
+                red0_dst.data[x + 1]   = rp;
+                green0_dst.data[x + 1] = gp;
+                blue0_dst.data[x + 1]  = bp;
+
+                id1_dst.data[x + 1]    = id;                
+                red1_dst.data[x + 1]   = rp;
+                green1_dst.data[x + 1] = gp;
+                blue1_dst.data[x + 1]  = bp;*/
+
+                cx += n * dx;
+            }
+
+            cy += n * dy;
+            cx = cx_begin;
+        }
+    }
+
+
+    void proc_mbt_1(ColorMatrix const& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit, ColorFormat format)
+    {
+        auto r = Color_Table.channels[format.R];
+        auto g = Color_Table.channels[format.G];
+        auto b = Color_Table.channels[format.B];
+
+        auto ids = mat.id_curr();
+        auto rgb = mat.rgb_curr();
+        auto red   = rgb.view_red();
+        auto green = rgb.view_green();
+        auto blue  = rgb.view_blue();
+
+        auto w = rgb.width;
+        auto h = rgb.height;
+
+        auto cy_begin = begin.y;
+        auto cx_begin = begin.x;
+
+        auto cy = cy_begin;
+        auto cx = cx_begin;
+
+        auto dy = delta.y;
+        auto dx = delta.x;
+
+
+    }
 }

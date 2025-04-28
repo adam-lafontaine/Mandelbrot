@@ -70,11 +70,11 @@ namespace colors
     ColorFormat make_color_format();
 
 
-    template <u32 PaletteSize>
+    template <u32 N>
     class ColorId
     {
     public:
-        static constexpr u32 max = PaletteSize;
+        static constexpr u32 max = N;
 
     private:
 
@@ -84,13 +84,13 @@ namespace colors
         static constexpr ColorId make_pvt(T val) { return ColorId((u16)val); }
 
     public:
-        u16 value = (u16)PaletteSize;
+        u16 value = (u16)N;
 
         static constexpr ColorId make(u8 v) { return make_pvt(v); }
         static constexpr ColorId make(u16 v) { return make_pvt(v); }
         static constexpr ColorId make(u32 v) { return make_pvt(v); }
 
-        static constexpr ColorId make_default() { return make_pvt((u16)PaletteSize); }
+        static constexpr ColorId make_default() { return make_pvt((u16)N); }
 
         ColorId() = delete;
     };
