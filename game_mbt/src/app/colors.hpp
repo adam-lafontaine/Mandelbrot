@@ -48,7 +48,7 @@ namespace colors
     }
 
 
-    constexpr u32 N_COLOR_LEVELS = 7;
+    constexpr u32 N_COLOR_LEVELS = 6;
 
     constexpr u32 N_COLORS = n_level_colors(N_COLOR_LEVELS);
 }
@@ -107,6 +107,30 @@ namespace game_mbt
 {
     using ColorFormat = colors::ColorFormat;
     using ColorId = colors::ColorId<colors::N_COLORS>;
+
+
+    static inline ColorId to_color_id(u32 iter, u32 limit, u32 n_colors)
+    {   
+        constexpr auto N = colors::N_COLORS;
+        constexpr auto DEF = ColorId::make_default();
+
+        if (iter >= limit)
+        {
+            return DEF;
+        }
+        
+        u32 d = n_colors;
+        u32 n = iter % d;
+
+        return ColorId::make(N * n / d);
+    }
+
+
+    // TODO: delete
+    static inline ColorId to_color_id(u32 iter, u32 limit)
+    {   
+        return to_color_id(iter, limit, 48); // TODO
+    }
 
 
     class MatrixViewRGB

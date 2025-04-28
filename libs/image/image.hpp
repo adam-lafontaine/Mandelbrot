@@ -151,6 +151,19 @@ namespace image
 
 namespace image
 {
+
+    template <typename T>
+    inline MatrixView2D<T> make_view(T* data, u32 width, u32 height)
+    {
+        MatrixView2D<T> view{};
+        view.matrix_data_ = data;
+        view.width = width;
+        view.height = height;
+
+        return view;
+    }
+
+
     ImageView make_view(u32 width, u32 height, Pixel* data);
 
     GrayView make_view(u32 width, u32 height, u8* data);

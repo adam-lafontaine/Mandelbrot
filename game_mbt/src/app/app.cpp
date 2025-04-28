@@ -23,6 +23,7 @@ namespace game_mbt
         f32 zoom = 1.0f;
 
         u32 iter_limit = MAX_ITERATIONS_START;
+        u32 n_colors;
 
         Vec2D<fmbt> mbt_scale;
         Vec2D<fmbt> mbt_pos;
@@ -53,6 +54,7 @@ namespace game_mbt
 
         data.zoom_rate = ZOOM_RATE_LOWER_LIMIT;
 
+        data.n_colors = 48; // TODO
         data.zoom = 1.0f;
         data.iter_limit = MAX_ITERATIONS_START;
         data.mbt_pos = { MBT_MIN_X, MBT_MIN_Y };
