@@ -300,7 +300,8 @@ namespace game_state
             while (game_running && props.enabled)
             {
                 sw.start();
-                game::proc_copy(data.color_ids, r, r);
+                //game::proc_copy(data.color_ids, r, r);
+                game::proc_copy(data.mbt_mat, r, r);
                 props.add_data((f32)sw.get_time_milli());
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -324,7 +325,8 @@ namespace game_state
             while (game_running && props.enabled)
             {
                 sw.start();
-                game::proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit, data.format);
+                //game::proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit, data.format);
+                game::proc_mbt(data.mbt_mat, data.mbt_pos, data.mbt_delta, data.iter_limit);
                 props.add_data((f32)sw.get_time_milli());
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -349,7 +351,8 @@ namespace game_state
             while (game_running && props.enabled)
             {
                 sw.start();
-                game::proc_render(data.color_ids, mbt_state.screen);
+                //game::proc_render(data.color_ids, mbt_state.screen);
+                game::proc_render(data.mbt_mat, mbt_state.screen, data.format, data.n_colors);
                 props.add_data((f32)sw.get_time_milli());
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));

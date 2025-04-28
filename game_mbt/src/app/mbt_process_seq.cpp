@@ -278,10 +278,10 @@ namespace game_mbt
 
 namespace game_mbt
 {
-    void proc_copy(MBTMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst)
+    void proc_copy(MBTMatrix& mat, Rect2Du32 r_src, Rect2Du32 r_dst)
     {
         auto mbt_src = mat.mbt_prev();
-        auto mbt_dst = mat.mbt_curr();
+        auto& mbt_dst = mat.mbt_curr();
 
         mbt_dst.limit = mbt_src.limit;
 
@@ -327,9 +327,27 @@ namespace game_mbt
     }
 
 
-    void proc_mbt(MBTMatrix const& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit)
+    void proc_mbt(MBTMatrix& mat, u32 limit)
     {
-        auto mbt = mat.mbt_curr();
+        auto& mbt = mat.mbt_curr();
+        mbt.limit = limit;
+
+        auto w = mbt.width;
+        auto h = mbt.height;
+
+        for (u32 y = 0; y < h; y++)
+        {            
+            for (u32 x = 0; x < w; x++)
+            {
+                mandelbrot_xy(mbt, x, y);
+            }
+        }
+    }
+    
+    
+    void proc_mbt(MBTMatrix& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit)
+    {
+        auto& mbt = mat.mbt_curr();
         mbt.limit = limit;
 
         auto w = mbt.width;
@@ -342,6 +360,7 @@ namespace game_mbt
             for (u32 x = 0; x < w; x++)
             {
                 mandelbrot_pos_xy(mbt, cpos, x, y);
+                cpos.x += delta.x;
             }
 
             cpos.y += delta.y;
@@ -350,9 +369,9 @@ namespace game_mbt
     }
 
 
-    void proc_mbt_range(MBTMatrix const& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit)
+    void proc_mbt_range(MBTMatrix& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit)
     {
-        auto mbt = mat.mbt_curr();
+        auto& mbt = mat.mbt_curr();
         mbt.limit = limit;
 
         auto x_begin = r_dst.x_begin;
@@ -370,6 +389,7 @@ namespace game_mbt
             for (u32 x = x_begin; x < x_end; x++)
             {
                 mandelbrot_pos_xy(mbt, cpos, x, y);
+                cpos.x += delta.x;
             }
 
             cpos.y += delta.y;

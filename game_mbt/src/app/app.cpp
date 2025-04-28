@@ -15,7 +15,9 @@ namespace game_mbt
         f64 dt_frame;
         InputCommand in_cmd;
 
-        ColorMatrix color_ids;
+        //ColorMatrix color_ids;
+
+        MBTMatrix mbt_mat;
 
         ColorFormat format;
 
@@ -102,7 +104,8 @@ namespace game_mbt
 
         auto& data = get_data(state);
 
-        destroy_color_ids(data.color_ids);
+        //destroy_color_ids(data.color_ids);
+        destroy_mbt(data.mbt_mat);
 
         mem::free(state.data_);
         state.data_ = 0;
@@ -337,16 +340,21 @@ namespace ns_update_state
 
         if (data.n_copy)
         {
-            proc_copy(data.color_ids, data.copy_src, data.copy_dst);
+            //proc_copy(data.color_ids, data.copy_src, data.copy_dst);
+            proc_copy(data.mbt_mat, data.copy_src, data.copy_dst);
 
             for (u32 i = 0; i < data.n_proc; i++)
             {            
-                proc_mbt_range(data.color_ids, data.proc_dst[i], data.mbt_pos, data.mbt_delta, data.iter_limit, data.format);
+                //proc_mbt_range(data.color_ids, data.proc_dst[i], data.mbt_pos, data.mbt_delta, data.iter_limit, data.format);
+                proc_mbt_range(data.mbt_mat, data.proc_dst[i], data.mbt_pos, data.mbt_delta, data.iter_limit);
             }
+
+
         }
         else
         {
-            proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit, data.format);
+            //proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit, data.format);
+            proc_mbt(data.mbt_mat, data.mbt_pos, data.mbt_delta, data.iter_limit);
         }    
     }
 
@@ -399,7 +407,12 @@ namespace game_mbt
         auto w = state.screen.width;
         auto h = state.screen.height;
 
-        if (!create_color_ids(data.color_ids, w, h))
+        /*if (!create_color_ids(data.color_ids, w, h))
+        {
+            return false;
+        }*/
+
+        if (!create_mbt(data.mbt_mat, w, h))
         {
             return false;
         }
@@ -408,7 +421,8 @@ namespace game_mbt
         
         reset_state_data(data);
 
-        proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit, data.format);
+        //proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit, data.format);
+        proc_mbt(data.mbt_mat, data.mbt_pos, data.mbt_delta, data.iter_limit);
 
         data.frame_sw.start();
 
@@ -428,7 +442,8 @@ namespace game_mbt
         data.render_new |= cmd.any;
         if (data.render_new)
         {
-            data.color_ids.swap();
+            //data.color_ids.swap();
+            data.mbt_mat.swap();
         }
 
         update_state(cmd, data);
@@ -436,7 +451,8 @@ namespace game_mbt
 
         if (data.render_new)
         {
-            proc_render(data.color_ids, state.screen);
+            //proc_render(data.color_ids, state.screen);
+            proc_render(data.mbt_mat, state.screen, data.format, data.n_colors);
         }
         
         data.render_new = false;

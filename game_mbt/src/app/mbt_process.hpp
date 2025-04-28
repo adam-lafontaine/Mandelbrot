@@ -20,6 +20,7 @@ namespace game_mbt
 
 namespace game_mbt
 {
+    // TODO: delete
     static inline u32 mandelbrot_iter(fmbt cx, fmbt cy, u32 iter_limit)
     {
         u32 iter = 0;
@@ -82,11 +83,65 @@ namespace game_mbt
     public:
         MatrixViewMBT mbt_data_[2];
 
-        MatrixViewMBT mbt_prev() const { return mbt_data_[p]; }
+        MatrixViewMBT& mbt_prev() { return mbt_data_[p]; }
+        MatrixViewMBT& mbt_curr() { return mbt_data_[c]; }
+
         MatrixViewMBT mbt_curr() const { return mbt_data_[c]; }
 
         void swap() { p = c; c = !p; }
+
+
+        MemoryBuffer<fmbt> buffer64;
+        MemoryBuffer<u32> buffer32;
     };
+
+
+    inline bool create_mbt(MBTMatrix& mat, u32 width, u32 height)
+    {
+        auto len = width * height;
+
+        auto n_mbt = len * 6 * 2;
+        if (!mb::create_buffer(mat.buffer64, n_mbt, "mbt buffer64"))
+        {
+            return false;
+        }
+
+        auto n_32 = len * 2;
+        if (!mb::create_buffer(mat.buffer32, n_32, "mbt buffer 32"))
+        {
+            return false;
+        }
+
+        for (u32 i = 0; i < 2; i++)
+        {
+            auto& mbt = mat.mbt_data_[i];
+
+            mbt.cx = mb::push_elements(mat.buffer64, len);
+            mbt.cy = mb::push_elements(mat.buffer64, len);
+
+            mbt.mx = mb::push_elements(mat.buffer64, len);
+            mbt.my = mb::push_elements(mat.buffer64, len);
+
+            mbt.mx2 = mb::push_elements(mat.buffer64, len);
+            mbt.my2 = mb::push_elements(mat.buffer64, len);
+
+            mbt.iter = mb::push_elements(mat.buffer32, len);
+
+            mbt.width = width;
+            mbt.height = height;
+
+            mbt.limit = 32;
+        }
+        
+        return true;
+    }
+
+
+    void destroy_mbt(MBTMatrix& mat)
+    {
+        mb::destroy_buffer(mat.buffer64);
+        mb::destroy_buffer(mat.buffer32);
+    }
 
 
     static inline void mandelbrot_at(MatrixViewMBT const& mbt, u32 i)
@@ -137,4 +192,19 @@ namespace game_mbt
 
         mandelbrot_at(mbt, i);
     }
+}
+
+
+namespace game_mbt
+{
+    void proc_copy(MBTMatrix& mat, Rect2Du32 r_src, Rect2Du32 r_dst);
+
+    void proc_mbt(MBTMatrix& mat, u32 limit);
+
+    void proc_mbt(MBTMatrix& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit);
+
+    void proc_mbt_range(MBTMatrix& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit);
+
+    void proc_render(MBTMatrix const& mat, img::ImageView const& screen, ColorFormat format, u32 n_colors);
+    
 }
