@@ -245,7 +245,7 @@ namespace game_mbt
 
     void proc_mbt_range(MBTMatrix& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit);
 
-    void proc_render(MBTMatrix const& mat, img::ImageView const& screen, ColorFormat format, u32 n_colors);
+    void proc_render(MBTMatrix const& mat, img::ImageView const& screen, ColorFormat format);
     
 }
 

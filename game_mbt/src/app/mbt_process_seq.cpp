@@ -16,6 +16,18 @@ namespace game_mbt
         auto cy_src = img::sub_view(mbt_src.view_cy(), r_src);
         auto cy_dst = img::sub_view(mbt_dst.view_cy(), r_dst);
 
+        auto mx_src = img::sub_view(mbt_src.view_mx(), r_src);
+        auto mx_dst = img::sub_view(mbt_dst.view_mx(), r_dst);
+
+        auto my_src = img::sub_view(mbt_src.view_my(), r_src);
+        auto my_dst = img::sub_view(mbt_dst.view_my(), r_dst);
+
+        auto mx2_src = img::sub_view(mbt_src.view_mx2(), r_src);
+        auto mx2_dst = img::sub_view(mbt_dst.view_mx2(), r_dst);
+
+        auto my2_src = img::sub_view(mbt_src.view_my2(), r_src);
+        auto my2_dst = img::sub_view(mbt_dst.view_my2(), r_dst);
+
         auto iter_src = img::sub_view(mbt_src.view_iter(), r_src);
         auto iter_dst = img::sub_view(mbt_dst.view_iter(), r_dst);
 
@@ -25,6 +37,10 @@ namespace game_mbt
         {
             span::copy(img::row_span(cx_src, y), img::row_span(cx_dst, y));
             span::copy(img::row_span(cy_src, y), img::row_span(cy_dst, y));
+            span::copy(img::row_span(mx_src, y), img::row_span(mx_dst, y));
+            span::copy(img::row_span(my_src, y), img::row_span(my_dst, y));
+            span::copy(img::row_span(mx2_src, y), img::row_span(mx2_dst, y));
+            span::copy(img::row_span(my2_src, y), img::row_span(my2_dst, y));
             span::copy(img::row_span(iter_src, y), img::row_span(iter_dst, y));
         }        
     }
@@ -88,7 +104,7 @@ namespace game_mbt
     }
 
 
-    void proc_render(MBTMatrix const& mat, img::ImageView const& screen, ColorFormat format, u32 n_colors)
+    void proc_render(MBTMatrix const& mat, img::ImageView const& screen, ColorFormat format)
     {
         auto r = Color_Table.channels[format.R];
         auto g = Color_Table.channels[format.G];
@@ -101,7 +117,7 @@ namespace game_mbt
 
         for (u32 i = 0; i < dst.length; i++)
         {
-            auto id = to_color_id(src.data[i], mbt.limit, n_colors).value;
+            auto id = to_color_id(src.data[i], mbt.limit).value;
             dst.data[i] = img::to_pixel(r[id], g[id], b[id]);
         }
     }

@@ -109,7 +109,7 @@ namespace game_mbt
     using ColorId = colors::ColorId<colors::N_COLORS>;
 
 
-    static inline ColorId to_color_id(u32 iter, u32 limit, u32 n_colors)
+    static inline ColorId to_color_id(u32 iter, u32 limit)
     {   
         constexpr auto N = colors::N_COLORS;
         constexpr auto DEF = ColorId::make_default();

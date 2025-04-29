@@ -23,7 +23,6 @@ namespace game_mbt
         f32 zoom = 1.0f;
 
         u32 iter_limit = MAX_ITERATIONS_START;
-        u32 n_colors;
 
         Vec2D<fmbt> mbt_scale;
         Vec2D<fmbt> mbt_pos;
@@ -67,8 +66,6 @@ namespace game_mbt
         data.format = colors::make_color_format();
 
         data.zoom_rate = ZOOM_RATE_LOWER_LIMIT;
-
-        data.n_colors = colors::n_level_colors(1);
 
         data.zoom = 1.0f;
         data.iter_limit = MAX_ITERATIONS_START;
@@ -462,9 +459,9 @@ namespace game_mbt
         update_state(cmd, data);
         update_mandelbrot(data);
 
-        if (data.updated.any || 1)
+        if (data.updated.any)
         {
-            proc_render(data.mbt_mat, state.screen, data.format, data.n_colors);
+            proc_render(data.mbt_mat, state.screen, data.format);
         }
         
         data.updated.any = 0;

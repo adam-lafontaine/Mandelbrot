@@ -156,7 +156,6 @@ namespace game_state
         ImGui::Text("zoom rate : %f", data.zoom_rate);
         ImGui::Text("zoom      : %f", data.zoom);
         ImGui::Text("iter_limit: %u", data.iter_limit);
-        ImGui::Text("  n_colors: %u", data.n_colors);
         ImGui::Text("");
         show_vec("scale   ", data.mbt_scale);
         show_vec("position", data.mbt_pos);
@@ -194,15 +193,6 @@ namespace game_state
 
         ImGui::Text(" Id: %u", id.value);
         ImGui::ColorEdit3("Color##1", (float*)&color);
-
-
-        ImGui::SeparatorText("N Colors");
-        static int n_colors = 32;
-
-        n_colors = data.n_colors;
-        ImGui::SliderInt("n_colors", &n_colors, 32, id_max);
-        data.n_colors = n_colors;
-
 
     }
     
@@ -359,7 +349,7 @@ namespace game_state
             while (game_running && props.enabled)
             {
                 sw.start();
-                game::proc_render(data.mbt_mat, mbt_state.screen, data.format, data.n_colors);
+                game::proc_render(data.mbt_mat, mbt_state.screen, data.format);
                 props.add_data((f32)sw.get_time_milli());
 
                 thread_sleep_ms(10);
