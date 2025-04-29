@@ -190,3 +190,21 @@ namespace colors
 } // game_mbt
 
 
+/* color table */
+
+namespace game_mbt
+{
+    static constexpr auto Color_Table = colors::make_table();
+
+    static void static_test_color_table()
+    {
+        constexpr auto D = ColorId::make_default().value;
+
+        static_assert(Color_Table.channels[0][D] == 0);
+        static_assert(Color_Table.channels[1][D] == 0);
+        static_assert(Color_Table.channels[2][D] == 0);
+        static_assert(Color_Table.channels[3][D] == 0);
+        static_assert(Color_Table.channels[4][D] == 0);
+        static_assert(Color_Table.channels[5][D] == 0);
+    }
+}

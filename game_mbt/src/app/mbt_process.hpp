@@ -5,7 +5,7 @@
 
 namespace game_mbt
 {
-    // TODO: delete
+    // The mandelbrot iteration loop
     static inline u32 mandelbrot_iter(fmbt cx, fmbt cy, u32 iter_limit)
     {
         u32 iter = 0;
@@ -67,7 +67,13 @@ namespace game_mbt
             mdata.mx2 = mdata.mx * mdata.mx;
         }
     }
+}
 
+
+/* data matrix */
+
+namespace game_mbt
+{
 
     class MatrixViewMBT
     {
@@ -122,7 +128,6 @@ namespace game_mbt
         MatrixViewMBT mbt_curr() const { return mbt_data_[c]; }
 
         void swap() { p = c; c = !p; }
-
 
         MemoryBuffer<fmbt> buffer64;
         MemoryBuffer<u32> buffer32;
@@ -228,6 +233,8 @@ namespace game_mbt
 }
 
 
+/* processing api */
+
 namespace game_mbt
 {
     void proc_copy(MBTMatrix& mat, Rect2Du32 r_src, Rect2Du32 r_dst);
@@ -240,4 +247,158 @@ namespace game_mbt
 
     void proc_render(MBTMatrix const& mat, img::ImageView const& screen, ColorFormat format, u32 n_colors);
     
+}
+
+
+/* span */
+
+namespace game_mbt
+{
+    class SpanViewMBT
+    {
+    public:
+        fmbt* cx = 0;
+        fmbt* cy = 0;
+
+        fmbt* mx = 0;
+        fmbt* my = 0;
+
+        fmbt* mx2 = 0;
+        fmbt* my2 = 0;
+
+        u32* iter = 0;
+
+        u32 length = 0;
+    };
+
+
+    SpanViewMBT row_span(MatrixViewMBT const& mbt, u32 y)
+    {
+        SpanViewMBT span{};
+
+        span.cx = img::row_span(mbt.view_cx(), y).data;
+        span.cy = img::row_span(mbt.view_cy(), y).data;
+        span.mx = img::row_span(mbt.view_mx(), y).data;
+        span.my = img::row_span(mbt.view_my(), y).data;
+        span.mx2 = img::row_span(mbt.view_mx2(), y).data;
+        span.my2 = img::row_span(mbt.view_my2(), y).data;
+        span.iter = img::row_span(mbt.view_iter(), y).data;
+
+        span.length = mbt.width;
+
+        return span;
+    }    
+
+
+    SpanViewMBT row_sub_span(MatrixViewMBT const& mbt, u32 y, u32 x_begin, u32 x_end)
+    {
+        SpanViewMBT span{};
+
+        span.cx = img::row_span(mbt.view_cx(), y).data + x_begin;
+        span.cy = img::row_span(mbt.view_cy(), y).data + x_begin;
+        span.mx = img::row_span(mbt.view_mx(), y).data + x_begin;
+        span.my = img::row_span(mbt.view_my(), y).data + x_begin;
+        span.mx2 = img::row_span(mbt.view_mx2(), y).data + x_begin;
+        span.my2 = img::row_span(mbt.view_my2(), y).data + x_begin;
+        span.iter = img::row_span(mbt.view_iter(), y).data + x_begin;
+
+        span.length = x_end - x_begin;;
+
+        return span;
+    }
+
+
+    static void mandelbrot_row(MatrixViewMBT const& dst, u32 y, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta)
+    {
+        auto row = row_span(dst, y);
+
+        MBTData mdata{};
+
+        mdata.cx = begin.x;
+        mdata.cy = begin.y;
+        mdata.limit = dst.limit;
+
+        auto len = row.length;
+
+        for (u32 i = 0; i < len; i++)
+        {
+            zero_iter(mdata);
+            mandelbrot_iter(mdata);
+
+            row.cx[i] = mdata.cx;
+            row.cy[i] = mdata.cy;
+            row.mx[i] = mdata.mx;
+            row.my[i] = mdata.my;
+            row.mx2[i] = mdata.mx2;
+            row.my2[i] = mdata.my2;
+            row.iter[i] = mdata.iter;
+
+            mdata.cx += delta.x;
+        }
+    }
+
+
+    static void mandelbrot_row(MatrixViewMBT const& src, MatrixViewMBT const& dst, u32 y)
+    {
+        auto row_src = row_span(src, y);
+        auto row_dst = row_span(dst, y);
+
+        MBTData mdata{};
+        mdata.limit = dst.limit;
+
+        auto len = row_dst.length;
+
+        for (u32 i = 0; i < len; i++)
+        {
+            mdata.cx = row_src.cx[i];
+            mdata.cy = row_src.cy[i];
+
+            mdata.mx = row_src.mx[i];
+            mdata.my = row_src.my[i];
+            mdata.mx2 = row_src.mx2[i];
+            mdata.my2 = row_src.my2[i];
+            mdata.iter = row_src.iter[i];
+
+            mandelbrot_iter(mdata);
+            
+            row_dst.cx[i] = mdata.cx;
+            row_dst.cy[i] = mdata.cy;
+            
+            row_dst.mx[i] = mdata.mx;
+            row_dst.my[i] = mdata.my;
+            row_dst.mx2[i] = mdata.mx2;
+            row_dst.my2[i] = mdata.my2;
+            row_dst.iter[i] = mdata.iter;
+        }
+    }
+
+
+    static void mandelbrot_span(MatrixViewMBT const& dst, u32 y, u32 x_begin, u32 x_end, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta)
+    {
+        auto row = row_sub_span(dst, y, x_begin, x_end);
+
+        MBTData mdata{};
+
+        mdata.cx = begin.x;
+        mdata.cy = begin.y;
+        mdata.limit = dst.limit;
+
+        auto len = row.length;
+
+        for (u32 i = 0; i < len; i++)
+        {
+            zero_iter(mdata);
+            mandelbrot_iter(mdata);
+
+            row.cx[i] = mdata.cx;
+            row.cy[i] = mdata.cy;
+            row.mx[i] = mdata.mx;
+            row.my[i] = mdata.my;
+            row.mx2[i] = mdata.mx2;
+            row.my2[i] = mdata.my2;
+            row.iter[i] = mdata.iter;
+
+            mdata.cx += delta.x;
+        }
+    }
 }
