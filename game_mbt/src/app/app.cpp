@@ -68,7 +68,7 @@ namespace game_mbt
 
         data.zoom_rate = ZOOM_RATE_LOWER_LIMIT;
 
-        data.n_colors = 48; // TODO
+        data.n_colors = colors::n_level_colors(1);
 
         data.zoom = 1.0f;
         data.iter_limit = MAX_ITERATIONS_START;
@@ -184,7 +184,7 @@ namespace ns_update_state
 
         auto factor = 1.0 + idelta * zoom_per_second * data.dt_frame;
         
-        data.zoom = num::clamp(data.zoom * (f32)factor, ZOOM_LOWER_LIMIT, ZOOM_UPPER_LIMIT);        
+        data.zoom = num::clamp(data.zoom * (f32)factor, ZOOM_LOWER_LIMIT, ZOOM_UPPER_LIMIT);
 
         auto old_dims = data.mbt_scale;
 
@@ -462,7 +462,7 @@ namespace game_mbt
         update_state(cmd, data);
         update_mandelbrot(data);
 
-        if (data.updated.any)
+        if (data.updated.any || 1)
         {
             proc_render(data.mbt_mat, state.screen, data.format, data.n_colors);
         }

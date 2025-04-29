@@ -48,7 +48,7 @@ namespace game_mbt
 	constexpr u32 PIXELS_PER_SECOND = (u32)(0.2 * BUFFER_HEIGHT);
 
     constexpr u32 MAX_ITERTAIONS_LOWER_LIMIT = colors::n_level_colors(1);
-    constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = colors::N_COLORS;
+    constexpr u32 MAX_ITERATIONS_UPPER_LIMIT = colors::N_COLORS * 2;
     constexpr u32 MAX_ITERATIONS_START = MAX_ITERTAIONS_LOWER_LIMIT;
     constexpr f32 ZOOM_RATE_LOWER_LIMIT = 1.0f;
     constexpr f32 ZOOM_LOWER_LIMIT = 0.0001f;

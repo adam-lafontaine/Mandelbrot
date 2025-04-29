@@ -119,7 +119,8 @@ namespace game_mbt
             return DEF;
         }
         
-        u32 d = n_colors;
+        u32 d = num::max(32u, limit / 2);
+
         u32 n = iter % d;
 
         return ColorId::make(N * n / d);
