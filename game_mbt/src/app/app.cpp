@@ -70,17 +70,17 @@ namespace game_mbt
 
         data.n_colors = 48; // TODO
 
-        //data.zoom = 1.0f;
-        //data.iter_limit = MAX_ITERATIONS_START;
-        //data.mbt_pos = { MBT_MIN_X, MBT_MIN_Y };        
+        data.zoom = 1.0f;
+        data.iter_limit = MAX_ITERATIONS_START;
+        data.mbt_pos = { MBT_MIN_X, MBT_MIN_Y };        
 
         //data.zoom = 4.210048f;        
         //data.iter_limit = 128;        
         //data.mbt_pos = { -0.476671f, -0.285032f };
 
-        data.zoom = 21984.025391;
-        data.iter_limit = 182;
-        data.mbt_pos = { -0.916763, 0.283047 };
+        //data.zoom = 21984.025391;
+        //data.iter_limit = 182;
+        //data.mbt_pos = { -0.916763, 0.283047 };
 
         data.mbt_scale = mbt_screen_dims(data.zoom);
 

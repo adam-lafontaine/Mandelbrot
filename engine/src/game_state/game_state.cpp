@@ -118,6 +118,18 @@ namespace game_state
     }
 
 
+    static void thread_sleep_ms(int ms)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+    }
+
+
+    static ImVec4 to_im_color(img::Pixel p)
+    {
+        return ImVec4(p.red / 255.0f, p.green / 255.0f, p.blue / 255.0f, p.alpha / 255.0f );
+    }
+
+
     static void show_input()
     {
         auto& data = game::get_data(mbt_state);
@@ -144,6 +156,7 @@ namespace game_state
         ImGui::Text("zoom rate : %f", data.zoom_rate);
         ImGui::Text("zoom      : %f", data.zoom);
         ImGui::Text("iter_limit: %u", data.iter_limit);
+        ImGui::Text("  n_colors: %u", data.n_colors);
         ImGui::Text("");
         show_vec("scale   ", data.mbt_scale);
         show_vec("position", data.mbt_pos);
@@ -160,40 +173,37 @@ namespace game_state
     }
 
 
-    static void show_dbg()
+    static void show_colors()
     {
-        /*auto& data = game::get_data(mbt_state);
+        ImGui::SeparatorText("Color Table");
 
-        static bool enable_ids = false;
+        auto& data = game::get_data(mbt_state);
+        
         int id_min = 0;
         int id_max = game::ColorId::max;
         static int id_val = game::ColorId::max;
-
-        ImGui::Checkbox("Enable Debug", &enable_ids);
-        data.enabled = !enable_ids;
-
-        if (!enable_ids)
-        {            
-            ImGui::BeginDisabled();
-        }
+        static ImVec4 color;
 
         auto id = game::ColorId::make_default();
 
-        ImGui::SliderInt("Color", &id_val, id_min, id_max);
-        if (enable_ids)
-        {
-            id = game::ColorId::make((u32)id_val);
-            span::fill(game::to_span(data.color_ids.curr()), id);
-        }
+        ImGui::SliderInt("ColorId", &id_val, id_min, id_max);
+
+        id = game::ColorId::make((u32)id_val);
+        
+        color = to_im_color(game::color_at(id, data.format));
 
         ImGui::Text(" Id: %u", id.value);
-        auto rgb = game::color_at(id, data.format);
-        ImGui::Text("RGB: {%u, %u, %u}", rgb.red, rgb.green, rgb.blue);
+        ImGui::ColorEdit3("Color##1", (float*)&color);
 
-        if (!enable_ids)
-        {
-            ImGui::EndDisabled();
-        }*/
+
+        ImGui::SeparatorText("N Colors");
+        static int n_colors = 32;
+
+        n_colors = data.n_colors;
+        ImGui::SliderInt("n_colors", &n_colors, 32, id_max);
+        data.n_colors = n_colors;
+
+
     }
     
 }
@@ -300,11 +310,10 @@ namespace game_state
             while (game_running && props.enabled)
             {
                 sw.start();
-                //game::proc_copy(data.color_ids, r, r);
                 game::proc_copy(data.mbt_mat, r, r);
                 props.add_data((f32)sw.get_time_milli());
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                thread_sleep_ms(10);
             }
         };
 
@@ -325,11 +334,10 @@ namespace game_state
             while (game_running && props.enabled)
             {
                 sw.start();
-                //game::proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, data.iter_limit, data.format);
                 game::proc_mbt(data.mbt_mat, data.mbt_pos, data.mbt_delta, data.iter_limit);
                 props.add_data((f32)sw.get_time_milli());
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                thread_sleep_ms(10);
             }
         };
 
@@ -351,11 +359,10 @@ namespace game_state
             while (game_running && props.enabled)
             {
                 sw.start();
-                //game::proc_render(data.color_ids, mbt_state.screen);
                 game::proc_render(data.mbt_mat, mbt_state.screen, data.format, data.n_colors);
                 props.add_data((f32)sw.get_time_milli());
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                thread_sleep_ms(10);
             }
         };
 
@@ -391,9 +398,9 @@ namespace game_state
             ImGui::TreePop();
         }
 
-        if (ImGui::TreeNode("DBG"))
+        if (ImGui::TreeNode("Colors"))
         {
-            show_dbg();
+            show_colors();
             ImGui::TreePop();
         }
     }

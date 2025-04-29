@@ -207,4 +207,16 @@ namespace game_mbt
         static_assert(Color_Table.channels[4][D] == 0);
         static_assert(Color_Table.channels[5][D] == 0);
     }
+
+
+    static constexpr img::Pixel color_at(ColorId id, ColorFormat format)
+    {
+        auto r = Color_Table.channels[format.R];
+        auto g = Color_Table.channels[format.G];
+        auto b = Color_Table.channels[format.B];
+
+        auto offset = id.value;
+
+        return img::to_pixel(r[offset], g[offset], b[offset]);
+    }
 }
