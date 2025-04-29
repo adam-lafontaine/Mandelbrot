@@ -12,6 +12,12 @@ namespace game_mbt
 
         mbt_dst.limit = mbt_src.limit;
 
+        auto cx_src = img::sub_view(mbt_src.view_cx(), r_src);
+        auto cx_dst = img::sub_view(mbt_dst.view_cx(), r_dst);
+
+        auto cy_src = img::sub_view(mbt_src.view_cy(), r_src);
+        auto cy_dst = img::sub_view(mbt_dst.view_cy(), r_dst);
+
         auto iter_src = img::sub_view(mbt_src.view_iter(), r_src);
         auto iter_dst = img::sub_view(mbt_dst.view_iter(), r_dst);
 
@@ -19,6 +25,8 @@ namespace game_mbt
 
         for (u32 y = 0; y < h; y++)
         {
+            span::copy(img::row_span(cx_src, y), img::row_span(cx_dst, y));
+            span::copy(img::row_span(cy_src, y), img::row_span(cy_dst, y));
             span::copy(img::row_span(iter_src, y), img::row_span(iter_dst, y));
         }        
     }
@@ -64,7 +72,7 @@ namespace game_mbt
         auto x_end = r_dst.x_end;
         auto y_end = r_dst.y_end;
 
-        auto cy_begin = (fmbt)y_begin * delta.y + begin.y;
+        auto cy_begin = begin.y;
         auto cx_begin = (fmbt)x_begin * delta.x + begin.x;
 
         auto mbt_row = [&](u32 y)
