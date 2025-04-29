@@ -129,6 +129,9 @@ namespace game_mbt
 
             mandelbrot_iter(mdata);
             
+            row_dst.cx[i] = mdata.cx;
+            row_dst.cy[i] = mdata.cy;
+            
             row_dst.mx[i] = mdata.mx;
             row_dst.my[i] = mdata.my;
             row_dst.mx2[i] = mdata.mx2;
@@ -177,7 +180,7 @@ namespace game_mbt
         auto& mbt_dst = mat.mbt_curr();
 
         mbt_dst.limit = mbt_src.limit;
-        
+
         auto iter_src = img::sub_view(mbt_src.view_iter(), r_src);
         auto iter_dst = img::sub_view(mbt_dst.view_iter(), r_dst);
 

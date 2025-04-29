@@ -45,26 +45,26 @@ namespace game_mbt
     };
 
 
-    inline void zero_iter(MBTData& m)
+    inline void zero_iter(MBTData& mdata)
     {
-        m.mx = 0.0;
-        m.my = 0.0;
-        m.mx2 = 0.0;
-        m.my2 = 0.0;
-        m.iter = 0;        
+        mdata.mx = 0.0;
+        mdata.my = 0.0;
+        mdata.mx2 = 0.0;
+        mdata.my2 = 0.0;
+        mdata.iter = 0;        
     }
 
 
-    inline void mandelbrot_iter(MBTData& m)
+    inline void mandelbrot_iter(MBTData& mdata)
     {
-        while (m.iter < m.limit && m.mx2 + m.my2 <= 4.0)
+        while (mdata.iter < mdata.limit && mdata.mx2 + mdata.my2 <= 4.0)
         {
-            ++m.iter;
+            ++mdata.iter;
     
-            m.my = (m.mx + m.mx) * m.my + m.cy;
-            m.mx = m.mx2 -m.my2 + m.cx;
-            m.my2 = m.my * m.my;
-            m.mx2 = m.mx * m.mx;
+            mdata.my = (mdata.mx + mdata.mx) * mdata.my + mdata.cy;
+            mdata.mx = mdata.mx2 -mdata.my2 + mdata.cx;
+            mdata.my2 = mdata.my * mdata.my;
+            mdata.mx2 = mdata.mx * mdata.mx;
         }
     }
 

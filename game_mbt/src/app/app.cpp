@@ -69,13 +69,18 @@ namespace game_mbt
         data.zoom_rate = ZOOM_RATE_LOWER_LIMIT;
 
         data.n_colors = 48; // TODO
-        data.zoom = 1.0f;
-        data.iter_limit = MAX_ITERATIONS_START;
-        data.mbt_pos = { MBT_MIN_X, MBT_MIN_Y };
+
+        //data.zoom = 1.0f;
+        //data.iter_limit = MAX_ITERATIONS_START;
+        //data.mbt_pos = { MBT_MIN_X, MBT_MIN_Y };        
 
         //data.zoom = 4.210048f;        
         //data.iter_limit = 128;        
         //data.mbt_pos = { -0.476671f, -0.285032f };
+
+        data.zoom = 21984.025391;
+        data.iter_limit = 182;
+        data.mbt_pos = { -0.916763, 0.283047 };
 
         data.mbt_scale = mbt_screen_dims(data.zoom);
 
@@ -202,7 +207,9 @@ namespace ns_update_state
 
     static void update_mbt_pos(Vec2D<i8> ishift, StateData& data)
     {
-        auto n_px = 4.0; // PIXELS_PER_SECOND * data.dt_frame;
+        auto n_px = PIXELS_PER_SECOND * data.dt_frame;
+        n_px = num::clamp(n_px, 0.0, 5.0);
+        
 
         data.pixel_shift = {
             num::round_to_signed<i16>(ishift.x * n_px),
