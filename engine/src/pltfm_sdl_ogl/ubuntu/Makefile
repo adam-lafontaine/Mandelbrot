@@ -1,6 +1,6 @@
 GPP := g++-11 -std=c++20 -mavx -mavx2 -mfma
 
-#GPP += -DNDEBUG -O3
+GPP += -DNDEBUG -O3
 
 GPP += -DIMAGE_READ
 GPP += -DIMAGE_WRITE

@@ -1,21 +1,6 @@
 #pragma once
 
 
-/* proc */
-
-namespace game_mbt
-{
-    void proc_copy(ColorMatrix const& mat, Rect2Du32 r_src, Rect2Du32 r_dst);
-    
-    void proc_mbt(ColorMatrix const& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit, ColorFormat format);
-
-    void proc_mbt_range(ColorMatrix const& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit, ColorFormat format);
-
-    void proc_render(ColorMatrix const& mat, img::ImageView const& screen);
-
-}
-
-
 /* mandelbrot */
 
 namespace game_mbt
@@ -44,19 +29,59 @@ namespace game_mbt
     }
 
 
+    class MBTData
+    {
+    public:
+        fmbt cx = 0.0;
+        fmbt cy = 0.0;
+        
+        fmbt mx = 0.0;
+        fmbt my = 0.0;
+        fmbt mx2 = 0.0;
+        fmbt my2 = 0.0;
+
+        u32 iter = 0;
+        u32 limit = 32;
+    };
+
+
+    inline void zero_iter(MBTData& m)
+    {
+        m.mx = 0.0;
+        m.my = 0.0;
+        m.mx2 = 0.0;
+        m.my2 = 0.0;
+        m.iter = 0;        
+    }
+
+
+    inline void mandelbrot_iter(MBTData& m)
+    {
+        while (m.iter < m.limit && m.mx2 + m.my2 <= 4.0)
+        {
+            ++m.iter;
+    
+            m.my = (m.mx + m.mx) * m.my + m.cy;
+            m.mx = m.mx2 -m.my2 + m.cx;
+            m.my2 = m.my * m.my;
+            m.mx2 = m.mx * m.mx;
+        }
+    }
+
+
     class MatrixViewMBT
     {
     public:
-        fmbt* cx = 0;
-        fmbt* cy = 0;
+        fmbt* cx_ = 0;
+        fmbt* cy_ = 0;
 
-        fmbt* mx = 0;
-        fmbt* my = 0;
+        fmbt* mx_ = 0;
+        fmbt* my_ = 0;
 
-        fmbt* mx2 = 0;
-        fmbt* my2 = 0;
+        fmbt* mx2_ = 0;
+        fmbt* my2_ = 0;
 
-        u32* iter = 0;
+        u32* iter_ = 0;
 
         u32 width = 0;
         u32 height = 0;
@@ -64,13 +89,21 @@ namespace game_mbt
         u32 limit = 0;
 
 
-        auto view_cx() { return img::make_view(cx, width, height); }
-        auto view_cy() { return img::make_view(cy, width, height); }
-        auto view_mx() { return img::make_view(mx, width, height); }
-        auto view_my() { return img::make_view(my, width, height); }
-        auto view_mx2() { return img::make_view(mx2, width, height); }
-        auto view_my2() { return img::make_view(my2, width, height); }
-        auto view_iter() { return img::make_view(iter, width, height); }
+        auto view_cx() { return img::make_view(cx_, width, height); }
+        auto view_cy() { return img::make_view(cy_, width, height); }
+        auto view_mx() { return img::make_view(mx_, width, height); }
+        auto view_my() { return img::make_view(my_, width, height); }
+        auto view_mx2() { return img::make_view(mx2_, width, height); }
+        auto view_my2() { return img::make_view(my2_, width, height); }
+        auto view_iter() { return img::make_view(iter_, width, height); }
+
+        auto view_cx() const { return img::make_view(cx_, width, height); }
+        auto view_cy() const { return img::make_view(cy_, width, height); }
+        auto view_mx() const { return img::make_view(mx_, width, height); }
+        auto view_my() const { return img::make_view(my_, width, height); }
+        auto view_mx2() const { return img::make_view(mx2_, width, height); }
+        auto view_my2() const { return img::make_view(my2_, width, height); }
+        auto view_iter() const { return img::make_view(iter_, width, height); }
     };
 
 
@@ -83,7 +116,7 @@ namespace game_mbt
     public:
         MatrixViewMBT mbt_data_[2];
 
-        MatrixViewMBT& mbt_prev() { return mbt_data_[p]; }
+        MatrixViewMBT mbt_prev() const { return mbt_data_[p]; }
         MatrixViewMBT& mbt_curr() { return mbt_data_[c]; }
 
         MatrixViewMBT mbt_curr() const { return mbt_data_[c]; }
@@ -116,16 +149,16 @@ namespace game_mbt
         {
             auto& mbt = mat.mbt_data_[i];
 
-            mbt.cx = mb::push_elements(mat.buffer64, len);
-            mbt.cy = mb::push_elements(mat.buffer64, len);
+            mbt.cx_ = mb::push_elements(mat.buffer64, len);
+            mbt.cy_ = mb::push_elements(mat.buffer64, len);
 
-            mbt.mx = mb::push_elements(mat.buffer64, len);
-            mbt.my = mb::push_elements(mat.buffer64, len);
+            mbt.mx_ = mb::push_elements(mat.buffer64, len);
+            mbt.my_ = mb::push_elements(mat.buffer64, len);
 
-            mbt.mx2 = mb::push_elements(mat.buffer64, len);
-            mbt.my2 = mb::push_elements(mat.buffer64, len);
+            mbt.mx2_ = mb::push_elements(mat.buffer64, len);
+            mbt.my2_ = mb::push_elements(mat.buffer64, len);
 
-            mbt.iter = mb::push_elements(mat.buffer32, len);
+            mbt.iter_ = mb::push_elements(mat.buffer32, len);
 
             mbt.width = width;
             mbt.height = height;
@@ -146,15 +179,15 @@ namespace game_mbt
 
     static inline void mandelbrot_at(MatrixViewMBT const& mbt, u32 i)
     {
-        auto const cx = mbt.cx[i];
-        auto const cy = mbt.cy[i];
+        auto const cx = mbt.cx_[i];
+        auto const cy = mbt.cy_[i];
 
-        auto& mx = mbt.mx[i];
-        auto& my = mbt.my[i];
-        auto& mx2 = mbt.mx2[i];
-        auto& my2 = mbt.my2[i];
+        auto& mx = mbt.mx_[i];
+        auto& my = mbt.my_[i];
+        auto& mx2 = mbt.mx2_[i];
+        auto& my2 = mbt.my2_[i];
 
-        auto& iter = mbt.iter[i];
+        auto& iter = mbt.iter_[i];
 
         while (iter < mbt.limit && mx2 + my2 <= 4.0)
         {
@@ -180,15 +213,15 @@ namespace game_mbt
     {
         auto i = mbt.width * y + x;
 
-        mbt.cx[i] = cpos.x;
-        mbt.cy[i] = cpos.y;
+        mbt.cx_[i] = cpos.x;
+        mbt.cy_[i] = cpos.y;
 
-        mbt.mx[i] = 0;
-        mbt.my[i] = 0;
-        mbt.mx2[i] = 0;
-        mbt.my2[i] = 0;
+        mbt.mx_[i] = 0;
+        mbt.my_[i] = 0;
+        mbt.mx2_[i] = 0;
+        mbt.my2_[i] = 0;
 
-        mbt.iter[i] = 0;        
+        mbt.iter_[i] = 0;        
 
         mandelbrot_at(mbt, i);
     }

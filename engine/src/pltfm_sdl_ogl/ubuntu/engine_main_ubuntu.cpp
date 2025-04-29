@@ -233,7 +233,12 @@ static bool game_state_init()
 
 static bool main_init()
 {
+#ifdef NDEBUG
     ui_state.window_title = "Mandelbrot Engine";
+#else
+    ui_state.window_title = "Mandelbrot Engine (Debug)";
+#endif
+    
     ui_state.window_width = 1300;
     ui_state.window_height = 800;
     
