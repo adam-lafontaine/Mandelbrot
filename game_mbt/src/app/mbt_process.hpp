@@ -351,14 +351,14 @@ namespace game_mbt
 
 namespace game_mbt
 {
-    static void mandelbrot_row(MatrixViewMBT const& dst, u32 y, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta)
+    static void mandelbrot_row(MatrixViewMBT const& dst, u32 y, fmbt bx, fmbt by, fmbt dx)
     {
         auto row = row_span(dst, y);
 
         MBTData mdata{};
 
-        mdata.cx = begin.x;
-        mdata.cy = begin.y;
+        mdata.cx = bx;
+        mdata.cy = by;
         mdata.limit = dst.limit;
 
         auto len = row.length;
@@ -369,7 +369,7 @@ namespace game_mbt
             mandelbrot_iter(mdata);
             store_iter_at(mdata, row, i);
 
-            mdata.cx += delta.x;
+            mdata.cx += dx;
         }
     }
 
@@ -393,14 +393,14 @@ namespace game_mbt
     }
 
 
-    static void mandelbrot_span(MatrixViewMBT const& dst, u32 y, u32 x_begin, u32 x_end, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta)
+    static void mandelbrot_span(MatrixViewMBT const& dst, u32 y, u32 x_begin, u32 x_end, fmbt bx, fmbt by, fmbt dx)
     {
         auto row = row_sub_span(dst, y, x_begin, x_end);
 
         MBTData mdata{};
 
-        mdata.cx = begin.x;
-        mdata.cy = begin.y;
+        mdata.cx = bx;
+        mdata.cy = by;
         mdata.limit = dst.limit;
 
         auto len = row.length;
@@ -411,7 +411,7 @@ namespace game_mbt
             mandelbrot_iter(mdata);
             store_iter_at(mdata, row, i);
 
-            mdata.cx += delta.x;
+            mdata.cx += dx;
         }
     }
 
