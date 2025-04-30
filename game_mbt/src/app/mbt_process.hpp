@@ -51,7 +51,7 @@ namespace game_mbt
         mdata.my = 0.0;
         mdata.mx2 = 0.0;
         mdata.my2 = 0.0;
-        mdata.iter = 0;        
+        mdata.iter = 0;
     }
 
 
@@ -62,9 +62,86 @@ namespace game_mbt
             ++mdata.iter;
     
             mdata.my = (mdata.mx + mdata.mx) * mdata.my + mdata.cy;
-            mdata.mx = mdata.mx2 -mdata.my2 + mdata.cx;
+            //mdata.my = num::fma((mdata.mx + mdata.mx), mdata.my, mdata.cy); slower
+            mdata.mx = mdata.mx2 - mdata.my2 + mdata.cx;
             mdata.my2 = mdata.my * mdata.my;
             mdata.mx2 = mdata.mx * mdata.mx;
+        }
+    }
+}
+
+
+#include <immintrin.h>
+
+namespace game_mbt
+{
+    using f256 = __m256;
+
+
+    class MBTData256
+    {
+    public:
+        f256 cx;
+        f256 cy;
+        
+        f256 mx;
+        f256 my;
+        f256 mx2;
+        f256 my2;
+
+        u32 iter = 0;
+        u32 limit = 32;
+    };
+
+
+    inline void zero_iter(MBTData256& mdata)
+    {
+        mdata.mx = _mm256_setzero_ps();
+        mdata.my = _mm256_setzero_ps();
+        mdata.mx2 = _mm256_setzero_ps();
+        mdata.my2 = _mm256_setzero_ps();
+        mdata.iter = 0;
+    }
+
+
+    inline void mandelbrot_iter(MBTData256& mdata)
+    {
+        auto sum = _mm256_setzero_ps();
+        auto counts = _mm256_setzero_si256();
+        auto active = _mm256_set1_epi32(1);
+        auto esc = _mm256_setzero_ps();
+        int sum_le_4 = 0;
+
+        //mdata.mx2 + mdata.my2 <= 4.0
+        sum = _mm256_add_ps(mdata.mx2, mdata.my2);
+        esc = _mm256_cmp_ps(sum, _mm256_set1_ps(4.0f), _CMP_LE_OQ);
+        counts = _mm256_add_epi32(counts, _mm256_and_si256(active, _mm256_set1_epi32(1)));
+        active = _mm256_andnot_si256(_mm256_castps_si256(esc), active);
+        sum_le_4 = _mm256_testz_si256(active, active);
+
+        while (mdata.iter < mdata.limit && sum_le_4)
+        {
+            ++mdata.iter;
+
+            //mdata.my = (mdata.mx + mdata.mx) * mdata.my + mdata.cy;
+            auto val = _mm256_add_ps(mdata.mx, mdata.mx);
+            val = _mm256_fmadd_ps(val, mdata.my, mdata.cy);
+
+            //mdata.mx = mdata.mx2 - mdata.my2 + mdata.cx;
+            val = _mm256_sub_ps(mdata.mx2, mdata.my2);
+            mdata.mx = _mm256_add_ps(val, mdata.cx);
+
+            //mdata.my2 = mdata.my * mdata.my;
+            //mdata.mx2 = mdata.mx * mdata.mx;
+            mdata.mx2 = _mm256_mul_ps(mdata.mx, mdata.mx);
+            mdata.my2 = _mm256_mul_ps(mdata.my, mdata.my);
+
+            //mdata.mx2 + mdata.my2 <= 4.0
+            sum = _mm256_add_ps(mdata.mx2, mdata.my2);
+            esc = _mm256_cmp_ps(sum, _mm256_set1_ps(4.0f), _CMP_LE_OQ);
+            counts = _mm256_add_epi32(counts, _mm256_and_si256(active, _mm256_set1_epi32(1)));
+            active = _mm256_andnot_si256(_mm256_castps_si256(esc), active);
+            sum_le_4 = _mm256_testz_si256(active, active);
         }
     }
 }
