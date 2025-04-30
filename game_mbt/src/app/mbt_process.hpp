@@ -312,90 +312,6 @@ namespace game_mbt
         }
     }
 
-
-namespace avx
-{
-
-}
-
-
-namespace avx2
-{
-    class MBTData256
-    {
-    public:
-        __m256d cx;
-        __m256d cy;
-        
-        __m256d mx;
-        __m256d my;
-        __m256d mx2;
-        __m256d my2;
-
-        __m256i iter;
-
-        u32 limit = 32;
-    };
-
-
-    inline void zero_iter(MBTData256& mdata)
-    {
-        mdata.mx = _mm256_setzero_pd();
-        mdata.my = _mm256_setzero_pd();
-        mdata.mx2 = _mm256_setzero_pd();
-        mdata.my2 = _mm256_setzero_pd();
-        mdata.iter = _mm256_setzero_si256();
-    }
-
-
-    inline void mandelbrot_iter(MBTData256& mdata)
-    {
-        auto sum = _mm256_setzero_pd();
-        auto esc = _mm256_setzero_pd();
-        auto inc = _mm256_setzero_si256();
-        auto counts = _mm256_setzero_si256();
-        auto active = _mm256_set1_epi64x(1);
-        
-        int sum_le_4 = 0;
-
-        //mdata.mx2 + mdata.my2 <= 4.0
-        sum = _mm256_add_pd(mdata.mx2, mdata.my2);
-        esc = _mm256_cmp_pd(sum, _mm256_set1_pd(4.0), _CMP_LE_OQ);
-        inc = _mm256_and_si256(active, _mm256_set1_epi64x(1));
-        counts = _mm256_add_epi64(counts, inc);
-        active = _mm256_andnot_si256(_mm256_castpd_si256(esc), active);
-        sum_le_4 = _mm256_testz_si256(active, active);
-
-        while (mdata.iter < mdata.limit && sum_le_4)
-        {
-            ++mdata.iter;
-
-            //mdata.my = (mdata.mx + mdata.mx) * mdata.my + mdata.cy;
-            auto val = _mm256_add_pd(mdata.mx, mdata.mx);
-            val = _mm256_fmadd_pd(val, mdata.my, mdata.cy);
-
-            //mdata.mx = mdata.mx2 - mdata.my2 + mdata.cx;
-            val = _mm256_sub_pd(mdata.mx2, mdata.my2);
-            mdata.mx = _mm256_add_pd(val, mdata.cx);
-
-            //mdata.my2 = mdata.my * mdata.my;
-            //mdata.mx2 = mdata.mx * mdata.mx;
-            mdata.mx2 = _mm256_mul_pd(mdata.mx, mdata.mx);
-            mdata.my2 = _mm256_mul_pd(mdata.my, mdata.my);
-
-            //mdata.mx2 + mdata.my2 <= 4.0
-            sum = _mm256_add_pd(mdata.mx2, mdata.my2);
-            esc = _mm256_cmp_pd(sum, _mm256_set1_pd(4.0), _CMP_LE_OQ);
-            inc = _mm256_and_si256(active, _mm256_set1_epi64x(1));
-            counts = _mm256_add_epi64(counts, inc);
-            active = _mm256_andnot_si256(_mm256_castpd_si256(esc), active);
-            sum_le_4 = _mm256_testz_si256(active, active);
-        }
-
-
-    }
-
-} // avx2
 }
 
 
@@ -427,40 +343,6 @@ namespace game_mbt
         dst.my2[i] = mdata.my2;
         dst.iter[i] = mdata.iter;
     }
-
-
-namespace avx2
-{
-    inline void load_iter_at(SpanViewMBT const& src, MBTData256& mdata, u32 i)
-    {
-        mdata.cx = _mm256_load_pd(src.cx + i);
-        mdata.cy = _mm256_load_pd(src.cy + i);
-
-        mdata.mx = _mm256_load_pd(src.mx + i);
-        mdata.my = _mm256_load_pd(src.my + i);
-        mdata.mx2 = _mm256_load_pd(src.mx2 + i);
-        mdata.my2 = _mm256_load_pd(src.my2 + i);
-
-        mdata.iter = _mm256_set_epi64x(src.iter[i], src.iter[i + 1], src.iter[i + 2], src.iter[i + 3]);
-    }
-
-
-    inline void store_iter_at(MBTData256 const& mdata, SpanViewMBT const& dst, u32 i)
-    {
-        _mm256_store_pd(dst.cx + i, mdata.cx);
-        _mm256_store_pd(dst.cy + i, mdata.cy);
-
-        _mm256_store_pd(dst.mx + i, mdata.mx);
-        _mm256_store_pd(dst.my + i, mdata.my);
-        _mm256_store_pd(dst.mx2 + i, mdata.mx2);
-        _mm256_store_pd(dst.my2 + i, mdata.my2);
-
-        i64 iter[4] = { dst.iter[i], dst.iter[i + 1], dst.iter[i + 2], dst.iter[i + 3] };
-        auto mem256 = (__m256i*)iter;
-        _mm256_storeu_si256(mem256, mdata.iter);
-    }
-
-}// avx2
 
 } // game_mbt
 
@@ -532,7 +414,210 @@ namespace game_mbt
             mdata.cx += delta.x;
         }
     }
+
 }
+
+
+/* simd avx2 */
+
+namespace game_mbt
+{
+
+/* mandelbrot processing */
+
+namespace avx2
+{
+    using d256 = __m256d;
+    using i256 = __m256i;
+
+
+    class MBTData256
+    {
+    public:
+        d256 cx;
+        d256 cy;
+        
+        d256 mx;
+        d256 my;
+        d256 mx2;
+        d256 my2;
+
+        i256 iter;
+
+        u32 limit = 32;
+    };
+
+
+    inline void zero_iter(MBTData256& mdata)
+    {
+        mdata.mx = _mm256_setzero_pd();
+        mdata.my = _mm256_setzero_pd();
+        mdata.mx2 = _mm256_setzero_pd();
+        mdata.my2 = _mm256_setzero_pd();
+        mdata.iter = _mm256_setzero_si256();
+    }
+
+
+    inline void mandelbrot_iter(MBTData256& mdata)
+    {
+        auto active = _mm256_set1_epi64x(1); 
+
+        auto test_active = [&]()
+        {
+            // mdata.iter < mdata.limit
+            auto cmp_iter = _mm256_cmpgt_epi64(_mm256_set1_epi64x(mdata.limit) , mdata.iter);
+            active = _mm256_andnot_si256(cmp_iter, active);
+
+            // mdata.mx2 + mdata.my2 <= 4.0
+            auto sum = _mm256_add_pd(mdata.mx2, mdata.my2);
+            auto val = _mm256_cmp_pd(sum, _mm256_set1_pd(4.0), _CMP_LE_OQ);
+            auto cmp_sum = _mm256_castpd_si256(val);
+            active = _mm256_andnot_si256(cmp_sum, active);
+
+            return _mm256_testz_si256(active, active);
+        };
+
+        auto inc_iter = [&]()
+        {
+            // ++mdata.iter;
+            auto inc = _mm256_and_si256(active, _mm256_set1_epi64x(1));
+            mdata.iter = _mm256_add_epi64(mdata.iter, inc);
+        };        
+
+        while (test_active())
+        {   
+            inc_iter();
+
+            // mdata.my = (mdata.mx + mdata.mx) * mdata.my + mdata.cy;
+            auto val = _mm256_add_pd(mdata.mx, mdata.mx);
+            val = _mm256_fmadd_pd(val, mdata.my, mdata.cy);
+
+            // mdata.mx = mdata.mx2 - mdata.my2 + mdata.cx;
+            val = _mm256_sub_pd(mdata.mx2, mdata.my2);
+            mdata.mx = _mm256_add_pd(val, mdata.cx);
+
+            // mdata.my2 = mdata.my * mdata.my;
+            // mdata.mx2 = mdata.mx * mdata.mx;
+            mdata.mx2 = _mm256_mul_pd(mdata.mx, mdata.mx);
+            mdata.my2 = _mm256_mul_pd(mdata.my, mdata.my);
+        }
+    }
+    
+} // avx2
+
+
+/* load/store */
+
+namespace avx2
+{
+    inline void load_iter_at(SpanViewMBT const& src, MBTData256& mdata, u32 i)
+    {
+        mdata.cx = _mm256_load_pd(src.cx + i);
+        mdata.cy = _mm256_load_pd(src.cy + i);
+
+        mdata.mx = _mm256_load_pd(src.mx + i);
+        mdata.my = _mm256_load_pd(src.my + i);
+        mdata.mx2 = _mm256_load_pd(src.mx2 + i);
+        mdata.my2 = _mm256_load_pd(src.my2 + i);
+
+        mdata.iter = _mm256_set_epi64x(src.iter[i], src.iter[i + 1], src.iter[i + 2], src.iter[i + 3]);
+    }
+
+
+    inline void store_iter_at(MBTData256 const& mdata, SpanViewMBT const& dst, u32 i)
+    {
+        _mm256_store_pd(dst.cx + i, mdata.cx);
+        _mm256_store_pd(dst.cy + i, mdata.cy);
+
+        _mm256_store_pd(dst.mx + i, mdata.mx);
+        _mm256_store_pd(dst.my + i, mdata.my);
+        _mm256_store_pd(dst.mx2 + i, mdata.mx2);
+        _mm256_store_pd(dst.my2 + i, mdata.my2);
+
+        i64 iter[4] = { dst.iter[i], dst.iter[i + 1], dst.iter[i + 2], dst.iter[i + 3] };
+        auto mem256 = (i256*)iter;
+        _mm256_storeu_si256(mem256, mdata.iter);
+    }
+    
+} // avx2
+
+
+/* mandelbrot row */
+
+namespace avx2
+{
+    static void mandelbrot_row(MatrixViewMBT const& dst, u32 y, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta)
+    {
+        /*uto row = row_span(dst, y);
+
+        auto bx = begin.x;
+        auto dx = delta.x;
+
+        f64 cx64[4] = { bx, bx + dx, bx + 2 * dx, bx + 3 * dx };
+
+        MBTData256 mdata{};
+        
+        mdata.cx = _mm256_load_pd(cx64);
+        mdata.cy = begin.y;
+        mdata.limit = dst.limit;
+
+        auto len = row.length;
+
+        for (u32 i = 0; i < len; i++)
+        {
+            zero_iter(mdata);
+            mandelbrot_iter(mdata);
+            store_iter_at(mdata, row, i);
+
+            mdata.cx += delta.x;
+        }*/
+    }
+
+
+    static void mandelbrot_row(MatrixViewMBT const& src, MatrixViewMBT const& dst, u32 y)
+    {
+        auto row_src = row_span(src, y);
+        auto row_dst = row_span(dst, y);
+
+        MBTData mdata{};
+        mdata.limit = dst.limit;
+
+        auto len = row_dst.length;
+
+        for (u32 i = 0; i < len; i++)
+        {
+            load_iter_at(row_src, mdata, i);
+            mandelbrot_iter(mdata);            
+            store_iter_at(mdata, row_dst, i);
+        }
+    }
+
+
+    static void mandelbrot_span(MatrixViewMBT const& dst, u32 y, u32 x_begin, u32 x_end, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta)
+    {
+        auto row = row_sub_span(dst, y, x_begin, x_end);
+
+        MBTData mdata{};
+
+        mdata.cx = begin.x;
+        mdata.cy = begin.y;
+        mdata.limit = dst.limit;
+
+        auto len = row.length;
+
+        for (u32 i = 0; i < len; i++)
+        {
+            zero_iter(mdata);
+            mandelbrot_iter(mdata);
+            store_iter_at(mdata, row, i);
+
+            mdata.cx += delta.x;
+        }
+    }
+    
+} // avx2
+
+} // game_game_mbt
 
 
 /* processing api */
