@@ -8,11 +8,11 @@ namespace game_mbt
 
 namespace colors
 {
-    constexpr u32 calc_n_palette_colors(u32 n_levels)
+    constexpr u32 n_level_colors(u32 level)
     {
-        u32 n = 16;
+        u32 n = 32;
 
-        for (u32 i = 0; i < n_levels; ++i)
+        for (u32 i = 0; i < level - 1; ++i)
         {
             n *= 2;
         }
@@ -21,9 +21,36 @@ namespace colors
     }
 
 
-    constexpr u32 N_COLOR_LEVELS = 2;
+    constexpr u32 n_colors_level(u32 n)
+    {
+        u32 level = 1;
 
-    constexpr u32 N_COLORS = calc_n_palette_colors(N_COLOR_LEVELS);
+        while (n > 32)
+        {
+            n /= 2;
+            level++;
+        }
+
+        return level;
+    }
+
+
+    static constexpr void static_test_level_colors()
+    {
+        static_assert(n_colors_level(n_level_colors(1)) == 1);
+        static_assert(n_colors_level(n_level_colors(2)) == 2);
+        static_assert(n_colors_level(n_level_colors(3)) == 3);
+        static_assert(n_colors_level(n_level_colors(4)) == 4);
+        static_assert(n_colors_level(n_level_colors(5)) == 5);
+        static_assert(n_colors_level(n_level_colors(6)) == 6);
+        static_assert(n_colors_level(n_level_colors(7)) == 7);
+        static_assert(n_colors_level(n_level_colors(8)) == 8);
+    }
+
+
+    constexpr u32 N_COLOR_LEVELS = 6;
+
+    constexpr u32 N_COLORS = n_level_colors(N_COLOR_LEVELS);
 }
 
 
@@ -43,11 +70,11 @@ namespace colors
     ColorFormat make_color_format();
 
 
-    template <u32 PaletteSize>
+    template <u32 N>
     class ColorId
     {
     public:
-        static constexpr u32 max = PaletteSize;
+        static constexpr u32 max = N;
 
     private:
 
@@ -57,13 +84,13 @@ namespace colors
         static constexpr ColorId make_pvt(T val) { return ColorId((u16)val); }
 
     public:
-        u16 value = (u16)PaletteSize;
+        u16 value = (u16)N;
 
         static constexpr ColorId make(u8 v) { return make_pvt(v); }
         static constexpr ColorId make(u16 v) { return make_pvt(v); }
         static constexpr ColorId make(u32 v) { return make_pvt(v); }
 
-        static constexpr ColorId make_default() { return make_pvt((u16)PaletteSize); }
+        static constexpr ColorId make_default() { return make_pvt((u16)N); }
 
         ColorId() = delete;
     };
@@ -82,38 +109,20 @@ namespace game_mbt
     using ColorId = colors::ColorId<colors::N_COLORS>;
 
 
-    class ColorIdMatrix
-    {
-    private:
-        u8 p = 1;
-        u8 c = 0;
+    static inline ColorId to_color_id(u32 iter, u32 limit)
+    {   
+        constexpr auto N = colors::N_COLORS;
+        constexpr auto DEF = ColorId::make_default();
 
-    public:
+        if (iter >= limit)
+        {
+            return DEF;
+        }
+        
+        u32 d = num::max(32u, limit / 2);
 
-        MatrixView2D<ColorId> data_[2];
+        u32 n = iter % d;
 
-        MatrixView2D<ColorId> prev() const { return data_[p]; }
-        MatrixView2D<ColorId> curr() const { return data_[c]; }
-
-        void swap() { p = c; c = !p; }
-
-        MemoryBuffer<ColorId> buffer;
-    };
-
-
-    void destroy_color_ids(ColorIdMatrix& mat);
-
-    bool create_color_ids(ColorIdMatrix& mat, u32 width, u32 height);    
-
-
-    inline auto to_span(MatrixView2D<ColorId> const& mat)
-    {
-        return img::to_span(mat);
-    }
-
-
-    inline auto sub_view(MatrixView2D<ColorId> const& mat, Rect2Du32 const& range)
-    {
-        return img::sub_view(mat, range);
+        return ColorId::make(N * n / d);
     }
 }

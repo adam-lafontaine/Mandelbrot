@@ -130,15 +130,17 @@ namespace ui
     {        
         ImGui::Begin(title, 0, ImGuiWindowFlags_HorizontalScrollbar);
 
+        auto min = [](f32 a, f32 b) { return a < b ? a : b; };
+
         if (state.hard_pause)
         {
             ImGui::Text("size = %u x %u | PAUSED", width, height);
         }
         else
         {
-            auto const game_ms = (f32)(state.game_nano / MICRO);
-            auto const thread_ms = (f32)(state.thread_nano / MICRO);
-            ImGui::Text("size = %u x %u | scale = %.1f | frame = %.1f/%.1f ms", width, height, state.game_window_scale, game_ms, thread_ms);
+            auto game_ms = min((f32)(state.game_nano / MICRO), 999.999f);
+            auto thread_ms = min((f32)(state.thread_nano / MICRO), 999.999f);
+            ImGui::Text("size = %u x %u | scale = %.1f | frame = %7.3f/%7.3f ms", width, height, state.game_window_scale, game_ms, thread_ms);
         }
 
         auto w = width * state.game_window_scale;

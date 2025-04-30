@@ -151,6 +151,19 @@ namespace image
 
 namespace image
 {
+
+    template <typename T>
+    inline MatrixView2D<T> make_view(T* data, u32 width, u32 height)
+    {
+        MatrixView2D<T> view{};
+        view.matrix_data_ = data;
+        view.width = width;
+        view.height = height;
+
+        return view;
+    }
+
+
     ImageView make_view(u32 width, u32 height, Pixel* data);
 
     GrayView make_view(u32 width, u32 height, u8* data);
@@ -247,10 +260,16 @@ namespace image
 
         return pt;
     }
+    
+}
 
 
+/* span */
+
+namespace image
+{
     template <typename T>
-    static inline SpanView<T> to_span(Matrix2D<T> const& view)
+    inline SpanView<T> to_span(Matrix2D<T> const& view)
     {
         SpanView<T> span{};
 
@@ -262,12 +281,60 @@ namespace image
     
 
     template <typename T>
-    static inline SpanView<T> to_span(MatrixView2D<T> const& view)
+    inline SpanView<T> to_span(MatrixView2D<T> const& view)
     {
         SpanView<T> span{};
 
         span.data = view.matrix_data_;
         span.length = view.width * view.height;
+
+        return span;
+    }
+
+
+    template <typename T>
+	inline SpanView<T> row_span(MatrixView2D<T> const& view, u32 y)
+	{
+        SpanView<T> span{};
+
+        span.data = view.matrix_data_ + (u64)y * view.width;
+        span.length = view.width;
+
+        return span;
+	}
+
+
+    template <typename T>
+    inline SpanView<T> row_span(MatrixSubView2D<T> const& view, u32 y)
+    {
+        SpanView<T> span{};
+
+        span.data = view.matrix_data_ + (u64)(view.y_begin + y) * view.matrix_width + view.x_begin;
+        span.length = view.width;
+
+        return span;
+    }
+
+
+    template <typename T>
+    inline SpanView<T> sub_span(MatrixView2D<T> const& view, u32 y, u32 x_begin, u32 x_end)
+    {
+        SpanView<T> span{};
+
+        span.data = view.matrix_data_ + (u64)(y * view.width) + x_begin;
+        span.length = x_end - x_begin;
+
+        return span;
+    }
+
+
+    template <typename T>
+    inline SpanView<T> sub_span(MatrixSubView2D<T> const& view, u32 y, u32 x_begin, u32 x_end)
+    {
+        SpanView<T> span{};
+
+        span.data = view.matrix_data_ + (u64)((view.y_begin + y) * view.matrix_width + view.x_begin) + x_begin;
+        span.length = x_end - x_begin;
 
         return span;
     }

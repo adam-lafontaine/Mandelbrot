@@ -118,6 +118,18 @@ namespace game_state
     }
 
 
+    static void thread_sleep_ms(int ms)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+    }
+
+
+    static ImVec4 to_im_color(img::Pixel p)
+    {
+        return ImVec4(p.red / 255.0f, p.green / 255.0f, p.blue / 255.0f, p.alpha / 255.0f );
+    }
+
+
     static void show_input()
     {
         auto& data = game::get_data(mbt_state);
@@ -147,7 +159,8 @@ namespace game_state
         ImGui::Text("");
         show_vec("scale   ", data.mbt_scale);
         show_vec("position", data.mbt_pos);
-        show_vec("delta   ", data.mbt_delta);        
+        show_vec("delta   ", data.mbt_delta);
+
         ImGui::Text("");
         ImGui::Text("n_copy    : %u", data.n_copy);
         show_rect(   "copy_src", data.copy_src);
@@ -156,44 +169,31 @@ namespace game_state
         ImGui::Text("n_proc     : %u", data.n_proc);
         show_rect(  "proc_dst[0]", data.proc_dst[0]);
         show_rect(  "proc_dst[1]", data.proc_dst[1]);
-        // TODO: ranges
     }
 
 
-    static void show_dbg()
+    static void show_colors()
     {
-        /*auto& data = game::get_data(mbt_state);
+        ImGui::SeparatorText("Color Table");
 
-        static bool enable_ids = false;
+        auto& data = game::get_data(mbt_state);
+        
         int id_min = 0;
         int id_max = game::ColorId::max;
         static int id_val = game::ColorId::max;
-
-        ImGui::Checkbox("Enable Debug", &enable_ids);
-        data.enabled = !enable_ids;
-
-        if (!enable_ids)
-        {            
-            ImGui::BeginDisabled();
-        }
+        static ImVec4 color;
 
         auto id = game::ColorId::make_default();
 
-        ImGui::SliderInt("Color", &id_val, id_min, id_max);
-        if (enable_ids)
-        {
-            id = game::ColorId::make((u32)id_val);
-            span::fill(game::to_span(data.color_ids.curr()), id);
-        }
+        ImGui::SliderInt("ColorId", &id_val, id_min, id_max);
+
+        id = game::ColorId::make((u32)id_val);
+        
+        color = to_im_color(game::color_at(id, data.format));
 
         ImGui::Text(" Id: %u", id.value);
-        auto rgb = game::color_at(id, data.format);
-        ImGui::Text("RGB: {%u, %u, %u}", rgb.red, rgb.green, rgb.blue);
+        ImGui::ColorEdit3("Color##1", (float*)&color);
 
-        if (!enable_ids)
-        {
-            ImGui::EndDisabled();
-        }*/
     }
     
 }
@@ -300,10 +300,10 @@ namespace game_state
             while (game_running && props.enabled)
             {
                 sw.start();
-                game::proc_copy(data.color_ids, r, r);
+                game::proc_copy(data.mbt_mat, r, r);
                 props.add_data((f32)sw.get_time_milli());
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                thread_sleep_ms(10);
             }
         };
 
@@ -312,7 +312,7 @@ namespace game_state
     }
 
 
-    static void start_proc_mbt(PlotProps& props, int& limit)
+    static void start_proc_mbt(PlotProps& props)
     {
         props.units = "ms";
 
@@ -324,15 +324,15 @@ namespace game_state
             while (game_running && props.enabled)
             {
                 sw.start();
-                game::proc_mbt(data.color_ids, data.mbt_pos, data.mbt_delta, (u32)limit);
+                game::proc_mbt(data.mbt_mat, data.mbt_pos, data.mbt_delta, data.iter_limit);
                 props.add_data((f32)sw.get_time_milli());
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                thread_sleep_ms(10);
             }
         };
 
         std::thread th(copy_loop);
-        th.detach();        
+        th.detach();   
     }
 
 
@@ -349,10 +349,10 @@ namespace game_state
             while (game_running && props.enabled)
             {
                 sw.start();
-                game::proc_render(data.color_ids, mbt_state.screen, data.format);
+                game::proc_render(data.mbt_mat, mbt_state.screen, data.format);
                 props.add_data((f32)sw.get_time_milli());
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                thread_sleep_ms(10);
             }
         };
 
@@ -388,9 +388,9 @@ namespace game_state
             ImGui::TreePop();
         }
 
-        if (ImGui::TreeNode("DBG"))
+        if (ImGui::TreeNode("Colors"))
         {
-            show_dbg();
+            show_colors();
             ImGui::TreePop();
         }
     }
@@ -408,7 +408,12 @@ namespace game_state
             return; 
         }
 
-        ImGui::Checkbox("Enable", &enable_profile);
+        if (!mbt_state.data_)
+        {
+            return;
+        }
+
+        ImGui::Checkbox("Enable", &enable_profile);        
 
         state.hard_pause = enable_profile;
 
@@ -416,6 +421,10 @@ namespace game_state
 
         if (!enable_profile)
         {
+            copy_props.enabled = false;
+            mbt_props.enabled = false;
+            render_props.enabled = false;
+
             ImGui::BeginDisabled();
         }
         
@@ -435,13 +444,12 @@ namespace game_state
         }
 
         ImGui::Checkbox("proc_mbt", &mbt_props.enabled);
-
-        static int limit = 64; // slider?
+        
         if (mbt_props.enabled)
         {
             if (!mbt_props.started)
             {
-                start_proc_mbt(mbt_props, limit);
+                start_proc_mbt(mbt_props);
                 mbt_props.started = true;
             }
             show_plot(mbt_props, "MbtPlot");

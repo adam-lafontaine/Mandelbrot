@@ -190,37 +190,33 @@ namespace colors
 } // game_mbt
 
 
-/* color ids */
+/* color table */
 
 namespace game_mbt
 {
-    void destroy_color_ids(ColorIdMatrix& mat)
+    static constexpr auto Color_Table = colors::make_table();
+
+    static void static_test_color_table()
     {
-        mb::destroy_buffer(mat.buffer);
+        constexpr auto D = ColorId::make_default().value;
+
+        static_assert(Color_Table.channels[0][D] == 0);
+        static_assert(Color_Table.channels[1][D] == 0);
+        static_assert(Color_Table.channels[2][D] == 0);
+        static_assert(Color_Table.channels[3][D] == 0);
+        static_assert(Color_Table.channels[4][D] == 0);
+        static_assert(Color_Table.channels[5][D] == 0);
     }
 
 
-    bool create_color_ids(ColorIdMatrix& mat, u32 width, u32 height)
+    static constexpr img::Pixel color_at(ColorId id, ColorFormat format)
     {
-        auto n = width * height;
+        auto r = Color_Table.channels[format.R];
+        auto g = Color_Table.channels[format.G];
+        auto b = Color_Table.channels[format.B];
 
-        if (!mb::create_buffer(mat.buffer, n * 2, "color_ids"))
-        {
-            return false;
-        }
+        auto offset = id.value;
 
-        for (u32 i = 0; i < 2; i++)
-        {
-            auto span = span::push_span(mat.buffer, n);
-            mat.data_[i].matrix_data_ = span.data;
-            mat.data_[i].width = width;
-            mat.data_[i].height = height;
-        }        
-
-        return true;
+        return img::to_pixel(r[offset], g[offset], b[offset]);
     }
-
-
-    
 }
-
