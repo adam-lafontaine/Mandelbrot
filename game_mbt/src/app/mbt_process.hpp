@@ -1,7 +1,7 @@
 #pragma once
 
 
-/* mandelbrot */
+/* basic mandelbrot kernel */
 
 namespace game_mbt
 {
@@ -27,124 +27,20 @@ namespace game_mbt
     
         return iter;
     }
-
-
-    class MBTData
-    {
-    public:
-        fmbt cx = 0.0;
-        fmbt cy = 0.0;
-        
-        fmbt mx = 0.0;
-        fmbt my = 0.0;
-        fmbt mx2 = 0.0;
-        fmbt my2 = 0.0;
-
-        u32 iter = 0;
-        u32 limit = 32;
-    };
-
-
-    inline void zero_iter(MBTData& mdata)
-    {
-        mdata.mx = 0.0;
-        mdata.my = 0.0;
-        mdata.mx2 = 0.0;
-        mdata.my2 = 0.0;
-        mdata.iter = 0;
-    }
-
-
-    inline void mandelbrot_iter(MBTData& mdata)
-    {
-        while (mdata.iter < mdata.limit && mdata.mx2 + mdata.my2 <= 4.0)
-        {
-            ++mdata.iter;
-    
-            mdata.my = (mdata.mx + mdata.mx) * mdata.my + mdata.cy;
-            //mdata.my = num::fma((mdata.mx + mdata.mx), mdata.my, mdata.cy); slower
-            mdata.mx = mdata.mx2 - mdata.my2 + mdata.cx;
-            mdata.my2 = mdata.my * mdata.my;
-            mdata.mx2 = mdata.mx * mdata.mx;
-        }
-    }
 }
 
 
 #include <immintrin.h>
 
+/* mandelbrot kernel simd */
+
 namespace game_mbt
 {
-    using f256 = __m256;
 
 
-    class MBTData256
-    {
-    public:
-        f256 cx;
-        f256 cy;
-        
-        f256 mx;
-        f256 my;
-        f256 mx2;
-        f256 my2;
 
-        u32 iter = 0;
-        u32 limit = 32;
-    };
+} // game_mbt
 
-
-    inline void zero_iter(MBTData256& mdata)
-    {
-        mdata.mx = _mm256_setzero_ps();
-        mdata.my = _mm256_setzero_ps();
-        mdata.mx2 = _mm256_setzero_ps();
-        mdata.my2 = _mm256_setzero_ps();
-        mdata.iter = 0;
-    }
-
-
-    inline void mandelbrot_iter(MBTData256& mdata)
-    {
-        auto sum = _mm256_setzero_ps();
-        auto counts = _mm256_setzero_si256();
-        auto active = _mm256_set1_epi32(1);
-        auto esc = _mm256_setzero_ps();
-        int sum_le_4 = 0;
-
-        //mdata.mx2 + mdata.my2 <= 4.0
-        sum = _mm256_add_ps(mdata.mx2, mdata.my2);
-        esc = _mm256_cmp_ps(sum, _mm256_set1_ps(4.0f), _CMP_LE_OQ);
-        counts = _mm256_add_epi32(counts, _mm256_and_si256(active, _mm256_set1_epi32(1)));
-        active = _mm256_andnot_si256(_mm256_castps_si256(esc), active);
-        sum_le_4 = _mm256_testz_si256(active, active);
-
-        while (mdata.iter < mdata.limit && sum_le_4)
-        {
-            ++mdata.iter;
-
-            //mdata.my = (mdata.mx + mdata.mx) * mdata.my + mdata.cy;
-            auto val = _mm256_add_ps(mdata.mx, mdata.mx);
-            val = _mm256_fmadd_ps(val, mdata.my, mdata.cy);
-
-            //mdata.mx = mdata.mx2 - mdata.my2 + mdata.cx;
-            val = _mm256_sub_ps(mdata.mx2, mdata.my2);
-            mdata.mx = _mm256_add_ps(val, mdata.cx);
-
-            //mdata.my2 = mdata.my * mdata.my;
-            //mdata.mx2 = mdata.mx * mdata.mx;
-            mdata.mx2 = _mm256_mul_ps(mdata.mx, mdata.mx);
-            mdata.my2 = _mm256_mul_ps(mdata.my, mdata.my);
-
-            //mdata.mx2 + mdata.my2 <= 4.0
-            sum = _mm256_add_ps(mdata.mx2, mdata.my2);
-            esc = _mm256_cmp_ps(sum, _mm256_set1_ps(4.0f), _CMP_LE_OQ);
-            counts = _mm256_add_epi32(counts, _mm256_and_si256(active, _mm256_set1_epi32(1)));
-            active = _mm256_andnot_si256(_mm256_castps_si256(esc), active);
-            sum_le_4 = _mm256_testz_si256(active, active);
-        }
-    }
-}
 
 
 /* data matrix */
@@ -259,6 +155,9 @@ namespace game_mbt
     }
 
 
+
+
+
     static inline void mandelbrot_at(MatrixViewMBT const& mbt, u32 i)
     {
         auto const cx = mbt.cx_[i];
@@ -310,23 +209,6 @@ namespace game_mbt
 }
 
 
-/* processing api */
-
-namespace game_mbt
-{
-    void proc_copy(MBTMatrix& mat, Rect2Du32 r_src, Rect2Du32 r_dst);
-
-    void proc_mbt(MBTMatrix& mat, u32 limit);
-
-    void proc_mbt(MBTMatrix& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit);
-
-    void proc_mbt_range(MBTMatrix& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit);
-
-    void proc_render(MBTMatrix const& mat, img::ImageView const& screen, ColorFormat format);
-    
-}
-
-
 /* span */
 
 namespace game_mbt
@@ -347,7 +229,7 @@ namespace game_mbt
 
         u32 length = 0;
     };
-
+    
 
     SpanViewMBT row_span(MatrixViewMBT const& mbt, u32 y)
     {
@@ -382,9 +264,211 @@ namespace game_mbt
         span.length = x_end - x_begin;;
 
         return span;
+    }    
+}
+
+
+/* mandelbrot processing */
+
+namespace game_mbt
+{
+    class MBTData
+    {
+    public:
+        fmbt cx = 0.0;
+        fmbt cy = 0.0;
+        
+        fmbt mx = 0.0;
+        fmbt my = 0.0;
+        fmbt mx2 = 0.0;
+        fmbt my2 = 0.0;
+
+        u32 iter = 0;
+        u32 limit = 32;
+    };
+
+
+    inline void zero_iter(MBTData& mdata)
+    {
+        mdata.mx = 0.0;
+        mdata.my = 0.0;
+        mdata.mx2 = 0.0;
+        mdata.my2 = 0.0;
+        mdata.iter = 0;
     }
 
 
+    inline void mandelbrot_iter(MBTData& mdata)
+    {
+        while (mdata.iter < mdata.limit && mdata.mx2 + mdata.my2 <= 4.0)
+        {
+            ++mdata.iter;
+    
+            mdata.my = (mdata.mx + mdata.mx) * mdata.my + mdata.cy;
+            //mdata.my = num::fma((mdata.mx + mdata.mx), mdata.my, mdata.cy); slower
+            mdata.mx = mdata.mx2 - mdata.my2 + mdata.cx;
+            mdata.my2 = mdata.my * mdata.my;
+            mdata.mx2 = mdata.mx * mdata.mx;
+        }
+    }
+
+
+namespace avx
+{
+
+}
+
+
+namespace avx2
+{
+    class MBTData256
+    {
+    public:
+        __m256d cx;
+        __m256d cy;
+        
+        __m256d mx;
+        __m256d my;
+        __m256d mx2;
+        __m256d my2;
+
+        __m256i iter;
+
+        u32 limit = 32;
+    };
+
+
+    inline void zero_iter(MBTData256& mdata)
+    {
+        mdata.mx = _mm256_setzero_pd();
+        mdata.my = _mm256_setzero_pd();
+        mdata.mx2 = _mm256_setzero_pd();
+        mdata.my2 = _mm256_setzero_pd();
+        mdata.iter = _mm256_setzero_si256();
+    }
+
+
+    inline void mandelbrot_iter(MBTData256& mdata)
+    {
+        auto sum = _mm256_setzero_pd();
+        auto esc = _mm256_setzero_pd();
+        auto inc = _mm256_setzero_si256();
+        auto counts = _mm256_setzero_si256();
+        auto active = _mm256_set1_epi64x(1);
+        
+        int sum_le_4 = 0;
+
+        //mdata.mx2 + mdata.my2 <= 4.0
+        sum = _mm256_add_pd(mdata.mx2, mdata.my2);
+        esc = _mm256_cmp_pd(sum, _mm256_set1_pd(4.0), _CMP_LE_OQ);
+        inc = _mm256_and_si256(active, _mm256_set1_epi64x(1));
+        counts = _mm256_add_epi64(counts, inc);
+        active = _mm256_andnot_si256(_mm256_castpd_si256(esc), active);
+        sum_le_4 = _mm256_testz_si256(active, active);
+
+        while (mdata.iter < mdata.limit && sum_le_4)
+        {
+            ++mdata.iter;
+
+            //mdata.my = (mdata.mx + mdata.mx) * mdata.my + mdata.cy;
+            auto val = _mm256_add_pd(mdata.mx, mdata.mx);
+            val = _mm256_fmadd_pd(val, mdata.my, mdata.cy);
+
+            //mdata.mx = mdata.mx2 - mdata.my2 + mdata.cx;
+            val = _mm256_sub_pd(mdata.mx2, mdata.my2);
+            mdata.mx = _mm256_add_pd(val, mdata.cx);
+
+            //mdata.my2 = mdata.my * mdata.my;
+            //mdata.mx2 = mdata.mx * mdata.mx;
+            mdata.mx2 = _mm256_mul_pd(mdata.mx, mdata.mx);
+            mdata.my2 = _mm256_mul_pd(mdata.my, mdata.my);
+
+            //mdata.mx2 + mdata.my2 <= 4.0
+            sum = _mm256_add_pd(mdata.mx2, mdata.my2);
+            esc = _mm256_cmp_pd(sum, _mm256_set1_pd(4.0), _CMP_LE_OQ);
+            inc = _mm256_and_si256(active, _mm256_set1_epi64x(1));
+            counts = _mm256_add_epi64(counts, inc);
+            active = _mm256_andnot_si256(_mm256_castpd_si256(esc), active);
+            sum_le_4 = _mm256_testz_si256(active, active);
+        }
+
+
+    }
+
+} // avx2
+}
+
+
+/* load/store */
+
+namespace game_mbt
+{
+    inline void load_iter_at(SpanViewMBT const& src, MBTData& mdata, u32 i)
+    {
+        mdata.cx = src.cx[i];
+        mdata.cy = src.cy[i];
+
+        mdata.mx = src.mx[i];
+        mdata.my = src.my[i];
+        mdata.mx2 = src.mx2[i];
+        mdata.my2 = src.my2[i];
+        mdata.iter = src.iter[i];
+    }
+
+
+    inline void store_iter_at(MBTData const& mdata, SpanViewMBT const& dst, u32 i)
+    {
+        dst.cx[i] = mdata.cx;
+        dst.cy[i] = mdata.cy;
+        
+        dst.mx[i] = mdata.mx;
+        dst.my[i] = mdata.my;
+        dst.mx2[i] = mdata.mx2;
+        dst.my2[i] = mdata.my2;
+        dst.iter[i] = mdata.iter;
+    }
+
+
+namespace avx2
+{
+    inline void load_iter_at(SpanViewMBT const& src, MBTData256& mdata, u32 i)
+    {
+        mdata.cx = _mm256_load_pd(src.cx + i);
+        mdata.cy = _mm256_load_pd(src.cy + i);
+
+        mdata.mx = _mm256_load_pd(src.mx + i);
+        mdata.my = _mm256_load_pd(src.my + i);
+        mdata.mx2 = _mm256_load_pd(src.mx2 + i);
+        mdata.my2 = _mm256_load_pd(src.my2 + i);
+
+        mdata.iter = _mm256_set_epi64x(src.iter[i], src.iter[i + 1], src.iter[i + 2], src.iter[i + 3]);
+    }
+
+
+    inline void store_iter_at(MBTData256 const& mdata, SpanViewMBT const& dst, u32 i)
+    {
+        _mm256_store_pd(dst.cx + i, mdata.cx);
+        _mm256_store_pd(dst.cy + i, mdata.cy);
+
+        _mm256_store_pd(dst.mx + i, mdata.mx);
+        _mm256_store_pd(dst.my + i, mdata.my);
+        _mm256_store_pd(dst.mx2 + i, mdata.mx2);
+        _mm256_store_pd(dst.my2 + i, mdata.my2);
+
+        i64 iter[4] = { dst.iter[i], dst.iter[i + 1], dst.iter[i + 2], dst.iter[i + 3] };
+        auto mem256 = (__m256i*)iter;
+        _mm256_storeu_si256(mem256, mdata.iter);
+    }
+
+}// avx2
+
+} // game_mbt
+
+
+/* mandelbrot row */
+
+namespace game_mbt
+{
     static void mandelbrot_row(MatrixViewMBT const& dst, u32 y, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta)
     {
         auto row = row_span(dst, y);
@@ -401,14 +485,7 @@ namespace game_mbt
         {
             zero_iter(mdata);
             mandelbrot_iter(mdata);
-
-            row.cx[i] = mdata.cx;
-            row.cy[i] = mdata.cy;
-            row.mx[i] = mdata.mx;
-            row.my[i] = mdata.my;
-            row.mx2[i] = mdata.mx2;
-            row.my2[i] = mdata.my2;
-            row.iter[i] = mdata.iter;
+            store_iter_at(mdata, row, i);
 
             mdata.cx += delta.x;
         }
@@ -427,25 +504,9 @@ namespace game_mbt
 
         for (u32 i = 0; i < len; i++)
         {
-            mdata.cx = row_src.cx[i];
-            mdata.cy = row_src.cy[i];
-
-            mdata.mx = row_src.mx[i];
-            mdata.my = row_src.my[i];
-            mdata.mx2 = row_src.mx2[i];
-            mdata.my2 = row_src.my2[i];
-            mdata.iter = row_src.iter[i];
-
-            mandelbrot_iter(mdata);
-            
-            row_dst.cx[i] = mdata.cx;
-            row_dst.cy[i] = mdata.cy;
-            
-            row_dst.mx[i] = mdata.mx;
-            row_dst.my[i] = mdata.my;
-            row_dst.mx2[i] = mdata.mx2;
-            row_dst.my2[i] = mdata.my2;
-            row_dst.iter[i] = mdata.iter;
+            load_iter_at(row_src, mdata, i);
+            mandelbrot_iter(mdata);            
+            store_iter_at(mdata, row_dst, i);
         }
     }
 
@@ -466,16 +527,26 @@ namespace game_mbt
         {
             zero_iter(mdata);
             mandelbrot_iter(mdata);
-
-            row.cx[i] = mdata.cx;
-            row.cy[i] = mdata.cy;
-            row.mx[i] = mdata.mx;
-            row.my[i] = mdata.my;
-            row.mx2[i] = mdata.mx2;
-            row.my2[i] = mdata.my2;
-            row.iter[i] = mdata.iter;
+            store_iter_at(mdata, row, i);
 
             mdata.cx += delta.x;
         }
     }
+}
+
+
+/* processing api */
+
+namespace game_mbt
+{
+    void proc_copy(MBTMatrix& mat, Rect2Du32 r_src, Rect2Du32 r_dst);
+
+    void proc_mbt(MBTMatrix& mat, u32 limit);
+
+    void proc_mbt(MBTMatrix& mat, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit);
+
+    void proc_mbt_range(MBTMatrix& mat, Rect2Du32 r_dst, Vec2D<fmbt> const& begin, Vec2D<fmbt> const& delta, u32 limit);
+
+    void proc_render(MBTMatrix const& mat, img::ImageView const& screen, ColorFormat format);
+    
 }
