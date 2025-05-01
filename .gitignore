@@ -1,5 +1,10 @@
-*.exe
 .vscode/
+out_files/
+
+.zig-cache/
+.zig-out/
+
+*.exe
 *.out
 *.pdb
 *.exe
