@@ -11,8 +11,10 @@ EXE := mandelbrot
 # apt-get install libsdl2-mixer-dev
 
 LDFLAGS := -lSDL2
-LDFLAGS += -lSDL2_mixer
+#LDFLAGS += -lSDL2_mixer
+CPPFLAGS += -DNO_AUDIO
 LDFLAGS += -ltbb
+
 
 ROOT := ../../..
 

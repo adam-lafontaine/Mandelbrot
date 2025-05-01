@@ -7,13 +7,16 @@
 
 #include "../../../libs/sdl2/sdl_input.cpp"
 #include "../../../libs/sdl2/sdl_window.cpp"
+
+#ifndef NO_AUDIO
 #include "../../../libs/sdl2/sdl_audio.cpp"
+#endif
 
 // TODO: processing/cuda etc.
 #include "colors.cpp"
 
 
-//#define CAN_TBB
+#define CAN_TBB
 
 #ifdef CAN_TBB
 
