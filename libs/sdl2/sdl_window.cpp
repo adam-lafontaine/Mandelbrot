@@ -487,9 +487,7 @@ namespace window
 
         auto pitch = screen.width_px * sizeof(window.pixel_buffer[0]);
         
-
-        #ifdef PRINT_MESSAGES
-
+        #ifndef NDEBUG
         err = SDL_UpdateTexture(screen.texture, 0, (void*)window.pixel_buffer, pitch);
         if(err)
         {

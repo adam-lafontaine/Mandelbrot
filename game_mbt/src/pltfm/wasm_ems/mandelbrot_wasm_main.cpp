@@ -342,7 +342,7 @@ int main(int argc, char* argv[])
 
     smn::run_state = RunState::Run;
 
-    emscripten_set_main_loop(main_loop, 60, 1);
+    emscripten_set_main_loop(main_loop, 30, 1);
     
     main_close();
 

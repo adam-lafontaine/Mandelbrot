@@ -370,7 +370,7 @@ namespace ns_update_state
             proc_mbt(data.mbt_mat, data.iter_limit);
         }
         else if (data.updated.pos)
-        {
+        {        
             data.mbt_mat.swap();
             proc_copy(data.mbt_mat, data.copy_src, data.copy_dst);
 

@@ -31,7 +31,7 @@ namespace game_mbt
         auto iter_src = img::sub_view(mbt_src.view_iter(), r_src);
         auto iter_dst = img::sub_view(mbt_dst.view_iter(), r_dst);
 
-        auto h = mbt_src.height;
+        auto h = r_src.y_end - r_src.y_begin;
 
         for (u32 y = 0; y < h; y++)
         {
