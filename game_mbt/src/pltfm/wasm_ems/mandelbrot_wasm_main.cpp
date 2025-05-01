@@ -232,17 +232,19 @@ static bool main_init(InitParams const& params)
     auto result = game::init(smn::app_state, dims);
     if (!result.success)
     {
-        // result.error_code
+        printf("Error: game::init()\n");
         return false;
     }
 
     if (!create_window(result.app_dimensions, params))
     {
+        printf("Error: create_window()\n");
         return false;
     }
 
     if (!game::set_screen_memory(smn::app_state, make_window_view()))
     {
+        printf("Error: game::set_screen_memory()\n");
         return false;
     }
 

@@ -412,9 +412,26 @@ namespace game_mbt
 
     AppResult init(AppState& state, Vec2Du32 available_dims)
     {
-        AppResult result;
+        AppResult result{};
+        result.success = false;
 
-        result.app_dimensions = available_dims;
+        result.error_code = 0;
+
+        auto w = BUFFER_WIDTH;
+        auto h = BUFFER_HEIGHT;
+
+        auto max_w = !available_dims.x ? w : available_dims.x;
+        auto max_h = !available_dims.y ? h : available_dims.y;
+
+        auto max_scale = num::max(w / max_w, h / max_h);
+        
+        if (max_scale > 1)
+        {
+            w /= max_scale;
+            h /= max_scale;
+        }
+
+        result.app_dimensions = { w, h };
         result.success = true;
 
         return result;
