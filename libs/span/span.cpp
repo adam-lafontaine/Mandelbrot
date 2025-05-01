@@ -1,6 +1,7 @@
 #pragma once
+// 2025-04-30
 
-#include "span.hpp"
+#include "span.hpp"// 2025-04-30
 
 #ifdef __AVX__
 #define SPAN_SIMD_AVX_128
@@ -223,60 +224,6 @@ namespace span
 }
 
 
-/* bit_copy */
-
-namespace span
-{
-    static inline void bit_copy_512(u8* src, u8* dst)
-    {
-        bit_copy_256(src, dst);
-        bit_copy_256(src + size256, dst + size256);
-    }
-
-
-    static inline void bit_copy_1024(u8* src, u8* dst)
-    {
-        bit_copy_512(src, dst);
-        bit_copy_512(src + size512, dst + size512);
-    }
-}
-
-
-/* bit_fill */
-
-namespace span
-{
-
-    static inline void bit_fill_u8_512(u8* dst, u8 value)
-    {
-        bit_fill_u8_256(dst, value);
-        bit_fill_u8_256(dst + size256, value);
-    }
-
-
-    static inline void bit_fill_u8_1024(u8* dst, u8 value)
-    {
-        bit_fill_u8_512(dst, value);
-        bit_fill_u8_512(dst + size512, value);
-    }
-
-
-    static inline void bit_fill_u32_512(u8* dst, u32 value)
-    {              
-        bit_fill_u32_256(dst, value);
-        bit_fill_u32_256(dst + size256, value);
-    }
-
-
-    static inline void bit_fill_u32_1024(u8* dst, u32 value)
-    {
-        bit_fill_u32_512(dst, value);
-        bit_fill_u32_512(dst + size512, value);
-    }
-}
-
-
-
 /* copy */
 
 namespace span
@@ -331,40 +278,6 @@ namespace span
 
         i = len_u8 - size256;
         bit_copy_256(src + i, dst + i);
-    }
-
-
-    static void copy_512(u8* src, u8* dst, u64 len_u8)
-    {
-        auto const n512 = len_u8 / size512;
-        auto const end512 = n512 * size512;
-
-        u64 i = 0;
-
-        for(; i < end512; i += size512)
-        {
-            bit_copy_512(src + i, dst + i);
-        }
-
-        i = len_u8 - size512;
-        bit_copy_512(src + i, dst + i);
-    }
-
-
-    static void copy_1024(u8* src, u8* dst, u64 len_u8)
-    {
-        auto const n1024 = len_u8 / size1024;
-        auto const end1024 = n1024 * size1024;
-
-        u64 i = 0;
-
-        for(; i < end1024; i += size1024)
-        {
-            bit_copy_1024(src + i, dst + i);
-        }
-
-        i = len_u8 - size1024;
-        bit_copy_1024(src + i, dst + i);
     }
 
 
@@ -427,44 +340,6 @@ namespace span
         bit_copy_256(src + i, dst1 + i);
         bit_copy_256(src + i, dst2 + i);
     }
-
-
-    static void copy_512(u8* src, u8* dst1, u8* dst2, u64 len_u8)
-    {
-        auto const n512 = len_u8 / size512;
-        auto const end512 = n512 * size512;
-
-        u64 i = 0;
-
-        for(; i < end512; i += size512)
-        {
-            bit_copy_512(src + i, dst1 + i);
-            bit_copy_512(src + i, dst2 + i);
-        }
-
-        i = len_u8 - size512;
-        bit_copy_512(src + i, dst1 + i);
-        bit_copy_512(src + i, dst2 + i);
-    }
-
-
-    static void copy_1024(u8* src, u8* dst1, u8* dst2, u64 len_u8)
-    {
-        auto const n1024 = len_u8 / size1024;
-        auto const end1024 = n1024 * size1024;
-
-        u64 i = 0;
-
-        for(; i < end1024; i += size1024)
-        {
-            bit_copy_1024(src + i, dst1 + i);
-            bit_copy_1024(src + i, dst2 + i);
-        }
-
-        i = len_u8 - size1024;
-        bit_copy_1024(src + i, dst1 + i);
-        bit_copy_1024(src + i, dst2 + i);
-    }
 }
 
 
@@ -512,40 +387,6 @@ namespace span
 
         i = len_u8 - size256;
         bit_fill_u8_256(dst + i, value);
-    }
-
-
-    static void fill_u8_512(u8* dst, u8 value, u64 len_u8)
-    {
-        auto const n512 = len_u8 / size512;
-        auto const end512 = n512 * size512;
-
-        u64 i = 0;
-
-        for (; i < end512; i += size512)
-        {
-            bit_fill_u8_512(dst + i, value);
-        }
-
-        i = len_u8 - size512;
-        bit_fill_u8_512(dst + i, value);
-    }
-
-
-    static void fill_u8_1024(u8* dst, u8 value, u64 len_u8)
-    {
-        auto const n1024 = len_u8 / size1024;
-        auto const end1024 = n1024 * size1024;
-
-        u64 i = 0;
-
-        for (; i < end1024; i += size1024)
-        {
-            bit_fill_u8_1024(dst + i, value);
-        }
-
-        i = len_u8 - size1024;
-        bit_fill_u8_1024(dst + i, value);
     }
 }
 
@@ -601,47 +442,6 @@ namespace span
         i = len_u8 - size256;
         bit_fill_u32_256(d8 + i, value);
     }
-
-
-    static void fill_u32_512(u32* dst, u32 value, u64 len_u32)
-    {
-        auto const len_u8 = len_u32 * size32;
-        auto const n512 = len_u8 / size512;
-        auto const end512 = n512 * size512;
-
-        u8* d8 = (u8*)dst;
-
-        u64 i = 0;
-
-        for (; i < end512; i += size512)
-        {
-            bit_fill_u32_512(d8 + i, value);
-        }
-
-        i = len_u8 - size512;
-        bit_fill_u32_512(d8 + i, value);
-    }
-
-
-    static void fill_u32_1024(u32* dst, u32 value, u64 len_u32)
-    {
-        auto const len_u8 = len_u32 * size32;
-        auto const n1024 = len_u8 / size1024;
-        auto const end1024 = n1024 * size1024;
-
-        u8* d8 = (u8*)dst;
-
-        u64 i = 0;
-
-        for (; i < end1024; i += size1024)
-        {
-            bit_fill_u32_1024(d8 + i, value);
-        }
-
-        i = len_u8 - size1024;
-        bit_fill_u32_1024(d8 + i, value);
-    }
-
 }
 
 
@@ -651,6 +451,7 @@ namespace span
 {
     void copy_u8(u8* src, u8* dst, u64 len_u8)
     {
+    #ifndef DNDEBUG 
         auto const n_64 = len_u8 / 8;
 
         switch (n_64)
@@ -663,25 +464,19 @@ namespace span
         case 3:
             copy_128(src, dst, len_u8);
             break;
-        case 4:
-        case 5:
-        case 6:
-        case 7:
+        default:
             copy_256(src, dst, len_u8);
             break;
-        case 8:
-        case 9:
-        case 10:
-        case 11:
-        case 12:
-        case 13:
-        case 14:
-        case 15:
-            copy_512(src, dst, len_u8);
-            break;
-        default:
-            copy_1024(src, dst, len_u8);
         }
+
+    #else
+        // ignoring simd is faster when optimazed
+
+        for (u32 i = 0; i < len_u8; i++)
+        {
+            dst[i] = src[i];
+        }
+    #endif
     }
 
 
@@ -699,24 +494,9 @@ namespace span
         case 3:
             copy_128(src, dst1, dst2, len_u8);
             break;
-        case 4:
-        case 5:
-        case 6:
-        case 7:
+        default:
             copy_256(src, dst1, dst2, len_u8);
             break;
-        case 8:
-        case 9:
-        case 10:
-        case 11:
-        case 12:
-        case 13:
-        case 14:
-        case 15:
-            copy_512(src, dst1, dst2, len_u8);
-            break;
-        default:
-            copy_1024(src, dst1, dst2, len_u8);
         }
     }
 
@@ -735,24 +515,9 @@ namespace span
         case 3:
             fill_u8_128(dst, value, len_u8);
             break;
-        case 4:
-        case 5:
-        case 6:
-        case 7:
+        default:
             fill_u8_256(dst, value, len_u8);
             break;
-        case 8:
-        case 9:
-        case 10:
-        case 11:
-        case 12:
-        case 13:
-        case 14:
-        case 15:
-            fill_u8_512(dst, value, len_u8);
-            break;
-        default:
-            fill_u8_1024(dst, value, len_u8);
         }
     }
 
@@ -771,24 +536,9 @@ namespace span
         case 3:
             fill_u32_128(dst, value, len_u32);
             break;
-        case 4:
-        case 5:
-        case 6:
-        case 7:
+        default:
             fill_u32_256(dst, value, len_u32);
             break;
-        case 8:
-        case 9:
-        case 10:
-        case 11:
-        case 12:
-        case 13:
-        case 14:
-        case 15:
-            fill_u32_512(dst, value, len_u32);
-            break;
-        default:
-            fill_u32_1024(dst, value, len_u32);
         }
     }
 }

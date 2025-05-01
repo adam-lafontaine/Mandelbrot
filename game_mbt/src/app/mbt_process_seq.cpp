@@ -66,17 +66,14 @@ namespace game_mbt
         auto& dst = mat.mbt_curr();
         dst.limit = limit;
 
-        auto h = dst.height;
+        auto bx = begin.x;
+        auto by = begin.y;
+        auto dx = delta.x;
 
-        auto cy_begin = begin.y;
-        auto cx_begin = begin.x;
-
-        Vec2D<fmbt> cpos = { cx_begin, cy_begin };
-
-        for (u32 y = 0; y < h; y++)
+        for (u32 y = 0; y < dst.height; y++)
         {   
-            mandelbrot_row(dst, y, cpos, delta);
-            cpos.y += delta.y;
+            mandelbrot_row(dst, y, bx, by, dx);
+            by += delta.y;
         }
     }
 
@@ -91,15 +88,14 @@ namespace game_mbt
         auto x_end = r_dst.x_end;
         auto y_end = r_dst.y_end;
 
-        auto cy_begin = (fmbt)y_begin * delta.y + begin.y;
-        auto cx_begin = (fmbt)x_begin * delta.x + begin.x;
-
-        Vec2D<fmbt> cpos = { cx_begin, cy_begin };
+        auto bx = begin.x + x_begin * delta.x;
+        auto by = begin.y + y_begin * delta.y;
+        auto dx = delta.x;
 
         for (u32 y = y_begin; y < y_end; y++)
         {
-            mandelbrot_span(mbt, y, x_begin, x_end, cpos, delta);
-            cpos.y += delta.y;
+            mandelbrot_span(mbt, y, x_begin, x_end, bx, by, dx);
+            by += delta.y;
         }
     }
 
