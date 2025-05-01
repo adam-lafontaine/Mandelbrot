@@ -461,7 +461,10 @@ namespace avx2
     inline void mandelbrot_iter(MBTData256& mdata)
     {
         auto limit = _mm256_set1_epi64x(mdata.limit);
-        auto active = _mm256_set1_epi64x(1); 
+        auto active = _mm256_set1_epi64x(1);
+
+        u32 max = 32;
+        u32 num = 0;
 
         auto test_active = [&]()
         {
@@ -476,14 +479,16 @@ namespace avx2
             active = _mm256_and_si256(cmp_sum, active);
 
             auto res = !_mm256_testz_si256(active, active);
-
-            return res;
+            num++;
+            return res && num < max;
         };
 
         auto inc_iter = [&]()
         {
+            auto mask = active;
+
             // ++mdata.iter;
-            auto inc = _mm256_and_si256(active, _mm256_set1_epi64x(1));
+            auto inc = _mm256_and_si256(_mm256_set1_epi64x(1), mask);
             mdata.iter = _mm256_add_epi64(mdata.iter, inc);
         };        
 
@@ -491,18 +496,33 @@ namespace avx2
         {   
             inc_iter();
 
+            auto mask = _mm256_castsi256_pd(active);
+            auto val = _mm256_setzero_pd();
+
+            auto mx = mdata.mx;
+            auto my = mdata.my;
+            auto mx2 = mdata.mx2;
+            auto my2 = mdata.my2;
+            auto cx = mdata.cx;
+            auto cy = mdata.cy;
+
             // mdata.my = (mdata.mx + mdata.mx) * mdata.my + mdata.cy;
-            auto val = _mm256_add_pd(mdata.mx, mdata.mx);
-            mdata.my = _mm256_fmadd_pd(val, mdata.my, mdata.cy);
+            val = _mm256_add_pd(mx, mx);
+            my = _mm256_fmadd_pd(val, my, cy);
 
             // mdata.mx = mdata.mx2 - mdata.my2 + mdata.cx;
-            val = _mm256_sub_pd(mdata.mx2, mdata.my2);
-            mdata.mx = _mm256_add_pd(val, mdata.cx);
+            val = _mm256_sub_pd(mx2, my2);
+            mx = _mm256_add_pd(val, cx);
 
             // mdata.my2 = mdata.my * mdata.my;
             // mdata.mx2 = mdata.mx * mdata.mx;
-            mdata.mx2 = _mm256_mul_pd(mdata.mx, mdata.mx);
-            mdata.my2 = _mm256_mul_pd(mdata.my, mdata.my);
+            mx2 = _mm256_mul_pd(mx, mx);
+            my2 = _mm256_mul_pd(my, my);            
+
+            mdata.mx = _mm256_blendv_pd(mdata.mx, mx, mask);
+            mdata.my = _mm256_blendv_pd(mdata.my, my, mask);
+            mdata.mx2 = _mm256_blendv_pd(mdata.mx2, mx2, mask);
+            mdata.my2 = _mm256_blendv_pd(mdata.my2, my2, mask);
         }
     }
     
