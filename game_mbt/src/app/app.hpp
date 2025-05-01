@@ -7,7 +7,8 @@
 namespace game_mbt
 {
     constexpr auto APP_TITLE = "Mandelbrot";
-    constexpr auto VERSION = "1.2.0";
+    constexpr auto VERSION = "1.2.1";
+    constexpr auto DATE = "2025-05-01";
 
 
     class StateData;

@@ -283,16 +283,16 @@ static void main_loop()
 static void print_controls()
 {
     constexpr auto str = 
-    " _______________________________________________________________\n"
-    "|                          | Gamepad  | Keyboard    | Numpad    |\n" 
-    "| Gameplay Controls        | (mobile) | (desktop)   | (desktop) |\n" 
-    "|__________________________|__________|_____________|___________|\n"
-    "| Movement                 | D-Pad    | W A S D     | 8 4 2 6   |\n"
-    "|                          |          | Arrow keys  |           |\n"
-    "| Zoom                     | A B      | O P         |  + -      |\n"
-    "| Resolution               | X Y      | K L         |  * /      |\n"
-    "| Change colors            | L R      | Space key   |  0        |\n"
-    "|__________________________|__________|_____________|___________|\n"
+    " ________________________________________________________\n"
+    "|                   | Gamepad  | Keyboard    | Numpad    |\n" 
+    "| Gameplay Controls | (mobile) | (desktop)   | (desktop) |\n" 
+    "|___________________|__________|_____________|___________|\n"
+    "| Movement          | D-Pad    | W A S D     | 8 4 2 6   |\n"
+    "|                   |          | Arrow keys  |           |\n"
+    "| Zoom              | A B      | O P         |  + -      |\n"
+    "| Resolution        | X Y      | K L         |  * /      |\n"
+    "| Change colors     | L R      | Space key   |  0        |\n"
+    "|___________________|__________|_____________|___________|\n"
     ;
 
     printf(str);
@@ -331,7 +331,7 @@ int main(int argc, char* argv[])
         break;
     }
 
-    printf("\n%s v %s\n\n", game::APP_TITLE, game::VERSION);
+    printf("\n%s v%s | %s\n\n", game::APP_TITLE, game::VERSION, game::DATE);
 
     if (!main_init(params))
     {
