@@ -14,14 +14,14 @@
 #define KEYBOARD_H 0
 #define KEYBOARD_I 0
 #define KEYBOARD_J 0
-#define KEYBOARD_K 0
-#define KEYBOARD_L 0
+#define KEYBOARD_K 1
+#define KEYBOARD_L 1
 #define KEYBOARD_M 0
 #define KEYBOARD_N 0
-#define KEYBOARD_O 0
+#define KEYBOARD_O 1
 #define KEYBOARD_P 1
 #define KEYBOARD_Q 0
-#define KEYBOARD_R 1
+#define KEYBOARD_R 0
 #define KEYBOARD_S 1
 #define KEYBOARD_T 0
 #define KEYBOARD_U 0
@@ -49,7 +49,7 @@
 #define KEYBOARD_SPACE 1
 #define KEYBOARD_LSHIFT 0
 #define KEYBOARD_RSHIFT 0
-#define KEYBOARD_NUMPAD_0 0
+#define KEYBOARD_NUMPAD_0 1
 #define KEYBOARD_NUMPAD_1 0
 #define KEYBOARD_NUMPAD_2 1
 #define KEYBOARD_NUMPAD_3 0

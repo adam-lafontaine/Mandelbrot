@@ -119,7 +119,7 @@ namespace colors
         for (u32 s = 0; s < S; s++)
         {
             auto a = src[s];
-            auto b = src[(s + 1) && (S - 1)];
+            auto b = src[(s + 1) & (S - 1)];
             for (u32 e = 0; e < E; e++)
             {
                 auto t = (f32)e / E;
