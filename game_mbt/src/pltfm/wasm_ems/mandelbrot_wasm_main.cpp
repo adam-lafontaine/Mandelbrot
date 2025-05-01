@@ -283,16 +283,16 @@ static void main_loop()
 static void print_controls()
 {
     constexpr auto str = 
-    " ___________________________________________________\n"
-    "|                          | Gamepad  | Keyboard    |\n" 
-    "| Gameplay Controls        | (mobile) | (desktop)   |\n" 
-    "|__________________________|__________|_____________|\n"
-    "| Movement                 | D-Pad    | W A S D     |\n"
-    "|                          |          | Arrow keys  |\n"
-    "| Zoom                     | A B      | O P         |\n"
-    "| Resolution               | X Y      | K L         |\n"
-    "| Change colors            |          | Space key   |\n"
-    "|___________________________________________________|\n"
+    " _______________________________________________________________\n"
+    "|                          | Gamepad  | Keyboard    | Numpad    |\n" 
+    "| Gameplay Controls        | (mobile) | (desktop)   | (desktop) |\n" 
+    "|__________________________|__________|_____________|___________|\n"
+    "| Movement                 | D-Pad    | W A S D     | 8 4 2 6   |\n"
+    "|                          |          | Arrow keys  |           |\n"
+    "| Zoom                     | A B      | O P         |  + -      |\n"
+    "| Resolution               | X Y      | K L         |  * /      |\n"
+    "| Change colors            | L R      | Space key   |  0        |\n"
+    "|__________________________|__________|_____________|___________|\n"
     ;
 
     printf(str);
