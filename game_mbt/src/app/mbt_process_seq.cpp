@@ -72,7 +72,7 @@ namespace game_mbt
 
         for (u32 y = 0; y < dst.height; y++)
         {   
-            mandelbrot_row(dst, y, bx, by, dx);
+            avx2::mandelbrot_row(dst, y, bx, by, dx);
             by += delta.y;
         }
     }
