@@ -451,6 +451,7 @@ namespace span
 {
     void copy_u8(u8* src, u8* dst, u64 len_u8)
     {
+    #ifndef DNDEBUG 
         auto const n_64 = len_u8 / 8;
 
         switch (n_64)
@@ -467,6 +468,15 @@ namespace span
             copy_256(src, dst, len_u8);
             break;
         }
+
+    #else
+        // ignoring simd is faster when optimazed
+
+        for (u32 i = 0; i < len_u8; i++)
+        {
+            dst[i] = src[i];
+        }
+    #endif
     }
 
 
