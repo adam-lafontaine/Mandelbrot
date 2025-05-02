@@ -1,12 +1,13 @@
 CPP := g++
 
 CPPFLAGS := -std=c++20
-CPPFLAGS += -mavx
+CPPFLAGS += -mavx -mfma
 CPPFLAGS += -O3
 CPPFLAGS += -DNDEBUG
 CPPFLAGS += -mwindows
+CPPFLAGS += -DNO_AUDIO
 
-EXE := asteroids.exe
+EXE := mandelbrot.exe
 
 SDL := C:\SDL2\SDL2-2.30.5\x86_64-w64-mingw32
 #SDL_MIXER := C:\SDL2\SDL2_mixer-2.8.0\x86_64-w64-mingw32
@@ -89,9 +90,9 @@ $(program_exe): $(obj)
 build: $(program_exe)
 
 
-clean:	
-	find $(BUILD) -type f -exec rm -v {} \;
-#	rm -rfv $(BUILD)/*
+clean:
+	rm -fv $(O_BUILD)/*
+	rm -fv $(BUILD)/*
 
 
 setup:
